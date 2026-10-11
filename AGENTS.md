@@ -1,0 +1,63 @@
+# Repository Guidelines
+
+## Project Structure & Module Organization
+
+Sporeward is currently in the concept and planning phase. `docs/game-concept.md` contains design decisions, balancing parameters, and open questions. `docs/player-rules.md` contains player-facing rules, and `docs/tilehunting.md` provides background. Concept artwork lives in `docs/images`. Local editor history and exploratory visualizations are not versioned.
+
+Keep player-facing documentation focused on what players need to know. Keep development details in the concept document. Update both when gameplay rules change, preserving manual edits and agreed decisions. Remove discarded alternatives rather than retaining conversational history.
+
+## Build, Test, and Development Commands
+
+No application code, package manifests, or local build/test commands exist yet. Document actual commands when implementation is introduced.
+
+Only run build commands when the user requests them. A release-tag request authorizes the build at the end of the release sequence below.
+
+## Formatting & Style
+
+- Strictly use Stroustrup braces: put `else`, `catch`, and `finally` on a new line after the closing brace.
+- Indent with tabs; use spaces for YAML indentation.
+- Use explicit semicolons, double-quoted strings, and backticks for templates.
+- Avoid arrow functions unless they are one-liners.
+- Use BEM CSS classes: `block`, `block__element`, `block--modifier`, and `block__element--modifier`.
+- Configure ESLint and ESLint Stylistic to enforce these conventions when tooling is introduced.
+
+## TypeScript Guidelines
+
+- Never use `any`. Use `unknown` for dynamic data and narrow with runtime guards or schemas.
+- Specify return types on exported and public functions.
+- Use `readonly` and `as const` for fixed configurations.
+
+## Node.js Guidelines
+
+- Use ESM imports and prefix built-in modules with `node:`, for example `node:fs/promises`.
+- Prefer `async`/`await` over Promise chains.
+- Throw custom `Error` classes. Never swallow errors in empty `catch` blocks.
+
+## Testing Guidelines
+
+When implementation begins, use Vitest `*.test.ts` files for rules and server integration, and Playwright `*.spec.ts` for browser behavior. Test scoring, cooldowns, outbreak lifecycles, historical activity reconciliation, location privacy, command races, and recording recovery. No arbitrary coverage threshold is imposed. Add regression tests for meaningful fixes.
+
+## Commit & Pull Request Guidelines
+
+Use concise commit messages prefixed with an uppercase Conventional Commits type in brackets, such as `[FEAT] Add game setup` or `[FIX] Validate player count`.
+
+When asked to commit, propose the commit message and request approval before committing. Once approved, commit and push.
+
+PRs should explain purpose, link relevant issues, list validation, and include screenshots for interface changes.
+
+When asked to suggest commits, always check the files, also consider unstaged.
+
+Never mark commits Co-authored-by you.
+
+## Releasing New Versions
+
+When asked to tag a release:
+
+1. Rebase `main` to include new code from `development`.
+2. Increment the root `package.json` version according to SemVer and keep `package-lock.json` synchronized. Versions before the accepted MVP remain below `1.0.0`; the accepted MVP is `1.0.0`.
+3. Create a matching `v<version>` Git tag on `main`, never on `development`.
+4. Only then run build scripts.
+
+## Security & Configuration
+
+Never commit secrets. Use configuration placeholders and ignore local environment files and generated artifacts.
