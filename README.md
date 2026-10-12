@@ -60,7 +60,7 @@ Native dependency or app-configuration changes require rebuilding the developmen
 - `npm run check`: run both.
 - `npm run build --workspace @sporeward/web`: build browser assets.
 
-The current server test verifies the health endpoint without an external database. Full engine scenario tests are the next milestone. The interactive planning simulation remains under ignored `work/visualizations` and is not the production rules implementation.
+The current server test verifies the health endpoint without an external database. Full engine scenario tests are the next milestone. The [interactive planning simulation](docs/visualizations/sporeward-cleaning-lab.html) contains three repeatable scenarios with 17 assertions and is not the production rules implementation. Its source is an inline HTML fragment; standalone previews generated from it remain under ignored `work/visualizations`.
 
 ## Planning
 
