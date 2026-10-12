@@ -2,17 +2,23 @@
 
 Player-facing gameplay information is maintained in [Player rules](player-rules.md). This document contains the design rationale, development details, balancing parameters, and unresolved questions.
 
+Development stages and MVP acceptance criteria are maintained in the [Development roadmap](development-roadmap.md).
+
+Native development targets Android first, using the project owner's device for initial field testing. iOS follows when the Android experience is sufficiently mature and an external tester is available.
+
+The selected stack and current scaffold are described in [Architecture](architecture.md). Initial browser/server/mobile entry points and shared packages exist; gameplay implementation and native recording are the next milestones.
+
 ## TL;DR;
 
 - A location-based outdoor game where human-powered activity clears server-generated plague outbreaks. Players cooperate on cleanup while competing for personal points, with a recap after each activity.
-- Familiar routes remain useful. Touching an outbreak counts; loops inside it give no extra reward. Each player can contribute to the same outbreak once every 5 hours, with no limit on distinct targets per activity.
+- Familiar routes remain useful. Touching an outbreak counts; loops inside it give no extra reward. Each player can contribute to the same outbreak once every 6 hours, with no limit on distinct targets per activity.
 - Outbreaks look fluid and organic. Visits start fast and slow withering phases; repeated crossings can form cracks and strategically split it into easier parts. Imported and privacy-hidden contributions can appear as incoming support squads.
 - Show personal visit points, the locked cleanup bonus, and estimated remaining visits before departure. Repeat visit points diminish and slowly recover; growth never increases the cleanup bonus.
 - The last eligible visitor receives the finishing bonus, including delayed cleanup. Nearby-in-time participants also receive it, and a fixed 10-minute post-cleanup protection window preserves full applicable points.
 - Unresolved outbreaks visibly approach disintegration, then leave separate, non-growing remnants worth shares of the original bonus.
 - GPS visit times determine scoring and cooldowns. Routes may be uploaded within 24 hours after activity completion; late awards do not revoke points already granted.
 - Start with shared rules for all human-powered modes and publicly reachable targets. Location sharing defaults to everyone nearby, with off/friends options and private protection areas.
-- Use zoom-level-17 map cells as the working simulation grid, with outbreaks spanning one or more cells. Outbreak sizes, balancing values, and several timing details remain provisional. Mobile/browser play and a route-planner overlay are intended; implementation has not started.
+- Use zoom-level-17 map cells as the working simulation grid, with outbreaks spanning one or more cells. Outbreak sizes, balancing values, and several timing details remain provisional. Mobile/browser play and a route-planner overlay are intended; the initial application scaffold is in place.
 
 This document describes the current Sporeward concept. These are provisional design decisions, not a final specification. Numerical values are configurable balancing parameters.
 
@@ -26,7 +32,7 @@ During activity recording, the UI shows the current activity's running points ta
 
 Outbreaks touched during the current activity have their own clearly identifiable map state, visually distinct from both eligible targets and other cooldown-ineligible targets. This visit marker records contact during this activity, even if that contact does not earn points; show scoring eligibility separately so the marker does not imply a successful award. Use an icon or other non-colour cue alongside colour differences. The treatment of cleared or split targets in this activity history remains open.
 
-The intended product supports mobile devices and mobile browsers, accounts, location sharing, and server-generated outbreaks. Players can inspect outbreaks on the website or mobile app. A browser extension should overlay outbreaks on an external route-planning tool so players can choose detours themselves. Implementation has not started.
+The intended product supports mobile devices and mobile browsers, accounts, location sharing, and server-generated outbreaks. Players can inspect outbreaks on the website or mobile app. Browser recording is a foreground-only option with an awake screen; native mobile recording is the intended path for background and screen-off activity, subject to real-device validation. A future browser extension should overlay outbreaks on an external route-planning tool so players can choose detours themselves. The cleaning simulation is a prototype; the repository has an initial application scaffold but no playable product yet.
 
 ## Map and appearance
 
@@ -49,7 +55,7 @@ Outbreaks remain separate and never merge, even when their fluid-looking edges t
 - Touching an outbreak is sufficient; traversing it from edge to edge is unnecessary.
 - Starting or ending an activity inside an outbreak counts normally, provided the recorded activity reaches a minimum total distance of 500 metres, for all supported modes.
 - Distance, loops, and time spent inside an outbreak do not add visit points or cleaning power.
-- Each player can affect the same outbreak at most once every 5 hours. Ineligible repeat visits give neither points nor cleaning effects. Show these outbreaks in grey or another clearly distinct personal state.
+- Each player can affect the same outbreak at most once every 6 hours. Ineligible repeat visits give neither points nor cleaning effects. Show these outbreaks in grey or another clearly distinct personal state.
 - A ride can earn points from any number of distinct eligible outbreaks.
 - GPS tracks supply crossing geometry and a combined heatmap for splitting mechanics, independently of visit scoring.
 
@@ -75,7 +81,7 @@ The accepted starting probability model requires at least three accepted crossin
 
 Splitting creates two easier outbreaks, each independently touchable from a public route. Divide the remaining cleaning requirement, then provisionally reduce its total by 10%. Divide the locked bonus and pending cleaning effects without multiplying either total. Divide the parent's existing maximum-cell allowance. Children inherit its age and lifecycle timeline, with the remaining extension allowance divided between them. Exact division and integer-cell rounding rules remain open.
 
-Splitting has a provisional 30-minute stabilization period. During it, the parts neither grow nor accept visits. Both children inherit player visit-point history and the parent's player-specific 5-hour cooldown expiry; splitting neither resets nor restarts that cooldown. A player can visit a child only after stabilization has ended and their inherited cooldown has expired. Players without an active inherited cooldown can contribute as soon as stabilization ends.
+Splitting has a provisional 30-minute stabilization period. During it, the parts neither grow nor accept visits. Both children inherit player visit-point history and the parent's player-specific 6-hour cooldown expiry; splitting neither resets nor restarts that cooldown. A player can visit a child only after stabilization has ended and their inherited cooldown has expired. Players without an active inherited cooldown can contribute as soon as stabilization ends.
 
 Pending cleaning pauses during stabilization and resumes afterwards, preserving its remaining effect rather than consuming it during the lock.
 
@@ -93,7 +99,7 @@ Use X for the player's currently available visit points and Y for the cleanup bo
 
 Disintegration-phase visits retain ordinary visit points and the cleanup bonus, encouraging intervention instead of waiting for remnants.
 
-Repeat visit points diminish per player, provisionally by 50% each time. The suggested example is 100, 50, 25, 12, ... with a floor of 5; rounding and the floor are not final. Cleaning power remains constant even when points diminish, so a persistent solo player can still clear large outbreaks.
+Repeat visit points diminish per player, provisionally by 50% each time. The suggested example is 100, 50, 25, 12, ... with a floor of 5; rounding and the floor are not final. Repeat cleaning strength decreases more gently than points: 100%, 75%, 60%, then 50% for subsequent accepted visits. The 50% floor keeps repeat contributions meaningful for a persistent solo player. This is the first balancing experiment; compare it with constant strength in the simulation. Cleaning-strength recovery after a long absence remains open.
 
 Use uniform initial scoring for ordinary outbreaks rather than difficulty-scaled bonuses: first visit X is provisionally 100 points and cleanup bonus Y is 100 points, locked at spawning. Four equal disintegration remnants therefore award 25 points each. All ordinary outbreaks initially spawn at five connected cells, with a ten-cell growth cap. Varied spawn sizes are reserved for later. Accessibility-based cleaning requirements still vary independently of footprint within the initial 3–6-visit range.
 
@@ -107,7 +113,7 @@ Other accepted visitors within 10 minutes before or after the final visitor's vi
 
 After cleanup, a 10-minute protection window preserves the target as a scoring opportunity. Eligible arrivals receive full applicable points, including visit points where that outbreak phase allows them and the cleanup bonus, rather than a reduced post-cleanup reward. The window must not roll forward with each new arrival. This is separate from the ±10-minute group window centred on the last contributing visit: both windows apply, even when delayed destruction makes them far apart. Each player receives the cleanup bonus at most once per target.
 
-Players may upload recorded routes within 24 hours after activity completion. GPS visit time, rather than upload receipt time, determines scoring eligibility and the 5-hour cooldown. The activity-end reference for this deadline is a working interpretation; maximum activity duration is a separate unresolved limit.
+Players may upload recorded routes within 24 hours after activity completion. GPS visit time, rather than upload receipt time, determines scoring eligibility and the 6-hour cooldown. The activity-end reference for this deadline is a working interpretation; maximum activity duration is a separate unresolved limit.
 
 Delayed uploads can reveal that an apparently available outbreak was already cleared. Award historically earned points to the late uploader without revoking points previously granted to others, accepting that additional bonuses can increase total payouts. Attribute delayed awards to the recorded visit's month/year. Historical event ordering and leaderboard settlement details remain open; present-time cleaning is described under activity sources.
 
@@ -189,7 +195,7 @@ After an activity has been open for 24 hours, stop collecting new location data 
 
 An in-app pause only suspends that recording source. Independently valid Strava contacts still count, including when the player forgot the app on pause. Reconcile overlapping contacts under the same earliest-contact and cooldown rules.
 
-Keep in-app and Strava recordings as separate activity records: either may contain only part of an outing. Combine their outbreak contacts without discarding contacts unique to either source. For the same player's duplicate contact with the same outbreak, use the earliest recorded contact timestamp once for scoring, cleaning, and cooldown accounting, regardless of receipt order. Later genuinely separate visits remain eligible under the 5-hour rule. Exact contact matching, duplicate GPS/heatmap handling, and reconciliation with already-granted points remain open.
+Keep in-app and Strava recordings as separate activity records: either may contain only part of an outing. Combine their outbreak contacts without discarding contacts unique to either source. For the same player's duplicate contact with the same outbreak, use the earliest recorded contact timestamp once for scoring, cleaning, and cooldown accounting, regardless of receipt order. Later genuinely separate visits remain eligible under the 6-hour rule. Exact contact matching, duplicate GPS/heatmap handling, and reconciliation with already-granted points remain open.
 
 Match imported visits against outbreak positions and eligibility at the recorded contact time, then start their treatment in the present without rewinding the live world. Historically eligible points remain awardable without revoking prior awards. For already cleared targets, award historically eligible points but apply no cleaning to unrelated replacements. For split targets, divide imported treatment among surviving descendants without multiplying its total effect; exact allocation remains open. Finishing order uses recorded visit time rather than import receipt or support-squad arrival time.
 
@@ -204,6 +210,18 @@ The working simulation grid uses zoom-level-17 map cells. Ordinary outbreaks ini
 A future extension may place special bonus outbreaks on mountain-bike trails, using OpenStreetMap mtb:scale values 0–5 as a proposed difficulty input. This would offer walking and mountain-biking alternatives. The data interpretation and suitable access rules must be verified when designing that extension; it is not part of the initial rules.
 
 ## Remaining design questions
+
+### First cleaning simulation
+
+The first interactive experiment compares gentle repeat cleaning (100/75/60/50%) with constant cleaning strength. It separates visit points from cleaning units and allows simulated time advancement and contributions from multiple players. It also models cracks, two-child stabilization, cleanup/group bonuses, and disintegration into remnants.
+
+The experiment has three repeatable button-driven scenarios across West, Central, and East targets: a solo return route tests independent cooldowns and diminished points/cleaning; group cleanup tests shared bonuses and the post-cleanup protection window; a seeded crossing scenario tests splitting, conservation, stabilization, and inherited cooldowns. Each scenario starts from fresh state and reports assertions against the same simulation functions used by manual play. An embedded Tampere basemap shows illustrative target positions and visit-order connections; it is not road routing or GPS contact validation.
+
+Provisional simulation assumptions: a full-strength visit delivers one cleaning unit; initial effort is selectable at 3, 4, or 6 units; growth adds proportional strength over a four-day baseline; the lifecycle clock advances even when treatment suppresses growth. A one-day announced disintegration phase follows, with accepted extensions capped at one additional day. This clock is an experiment rather than a finalized lifecycle specification.
+
+The experiment uses continuous cell-equivalent area, illustrative contours, minute-resolution time steps, and equal split allocation. It does not validate real routes, model accessibility or imports, generate replacements, or implement the final collapse animation. Visit-point recovery uses a provisional linear curve; cleaning strength retains its repeat-visit floor because recovery of cleaning strength is still unresolved.
+
+### Open decisions
 
 - Late historical event ordering, duplicate contact reconciliation, and leaderboard settlement without revoking granted points.
 - Visual/contact boundary agreement, location accuracy limits, and historical contact matching.
