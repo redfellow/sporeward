@@ -1,11 +1,28 @@
 {
-	"expo": {
-		"name": "Sporeward",
-		"slug": "sporeward",
-		"version": "0.1.0",
-		"userInterfaceStyle": "dark",
-		"plugins": ["expo-dev-client"],
-		"android": { "package": "com.sporeward.app" },
-		"ios": { "bundleIdentifier": "com.sporeward.app", "supportsTablet": true }
-	}
+  "expo": {
+    "name": "Sporeward",
+    "slug": "sporeward",
+    "version": "0.1.0",
+    "userInterfaceStyle": "dark",
+    "plugins": [
+      "expo-dev-client",
+      "expo-sqlite",
+      "expo-sharing",
+      [
+        "expo-location",
+        {
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      "@maplibre/maplibre-react-native"
+    ],
+    "android": {
+      "package": "com.sporeward.app"
+    },
+    "ios": {
+      "bundleIdentifier": "com.sporeward.app",
+      "supportsTablet": true
+    }
+  }
 }

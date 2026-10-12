@@ -17,11 +17,11 @@ Android is the first physical-device target. iOS follows after the Android exper
 
 ## Responsibilities
 
-`packages/game` owns pure rules, configurable balance, and deterministic time/event processing. It must not depend on React, GPS services, databases, or the system clock. The initial scaffold exports the current balance settings; the complete engine remains to be extracted and tested.
+`packages/game` owns pure rules, configurable balance, and deterministic time/event processing. It must not depend on React, GPS services, databases, or the system clock. The shared package exports balance settings and the extracted deterministic cleaning simulation. It accepts explicit minute advancement and seeded randomness, with serializable state, cooldown/repeat scoring, two-phase cleaning, bonuses, growth/disintegration, remnants, and split inheritance. Its tests and the interactive lab exercise the same implementation. This minute-resolution planning model still needs authoritative event processing, spatial rules, late-import reconciliation, and real contact validation.
 
 `packages/protocol` owns shared data contracts. Add runtime validation when activity and outbreak endpoints are defined; TypeScript alone does not validate incoming requests.
 
-`apps/server` owns authoritative world state, accepted contributions, rewards, authentication, Strava delivery, and historical matching. PostgreSQL/PostGIS integration and background world processing follow the engine milestone. The scaffold only provides a health endpoint.
+`apps/server` owns authoritative world state, accepted contributions, rewards, authentication, Strava delivery, and historical matching. PostgreSQL/PostGIS integration and background world processing follow the engine milestone. The deployed test API currently provides a Basic-Auth-protected health endpoint with request limits. It runs in Docker inside the Windows host’s WSL2 instance on port 3101; Windows nginx supplies public HTTPS separately. Activity uploads and authoritative world processing remain to be implemented.
 
 `apps/web` owns browser map exploration, planning, rankings, activity review, and foreground-only recording. `apps/mobile` owns native recording, offline storage, and mobile map interaction. Share rules, contracts, validation, and appropriate networking code; keep platform-specific UI and recording adapters separate.
 
@@ -35,7 +35,9 @@ Begin the recording session through a visible user action and configure the appr
 
 If Expo's location module fails the measured requirements, isolate that issue in the recording adapter and evaluate a native implementation. Do not couple outbreak logic to one location library.
 
-Map styles/tile hosting, authentication provider, Strava access, database migrations, hosting, and live-update transport remain to be selected. MapLibre supplies rendering, not a production map-data service.
+The field recorder uses OpenFreeMap’s public Liberty style for its online route basemap, with visible attribution and a route-only offline fallback. GPS collection comes from the recording adapter; the map does not start another location watcher. Routes and recaps read local SQLite data. Production map hosting and offline basemap downloads remain undecided.
+
+Authentication provider, Strava access, database migrations, hosting, and live-update transport remain to be selected. MapLibre supplies rendering, not a production map-data service.
 
 ## References
 

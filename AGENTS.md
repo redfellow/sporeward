@@ -2,7 +2,7 @@
 
 ## Current scope
 
-Sporeward has a minimal npm workspace scaffold. The playable game, complete rules engine, native recording, database, and maps are still to be implemented. Follow `docs/architecture.md` and `docs/development-roadmap.md` for the selected stack and milestones.
+Sporeward has an Android field recorder with local route maps/recaps and a deterministic cleaning simulation shared with the planning lab. Native recording still needs field validation. The authoritative world engine, shared gameplay, accounts, spatial database, and Strava integration remain to be implemented. Follow `docs/architecture.md` and `docs/development-roadmap.md` for the selected stack and milestones.
 
 ## Code and checks
 

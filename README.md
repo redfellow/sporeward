@@ -2,7 +2,7 @@
 
 An outdoor game where recorded walks, runs, and rides help clear a shared world of spreading outbreaks. Players cooperate on cleaning and compete for points.
 
-The repository now has a minimal application scaffold. Playable maps, accounts, background GPS, Strava integration, and persistent outbreaks are still to be implemented.
+The repository contains a native Android field recorder with local route maps and recaps, a deterministic cleaning simulation engine, and minimal web/server scaffolds. Accounts, Strava integration, authoritative GPS contact matching, and persistent shared outbreaks remain to be implemented. Background recording requires field validation.
 
 ## Workspace
 
@@ -11,11 +11,11 @@ The repository now has a minimal application scaffold. Playable maps, accounts, 
 | `apps/web` | React + Vite browser client |
 | `apps/mobile` | React Native + Expo; Android first, iOS later |
 | `apps/server` | Fastify HTTP service |
-| `packages/game` | Shared TypeScript balancing configuration and future deterministic rules |
+| `packages/game` | Shared TypeScript balancing configuration and deterministic cleaning simulation |
 | `packages/protocol` | Shared API types and future runtime validation |
 | `docs` | Concept, player rules, roadmap, and artwork |
 
-MapLibre is selected for map rendering. PostgreSQL + PostGIS is selected for server persistence. Neither is connected in this initial scaffold.
+The Android route map uses MapLibre with an OpenFreeMap basemap. PostgreSQL + PostGIS is selected for server persistence but is not connected.
 
 ## Getting started
 
@@ -45,7 +45,15 @@ Install Android Studio, its Android SDK tools, and a compatible Java development
 npm run android
 ```
 
-For subsequent JavaScript-only changes, launch Metro:
+For a field-test APK that runs without Metro, build and install the locally signed release variant:
+
+```sh
+npm run android:field
+```
+
+This internal test build uses the generated debug signing key, not store-distribution credentials. It updates the same app and retains its local recordings. The APK is generated at `apps/mobile/android/app/build/outputs/apk/release/app-release.apk`. Rebuild to include subsequent code changes. Recording and saved routes work offline; the street basemap requires internet.
+
+For subsequent JavaScript-only changes in a development build, launch Metro:
 
 ```sh
 npm run dev:mobile
@@ -60,7 +68,7 @@ Native dependency or app-configuration changes require rebuilding the developmen
 - `npm run check`: run both.
 - `npm run build --workspace @sporeward/web`: build browser assets.
 
-The current server test verifies the health endpoint without an external database. Full engine scenario tests are the next milestone. The [interactive planning simulation](docs/visualizations/sporeward-cleaning-lab.html) contains three repeatable scenarios with 17 assertions and is not the production rules implementation. Its source is an inline HTML fragment; standalone previews generated from it remain under ignored `work/visualizations`.
+The current server test verifies the health endpoint without an external database. The shared cleaning engine and native recording/route helpers have deterministic regression tests. The [interactive planning simulation](docs/visualizations/sporeward-cleaning-lab.html) contains three repeatable scenarios with 17 assertions and runs the same extracted engine in `packages/game`. This minute-resolution balancing engine is not yet an authoritative GPS/world implementation. After changing shared rules, run `npm run build:lab` to refresh its embedded bundle; `npm run check` verifies it is current and runs the actual lab scenarios. Its source is an inline HTML fragment; standalone previews generated from it remain under ignored `work/visualizations`.
 
 ## Planning
 

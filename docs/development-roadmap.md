@@ -6,7 +6,7 @@ A player can complete a real outdoor activity in Tampere, contribute to a persis
 
 The browser supports map exploration, planning, rankings, and activity review. Browser recording is a foreground-only option requiring a visible page and an awake screen. Native mobile recording is the intended path for screen-off and background activity; its reliability must be demonstrated on real devices.
 
-This roadmap defines outcome gates, not dates. The selected stack and code responsibilities are recorded in [Architecture](architecture.md), with local setup in [Development setup](development-setup.md). The interactive cleaning experiment is a planning prototype, not a completed game engine or playable MVP.
+This roadmap defines outcome gates, not dates. The selected stack and code responsibilities are recorded in [Architecture](architecture.md), with local setup in [Development setup](development-setup.md). The interactive cleaning experiment runs the extracted shared TypeScript engine. It remains a minute-resolution balancing prototype, not the completed authoritative world engine or playable MVP.
 
 ## Platform rollout
 
@@ -20,6 +20,12 @@ Android is the first native platform. Initial recording experiments and field te
 Validate recording on both devices, including screen-off/background operation, battery-management interruptions, and folded/unfolded transitions. Android 16 is the initial test baseline. Record actual installed versions and the Motorola model identifier when testing begins; this information does not block engine development or initial planning. The reported Motorola update commitment is not used as a verified compatibility assumption.
 
 iOS development and validation follow after Android reaches a suitable level of maturity and an external iOS tester is available. The exact handoff milestone remains open. Initial native MVP acceptance applies to Android; iOS support is not implied by passing Android tests. The mobile browser remains part of the initial product scope.
+
+## Current implementation
+
+The Android recorder persists fixes and route sections in SQLite, shows a MapLibre route map and recap, and can build an APK with bundled JavaScript for independent field testing. Background GPS reliability remains a real-device acceptance gate.
+
+`packages/game` now contains the deterministic cleaning simulation used by the interactive planning lab. Tests cover cooldowns, repeat scoring/cleaning, two-phase decay, finishing/group/protection awards, growth, disintegration/remnants, and split conservation/stabilization. Spatial rules, authoritative historical events, import reconciliation, and multiplayer server state remain outstanding.
 
 ## 1. Reliable game engine
 

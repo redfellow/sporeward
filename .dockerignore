@@ -1,0 +1,15 @@
+.git
+.history
+node_modules
+**/node_modules
+work
+docs
+.env
+.env.*
+**/.env
+**/.env.*
+apps/mobile/android
+apps/mobile/ios
+apps/mobile/.expo
+**/dist
+**/coverage
