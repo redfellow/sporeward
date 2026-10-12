@@ -2,7 +2,13 @@
 
 ## Current scope
 
-Sporeward is in the concept and planning phase. No application stack, package manifests, or build/test commands have been established. Document implementation choices and actual commands when they are introduced.
+Sporeward has a minimal npm workspace scaffold. The playable game, complete rules engine, native recording, database, and maps are still to be implemented. Follow `docs/architecture.md` and `docs/development-roadmap.md` for the selected stack and milestones.
+
+## Code and checks
+
+`apps/web` uses React/Vite, `apps/mobile` uses React Native/Expo, and `apps/server` uses Fastify. `packages/game` holds pure TypeScript rules and `packages/protocol` holds shared data contracts. Keep platform-specific UI and recording separate from shared rules.
+
+Use `npm ci` for locked dependencies and `npm run check` for workspace typechecks and tests. Development commands and Android setup are in `README.md` and `docs/development-setup.md`. Test changed behaviour and meaningful rule boundaries. Native recording requires real-device validation; passing JavaScript checks is not proof of background GPS reliability.
 
 ## Documentation
 

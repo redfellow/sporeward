@@ -1,0 +1,27 @@
+{
+	"name": "sporeward",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"workspaces": [
+		"apps/*",
+		"packages/*"
+	],
+	"engines": {
+		"node": ">=24.3.0"
+	},
+	"scripts": {
+		"dev:web": "npm run dev --workspace @sporeward/web",
+		"dev:server": "npm run dev --workspace @sporeward/server",
+		"dev:mobile": "npm run start --workspace @sporeward/mobile",
+		"android": "npm run android --workspace @sporeward/mobile",
+		"typecheck": "npm run typecheck --workspaces --if-present",
+		"test": "vitest run",
+		"check": "npm run typecheck && npm test"
+	},
+	"devDependencies": {
+		"@types/node": "^24.0.0",
+		"typescript": "~6.0.3",
+		"vitest": "^5.0.4"
+	}
+}

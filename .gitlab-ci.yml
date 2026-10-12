@@ -17,3 +17,10 @@ variables:
   SECRET_DETECTION_ENABLED: 'true'
 secret_detection:
   stage: secret-detection
+
+workspace_check:
+  stage: test
+  image: node:24-bookworm
+  script:
+    - npm ci
+    - npm run check

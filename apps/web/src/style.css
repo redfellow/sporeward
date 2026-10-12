@@ -1,0 +1,11 @@
+:root {
+	font-family: system-ui, sans-serif;
+	color: #e6f2ea;
+	background: #112c23;
+	color-scheme: dark;
+}
+
+body { margin: 0; }
+.welcome { max-width: 40rem; padding: 3rem 1.5rem; margin: auto; }
+.welcome h1 { font-size: 2.5rem; }
+.welcome__detail { color: #a8c6b5; }
