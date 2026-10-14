@@ -1,3 +1,4 @@
+import {replayCommand,applyReplayCommand,publishReplayStatus,restoreReplayControl} from './src/replay/bridge';
 import {useWorld} from './src/server/use-world';
 import {previewEncounters} from './src/recording/encounters';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -34,6 +35,7 @@ export default function App() {
   const [p,s]=shown ? await Promise.all([store.points(shown.id),store.segments(shown.id)]) : [[],[]];
   setActivity(a);setHistory(list);setDisplayed(shown);setFixes(p);setSegments(s);
   const e = await store.lastEvent(); if(e) setMessage(e.message);
+  await publishReplayStatus();
  }
  async function run(action:()=>Promise<unknown>) {
   if(operation.current) return false;
@@ -45,7 +47,10 @@ export default function App() {
   const update = async () => { if(operation.current) return; operation.current = true; try { await recorder.recover(); if(alive) await refresh(); } catch(e) { if(alive) setMessage(String(e)); } finally {operation.current = false;} };
   const initialize=async()=> {
    // Honor a notification action before automatic recovery changes its section identity.
-   const action=notificationAction(await Linking.getInitialURL());
+   await restoreReplayControl();
+   const initialUrl=await Linking.getInitialURL();
+   const replay=replayCommand(initialUrl);if(replay)await run(()=>applyReplayCommand(replay));
+   const action=notificationAction(initialUrl);
    if(action) {
     const key=`${action.activity}:${action.action}:${action.nonce}`;
     if(!handledNotificationActions.current.has(key)) {
@@ -64,6 +69,8 @@ export default function App() {
   const handled=handledNotificationActions.current;
   let queue=Promise.resolve();
   const receive=(url:string|null)=> {
+   const replay=replayCommand(url);
+   if(replay){queue=queue.then(async()=>{while(operation.current)await new Promise(resolve=>setTimeout(resolve,50));await run(()=>applyReplayCommand(replay));});return;}
    const action=notificationAction(url);if(!action) return;
    const key=`${action.activity}:${action.action}:${action.nonce}`;if(handled.has(key)) return;handled.add(key);
    // A cold launch may still be recovering SQLite/service state. Serialize the action after it.

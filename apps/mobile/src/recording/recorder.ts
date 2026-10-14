@@ -1,3 +1,4 @@
+import {SERVER_URL} from '../server/client';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { Alert, AppState } from 'react-native';
@@ -5,6 +6,8 @@ import { requestNotificationPermission, updateNotification, locationServiceRunni
 import { deliveryDiagnostic } from './delivery';
 import * as store from './store';
 const TASK = 'sporeward-location';
+let replayGpsSuspended=false;
+const replayAllowed=()=>typeof __DEV__!=='undefined'&&__DEV__&&/^http:\/\/127\.0\.0\.1:[0-9]+$/.test(SERVER_URL);
 TaskManager.defineTask<{locations: Location.LocationObject[]}>(TASK, async ({data,error}) => {
  const receivedAt=Date.now();
  try {
@@ -36,17 +39,19 @@ async function startService() {
 }
 export async function stopService() { if (await Location.hasStartedLocationUpdatesAsync(TASK)) await Location.stopLocationUpdatesAsync(TASK); }
 export async function start(resume = false) {
+ replayGpsSuspended=false;
  await permissions();
  const notificationsAllowed=await requestNotificationPermission();
  if (resume) await store.transition('recording'); else await store.begin();
  try { await startService(); await store.event(resume ? 'Recording resumed.' : 'Recording started.'); await store.diagnostic('service-start',{resume,notificationsAllowed}); await updateNotification(true); if(!notificationsAllowed) await store.event('Recording started; notifications are disabled. Enable them in Android settings for recording controls.'); }
  catch (e) { await store.transition('paused'); throw e; }
 }
-export async function pause(finish = false) { await store.transition(finish ? 'finished' : 'paused'); await stopService(); await store.event(finish ? 'Activity saved.' : 'Recording paused.'); await updateNotification(true); }
+export async function pause(finish = false) { if(finish)replayGpsSuspended=false;await store.transition(finish ? 'finished' : 'paused'); await stopService(); await store.event(finish ? 'Activity saved.' : 'Recording paused.'); await updateNotification(true); }
 export async function recover() {
  await updateNotification();
  const a = await store.current();
  if (a?.status !== 'recording') { await stopService(); await updateNotification(); return; }
+ if(replayGpsSuspended&&replayAllowed())return;
  if (Date.now() >= a.deadline) { await pause(); await store.event('24-hour limit reached. Resume or finish explicitly.'); return; }
  const registered=await Location.hasStartedLocationUpdatesAsync(TASK);
  const serviceRunning=await locationServiceRunning();
@@ -67,4 +72,12 @@ export async function applyNotificationAction(action:import('./notification-acti
  if(action.action==='finish') await pause(true);
  else if(action.action==='pause' && current.status==='recording') await pause();
  else if(action.action==='resume' && current.status==='paused') await start(true);
+}
+
+/** Debug replay can simulate missing GPS without inventing a user pause or stopping source time. */
+export async function setReplayGpsAvailable(available:boolean){
+ if(!replayAllowed())throw new Error('GPS replay controls require the isolated development API.');
+ replayGpsSuspended=!available;
+ if(!available)await stopService();else if((await store.current())?.status==='recording'){await store.transition('recording',true);await startService();}
+ await store.diagnostic('replay-gps-availability',{available});
 }
