@@ -1,9 +1,10 @@
+import type {EncounterRecap} from './world';
 export const UPLOAD_BATCH_SIZE=1000;
 export const MAX_ACTIVITY_FIXES=100000;
 export type RecordedFix={timestamp:number;latitude:number;longitude:number;accuracy:number|null;segment:number};
 export type RecordedSection={id:number;started:number;ended:number};
 export type ActivityChunk={activity:{id:string;started:number;ended:number;sections:RecordedSection[]};totalFixes:number;chunkCount:number;fixes:RecordedFix[]};
-export type ActivityReceipt={id:string;status:'stored';fixCount:number;distanceMetres:number;eligibleForGame:boolean;reasons:string[];receivedAt:number};
+export type ActivityReceipt={id:string;status:'stored';fixCount:number;distanceMetres:number;eligibleForGame:boolean;reasons:string[];receivedAt:number;encounters?:EncounterRecap};
 const record=(x:unknown):x is Record<string,unknown>=>typeof x==='object'&&x!==null&&!Array.isArray(x);
 const integer=(x:unknown):x is number=>typeof x==='number'&&Number.isSafeInteger(x)&&x>=0;
 const finite=(x:unknown):x is number=>typeof x==='number'&&Number.isFinite(x);

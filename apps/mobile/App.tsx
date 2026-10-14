@@ -1,3 +1,5 @@
+import {useWorld} from './src/server/use-world';
+import {previewEncounters} from './src/recording/encounters';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Linking, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -20,8 +22,11 @@ export default function App() {
  const [segments,setSegments] = useState<Segment[]>([]);
  const [message,setMessage] = useState('Ready for a recording test.');
  const [busy,setBusy] = useState(false);
+ const [details,setDetails]=useState(false);
  const operation = useRef(false), selectedId=useRef<string|null>(null);
  const handledNotificationActions=useRef(new Set<string>());
+ const encounterWorld=useWorld(displayed?.id??null);
+ const encounterPreview=useMemo(()=>previewEncounters(fixes,encounterWorld.world,encounterWorld.recap,Date.now()),[fixes,encounterWorld.world,encounterWorld.recap]);
  const stats=useMemo(()=>summarize(fixes),[fixes]);
  async function refresh() {
   const a = await store.current(), list = await store.recent();
@@ -81,24 +86,33 @@ export default function App() {
  function exportPrompt(a:store.Activity) { Alert.alert('Export GPS route?', 'This file contains precise locations and timestamps. Choose where to save or share it.',[{text:'Cancel'},{text:'Export',onPress:()=>void run(()=>exportActivity(a))}]); }
  const button = (label:string, action:()=>Promise<unknown>) => <Pressable accessibilityRole="button" disabled={busy} style={[styles.button,busy && {opacity:0.5}]} onPress={()=>void run(action)}><Text style={styles.buttonText}>{label}</Text></Pressable>;
  return <SafeAreaProvider><SafeAreaView style={styles.screen}><StatusBar style="light"/><ScrollView contentContainerStyle={styles.content}>
-  <Text style={styles.title}>Sporeward</Text><Text style={styles.subtitle}>Field recorder</Text>
-  <Text style={styles.body}>Your route stays on this phone until you choose to upload. Outbreaks and scoring are coming next.</Text>
+  <Text style={styles.title}>Sporeward</Text><Text style={styles.subtitle}>Outbreak field test</Text>
+  <Text style={styles.body}>Touch purple outbreaks. Upload your finished outing to confirm points.</Text>
   <View style={styles.actions}>{!activity ? button('Start recording',()=>recorder.start()) : <>{activity.status==='recording' ? button('Pause',()=>recorder.pause()) : button('Resume',()=>recorder.start(true))}{button('Finish & save',()=>recorder.pause(true))}</>}</View>
   <View style={styles.card}><Text style={styles.state}>{activity?.status.toUpperCase() ?? (displayed ? 'ACTIVITY RECAP' : 'READY')}</Text>
-   {displayed && <Text style={styles.body}>{new Date(displayed.started).toLocaleString()}</Text>}
-   <Text style={styles.distance}>{(stats.meters/1000).toFixed(2)} km</Text><Text style={styles.body}>Raw GPS distance · includes GPS drift</Text>
+   {displayed && !activity && <Text style={styles.body}>{new Date(displayed.started).toLocaleString()}</Text>}
+   {encounterWorld.recap ? <><Text style={styles.metric}>{encounterWorld.recap.confirmedVisitPoints+encounterWorld.recap.confirmedCleanupPoints} confirmed points</Text><Text style={styles.body}>{encounterWorld.recap.confirmedVisitPoints} visit · {encounterWorld.recap.confirmedCleanupPoints} cleanup · {encounterWorld.recap.pendingCleanupPoints} possible cleanup points pending</Text></> : <><Text style={styles.metric}>{encounterPreview.provisionalPoints} provisional points · {encounterPreview.visited.size} outbreaks touched</Text><Text style={styles.body}>{encounterPreview.heldPoints>0?`${encounterPreview.heldPoints} potential visit points unlock after 500 m of continuous GPS coverage.`:'Provisional until upload and server validation.'}</Text></>}
+   <Text style={styles.distance}>{(stats.meters/1000).toFixed(2)} km</Text>
    <Text style={styles.metric}>Recording time: {duration(recordingDuration(segments,Date.now()))}</Text>
+   {activity && <Text style={styles.metric}>Last fix: {stats.latest ? `${Math.max(0,Math.floor((Date.now()-stats.latest.timestamp)/1000))} s ago` : 'waiting'}</Text>}
+   <Text style={styles.body}>{message}</Text>
+   <Pressable accessibilityRole="button" onPress={()=>setDetails(!details)}><Text style={styles.secondaryText}>{details?'Hide recording details':'Recording details'}</Text></Pressable>
+   {details && <><Text style={styles.body}>Raw GPS distance · includes GPS drift</Text>
    <Text style={styles.metric}>{stats.count} fixes · {segments.length} route sections</Text>
    <Text style={styles.metric}>Longest GPS gap: {(stats.maxGap/1000).toFixed(1)} s</Text>
    <Text style={styles.metric}>{stats.gaps} gaps over 2 s · {stats.latest?.accuracy?.toFixed(0) ?? '—'} m latest accuracy</Text>
-   {activity && <Text style={styles.metric}>Last fix: {stats.latest ? `${Math.max(0,Math.floor((Date.now()-stats.latest.timestamp)/1000))} s ago` : 'waiting'}</Text>}
-   <Text style={styles.body}>{message}</Text>
+   </>}
+
   </View>
-  <RouteMap fixes={fixes} activityId={displayed?.id ?? null}/>
+  <RouteMap fixes={fixes} activityId={displayed?.id ?? null} world={encounterWorld.world} visited={encounterPreview.visited} recording={activity?.status==='recording'}/>
+  <Text style={styles.body}>{encounterWorld.status}</Text>
+  <Pressable accessibilityRole="button" style={styles.secondary} onPress={()=>void encounterWorld.refresh()}><Text style={styles.secondaryText}>Refresh outbreaks & recap</Text></Pressable>
+  {encounterWorld.world && <View style={styles.card}><Text style={styles.metric}>Test outbreaks</Text>{encounterWorld.world.outbreaks.map(o=><Text key={o.id} style={styles.body}>{o.name}{encounterPreview.visited.has(o.id)?' · touched':''}: {o.status==='cleared'?`cleared${o.clearedAt!==null&&Date.now()<=o.clearedAt+600000?' · 10-minute protection window':''}`:`${o.visitPoints} + ${o.cleanupBonus} bonus · ~${o.visitsRemaining} visits · ${o.status}`}{o.eligibleAt>Date.now()?` · revisit ${new Date(o.eligibleAt).toLocaleTimeString()}`:''}</Text>)}</View>}
+  {encounterWorld.recap?.encounters.map(e=><Text key={e.outbreakId} style={styles.body}>{e.name}: {e.visitPoints+e.cleanupPoints} confirmed points · {e.reason}{e.cleanupPoints?' · cleanup bonus':''}</Text>)}
   {displayed?.status==='finished' && <Pressable accessibilityRole="button" disabled={busy} style={styles.secondary} onPress={()=>exportPrompt(displayed)}><Text style={styles.secondaryText}>Export this activity</Text></Pressable>}
   <Text style={styles.body}>Target: one fix per second. Android may deliver fixes in batches. Pause stops GPS collection; resumed sections stay separate.</Text>
-  {displayed?.status==='finished' && <ActivityUpload key={displayed.id} activity={displayed}/>}
-  <ServerConnection/>
+  {displayed?.status==='finished' && <ActivityUpload key={displayed.id} activity={displayed} onUploaded={receipt=>{if(receipt.encounters)encounterWorld.acceptRecap(receipt.encounters);void encounterWorld.refresh();}}/>}
+  <ServerConnection onChanged={()=>void encounterWorld.refresh()}/>
   <Text style={styles.heading}>Recent saved activities</Text>
   {history.filter(a=>a.status==='finished').map(a=><Pressable key={a.id} disabled={busy || !!activity} style={styles.card} onPress={()=>void run(async()=>{selectedId.current=a.id;})} accessibilityRole="button"><Text style={styles.metric}>{new Date(a.started).toLocaleString()}</Text><Text style={styles.body}>{activity ? 'Finish recording to review this activity' : 'View route and recap'}</Text></Pressable>)}
   {!history.some(a=>a.status==='finished') && <Text style={styles.body}>Finish your first test to keep its recording here.</Text>}

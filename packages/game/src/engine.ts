@@ -36,11 +36,11 @@ export function createWorld(options:{effort?:number;ids?:string[];mode?:WorldSta
   targets:ids.map(id=>createOutbreak(id,options.effort??4,balance)),scores:{},events:[],balance};
 }
 export function pendingCleaning(o:Outbreak) { return o.treatments.reduce((sum,t)=>sum+t.fast+t.slow,0); }
-export function nextVisit(state:WorldState,o:Outbreak,player:string) {
+export function nextVisit(state:WorldState,o:Outbreak,player:string,at=state.time) {
  const h=Object.hasOwn(o.history,player)?o.history[player]:undefined,count=h?.count??0,b=state.balance;
  const base=Math.max(b.minimumVisitPoints,Math.floor(b.firstVisitPoints/2**count));
- const recovery=h ? Math.min(1,Math.max(0,state.time-h.last-minutes(b.pointRecoveryDelayMs))/minutes(b.pointRecoveryDurationMs)) : 1;
- return {points:Math.round(base+(b.firstVisitPoints-base)*recovery),power:state.mode==='constant'?1:b.repeatCleaningStrength[Math.min(count,b.repeatCleaningStrength.length-1)],wait:h?Math.max(0,h.last+minutes(b.visitCooldownMs)-state.time):0};
+ const recovery=h ? Math.min(1,Math.max(0,at-h.last-minutes(b.pointRecoveryDelayMs))/minutes(b.pointRecoveryDurationMs)) : 1;
+ return {points:Math.round(base+(b.firstVisitPoints-base)*recovery),power:state.mode==='constant'?1:b.repeatCleaningStrength[Math.min(count,b.repeatCleaningStrength.length-1)],wait:h?Math.max(0,h.last+minutes(b.visitCooldownMs)-at):0};
 }
 export function outbreakStatus(state:WorldState,o:Outbreak) {
  if(o.cleared!==null) return state.time<=o.cleared+minutes(state.balance.cleanupProtectionMs) ? 'Cleared · protection window' : 'Cleared';
@@ -58,7 +58,7 @@ function award(s:WorldState,o:Outbreak,player:string) {
 }
 function clear(s:WorldState,o:Outbreak) {
  o.strength=0;o.treatments=[];o.cleared=s.time;
- const last=o.visits.at(-1);
+ const last=o.visits.reduce<(typeof o.visits)[number]|undefined>((last,v)=>!last||v.time>last.time?v:last,undefined);
  if(last) for(const v of o.visits) if(Math.abs(v.time-last.time)<=minutes(s.balance.cleanupProtectionMs)) award(s,o,v.player);
  log(s,`${o.id} cleared; protection window opened.`);
 }
@@ -83,20 +83,25 @@ function disintegrate(s:WorldState,o:Outbreak) {
 /** Caller supplies a validated concentrated edge-to-edge corridor classification.
  * Raw touches are never automatically counted as qualifying crossings here.
  */
-export function applyVisit(s:WorldState,id:string,player:string,options:{corridorCrossing?:boolean} = {}):VisitResult {
+export function applyVisit(s:WorldState,id:string,player:string,options:{corridorCrossing?:boolean;contactTime?:number} = {}):VisitResult {
  if(!player) throw new Error('Player ID is required.');
+ const contactTime=options.contactTime??s.time;
+ if(!Number.isFinite(contactTime)||contactTime<0)throw new Error('Invalid contact time.');
  const o=s.targets.find(target=>target.id===id);
  const reject=(reason:VisitResult['reason']):VisitResult=>({accepted:false,reason,points:0,power:0});
  if(!o) return reject('missing');
- const v=nextVisit(s,o,player);
+ const v=nextVisit(s,o,player,contactTime);
  if(v.wait>0) return reject('cooldown');
- if(s.time<o.stabilize) return reject('stabilizing');
- if(o.cleared!==null && s.time>o.cleared+minutes(s.balance.cleanupProtectionMs) || o.remnant && o.expires!==null && s.time>=o.expires) return reject('expired');
+ if(contactTime<o.stabilize) return reject('stabilizing');
+ if(o.cleared!==null && contactTime>o.cleared+minutes(s.balance.cleanupProtectionMs) || o.remnant && o.expires!==null && s.time>=o.expires) return reject('expired');
  const protection=o.cleared!==null,old=Object.hasOwn(o.history,player)?o.history[player]:undefined;
- Object.defineProperty(o.history,player,{value:{count:old?old.count+1:1,last:s.time},writable:true,enumerable:true,configurable:true});o.visits.push({player,time:s.time});
+ Object.defineProperty(o.history,player,{value:{count:old?old.count+1:1,last:contactTime},writable:true,enumerable:true,configurable:true});o.visits.push({player,time:contactTime});
  const points=o.remnant?0:protection?s.balance.firstVisitPoints:v.points;
  addPoints(s,player,points);
- if(protection) award(s,o,player);
+ if(protection) {
+  const latest=o.visits.reduce((time,v)=>Math.max(time,v.time),0);
+  if(contactTime>=o.cleared! || latest-contactTime<=minutes(s.balance.cleanupProtectionMs))award(s,o,player);
+ }
  else if(o.remnant) clear(s,o);
  else {
   o.treatments.push({fast:v.power*s.balance.fastCleaningFraction,slow:v.power*(1-s.balance.fastCleaningFraction),fastTime:minutes(s.balance.fastCleaningDurationMs),slowTime:minutes(s.balance.slowCleaningDurationMs)});

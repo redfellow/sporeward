@@ -2,8 +2,9 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import Fastify, { type FastifyInstance } from 'fastify';
 import rateLimit from '@fastify/rate-limit';
 import { parseActivityChunk, type HealthResponse } from '@sporeward/protocol';
+import { WorldStore } from './world-store.ts';
 import { ActivityStore,UploadConflict,UploadIncomplete } from './activity-store.ts';
-export type AppOptions = { auth?: { username: string; password: string }; rateLimitMax?: number; logger?: boolean; activityStore?: ActivityStore };
+export type AppOptions = { auth?: { username: string; password: string }; rateLimitMax?: number; logger?: boolean; activityStore?: ActivityStore; worldStore?:WorldStore };
 export async function createApp(options: AppOptions = {}): Promise<FastifyInstance> {
  const app=Fastify({bodyLimit:64*1024,logger:options.logger?{level:'info',redact:['req.headers.authorization']}:false});
  await app.register(rateLimit,{max:options.rateLimitMax??120,timeWindow:'1 minute'});
@@ -27,7 +28,15 @@ export async function createApp(options: AppOptions = {}): Promise<FastifyInstan
   });
   app.post<{Params:{id:string}}>('/activities/:id/complete',async(req,reply)=>{
    if(!/^[A-Za-z0-9-]{1,100}$/.test(req.params.id))return reply.code(400).send({error:'Invalid activity ID.'});
-   try{return await store.finish(req.params.id);}catch(e){if(e instanceof UploadIncomplete||e instanceof UploadConflict)return reply.code(409).send({error:e.message});if(e instanceof Error&&e.message==='Activity timestamps must be unique and increasing.')return reply.code(400).send({error:e.message});throw e;}
+   try{const receipt=await store.finish(req.params.id);if(!options.worldStore)return receipt;const payload=await store.read(req.params.id);const encounters=await options.worldStore.process(options.auth?.username??'local',payload.activity,payload.fixes,receipt);return {...receipt,encounters};}catch(e){if(e instanceof UploadIncomplete||e instanceof UploadConflict)return reply.code(409).send({error:e.message});if(e instanceof Error&&e.message==='Activity timestamps must be unique and increasing.')return reply.code(400).send({error:e.message});throw e;}
+  });
+ }
+ if(options.worldStore) {
+  const world=options.worldStore,player=options.auth?.username??'local';
+  app.get('/world',async()=>world.view(player));
+  app.get<{Params:{id:string}}>('/activities/:id/encounters',async(req,reply)=>{
+   if(!/^[A-Za-z0-9-]{1,100}$/.test(req.params.id))return reply.code(400).send({error:'Invalid activity ID.'});
+   const recap=await world.activity(player,req.params.id);return recap??reply.code(404).send({error:'Activity has not been processed.'});
   });
  }
  app.get('/health',async():Promise<HealthResponse>=>({service:'sporeward',status:'ok'}));

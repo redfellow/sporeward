@@ -1,4 +1,4 @@
-import { UPLOAD_BATCH_SIZE,type ActivityChunk,type ActivityReceipt } from '@sporeward/protocol';
+import { UPLOAD_BATCH_SIZE,parseEncounterRecap,type ActivityChunk,type ActivityReceipt } from '@sporeward/protocol';
 import { authorization,ConnectionError,SERVER_URL,type Credentials,type HealthRequest } from './client';
 export async function uploadActivity(payload:Omit<ActivityChunk,'fixes'|'chunkCount'> & {fixes:ActivityChunk['fixes']},credentials:Credentials,progress:(sent:number,total:number)=>void=()=>{},request:HealthRequest=fetch):Promise<ActivityReceipt> {
  const chunkCount=Math.max(1,Math.ceil(payload.fixes.length/UPLOAD_BATCH_SIZE)),header=authorization(credentials);
@@ -20,5 +20,6 @@ export async function uploadActivity(payload:Omit<ActivityChunk,'fixes'|'chunkCo
  }
  const receipt=await send(`/activities/${encodeURIComponent(payload.activity.id)}/complete`,'POST',{});
  if(typeof receipt!=='object'||!receipt||!('status' in receipt)||receipt.status!=='stored'||!('id' in receipt)||receipt.id!==payload.activity.id||!('fixCount' in receipt)||receipt.fixCount!==payload.fixes.length||!('eligibleForGame' in receipt)||typeof receipt.eligibleForGame!=='boolean'||!('distanceMetres' in receipt)||typeof receipt.distanceMetres!=='number'||!Number.isFinite(receipt.distanceMetres)||!('reasons' in receipt)||!Array.isArray(receipt.reasons)||receipt.reasons.some(x=>typeof x!=='string')||!('receivedAt' in receipt)||typeof receipt.receivedAt!=='number')throw new ConnectionError('Unexpected server receipt. Retry or keep the local export.');
+ if('encounters' in receipt&&receipt.encounters!==undefined){try{parseEncounterRecap(receipt.encounters,payload.activity.id);}catch{throw new ConnectionError('Unexpected encounter recap. Retry or keep the local export.');}}
  return receipt as ActivityReceipt;
 }

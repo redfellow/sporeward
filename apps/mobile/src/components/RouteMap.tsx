@@ -1,25 +1,35 @@
+import type {WorldView} from '@sporeward/protocol';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Map as NativeMap, Camera, type CameraRef, GeoJSONSource, Layer, type StyleSpecification } from '@maplibre/maplibre-react-native';
 import { type Fix, routeGeometry } from '../recording/model';
 const BASEMAP = 'https://tiles.openfreemap.org/styles/liberty';
 const OFFLINE_STYLE: StyleSpecification = {version:8,sources:{},layers:[{id:'background',type:'background',paint:{'background-color':'#152e26'}}]};
-export function RouteMap({fixes, activityId}:{fixes:Fix[];activityId:string | null}) {
+export function RouteMap({fixes, activityId,world,visited,recording}:{fixes:Fix[];activityId:string | null;world:WorldView|null;visited:Set<string>;recording:boolean}) {
  const camera=useRef<CameraRef>(null), fitted=useRef<string|null>(null);
- const [offline,setOffline]=useState(false),[ready,setReady]=useState(false);
+ const [offline,setOffline]=useState(false),[ready,setReady]=useState(false),[follow,setFollow]=useState(true);
+ const followedActivity=useRef<string|null>(null),latest=fixes.at(-1);
  useEffect(()=> {
   if(offline || ready) return;
   const timer=setTimeout(()=>setOffline(true),10000);
   return ()=>clearTimeout(timer);
  },[offline,ready]);
+ useEffect(()=>{setFollow(recording);followedActivity.current=null;},[activityId]);
  const route=useMemo(()=>routeGeometry(fixes),[fixes]);
- const fit = () => {if(route.bounds) camera.current?.fitBounds(route.bounds,{padding:{top:32,right:32,bottom:32,left:32},duration:300});};
- useEffect(()=> {if(ready && activityId && route.bounds && fitted.current!==activityId) {fit();fitted.current=activityId;}},[ready,activityId,route.bounds]);
+ const outbreaks=useMemo(()=>({type:'FeatureCollection' as const,features:world?.outbreaks.map(o=>({type:'Feature' as const,properties:{id:o.id,visited:visited.has(o.id),unavailable:o.status==='cleared'&&o.clearedAt!==null&&Date.now()>o.clearedAt+600000||o.eligibleAt>Date.now(),clearing:o.status==='clearing',intensity:Math.max(.18,Math.min(.65,o.strength/4*.65))},geometry:{type:'Polygon' as const,coordinates:[[...o.ring,o.ring[0]]]}}))??[]}),[world,visited]);
+ const fitOutbreaks=()=>{setFollow(false);const points=world?.outbreaks.flatMap(o=>o.ring)??[];if(points.length)camera.current?.fitBounds([Math.min(...points.map(p=>p[0]))-.002,Math.min(...points.map(p=>p[1]))-.002,Math.max(...points.map(p=>p[0]))+.002,Math.max(...points.map(p=>p[1]))+.002],{padding:{top:30,right:30,bottom:30,left:30},duration:300});};
+ const fit = () => {setFollow(false);if(route.bounds) camera.current?.fitBounds(route.bounds,{padding:{top:32,right:32,bottom:32,left:32},duration:300});};
+ useEffect(()=> {if(ready && activityId && route.bounds && fitted.current!==activityId && !recording) {fit();fitted.current=activityId;}},[ready,activityId,route.bounds,recording]);
+ useEffect(()=>{if(ready&&recording&&follow&&latest){const first=followedActivity.current!==activityId;camera.current?.easeTo({center:[latest.longitude,latest.latitude],duration:300,...(first?{zoom:15}:{})});followedActivity.current=activityId;}},[ready,recording,follow,latest?.timestamp,activityId]);
  return <View style={styles.section}>
   <View style={styles.map}><NativeMap style={StyleSheet.absoluteFill} mapStyle={offline ? OFFLINE_STYLE : BASEMAP}
    onDidFinishLoadingStyle={()=>setReady(true)} onDidFailLoadingMap={()=> {setOffline(true);setReady(false);}}
    attribution logo={false}>
    <Camera ref={camera} initialViewState={{center:[23.761,61.498],zoom:12}} maxZoom={19}/>
+   <GeoJSONSource id="outbreaks" data={outbreaks}>
+    <Layer id="outbreak-fill" type="fill" paint={{'fill-color':['case',['get','visited'],'#21dcca',['get','unavailable'],'#8a9492',['get','clearing'],'#ab9fe8','#a847de'],'fill-opacity':['get','intensity']}}/>
+    <Layer id="outbreak-edge" type="line" paint={{'line-color':['case',['get','visited'],'#70fff0',['get','unavailable'],'#a9b7af','#dca1ff'],'line-width':['case',['get','visited'],4,2]}}/>
+   </GeoJSONSource>
    <GeoJSONSource id="recorded-route" data={route.lines}>
     <Layer id="route-outline" type="line" filter={['==',['get','kind'],'recorded']} paint={{'line-color':'#10271f','line-width':7}}/>
     <Layer id="route-line" type="line" filter={['==',['get','kind'],'recorded']} paint={{'line-color':'#27c779','line-width':4}} layout={{'line-join':'round','line-cap':'round'}}/>
@@ -29,10 +39,11 @@ export function RouteMap({fixes, activityId}:{fixes:Fix[];activityId:string | nu
     <Layer id="route-points" type="circle" paint={{'circle-radius':6,'circle-color':['match',['get','role'],'start','#9be9b4','#eb6bad'],'circle-stroke-color':'#10271f','circle-stroke-width':2}}/>
    </GeoJSONSource>
   </NativeMap></View>
+  <Text style={styles.legend}>Purple: eligible outbreak · Gray: unavailable · Turquoise outline: touched during this activity · Pale purple: clearing.</Text>
   <Text style={styles.legend}>Green: recorded route · Pink dashes: GPS gaps over 2 s. Paused sections stay separate.</Text>
   {offline && <Text style={styles.legend}>Route-only view. Basemap unavailable; recording still works.</Text>}
   {!fixes.length && <Text style={styles.legend}>Tampere shown until your first GPS fix arrives.</Text>}
-  <View style={styles.actions}><Pressable accessibilityRole="button" disabled={!route.bounds} onPress={fit} style={styles.button}><Text style={styles.label}>Fit route</Text></Pressable>
+  <View style={styles.actions}>{recording && <Pressable accessibilityRole="button" onPress={()=>{followedActivity.current=null;setFollow(!follow);}} style={styles.button}><Text style={styles.label}>{follow?'Explore map':'Follow me'}</Text></Pressable>}<Pressable accessibilityRole="button" disabled={!world} onPress={fitOutbreaks} style={styles.button}><Text style={styles.label}>Fit outbreaks</Text></Pressable><Pressable accessibilityRole="button" disabled={!route.bounds} onPress={fit} style={styles.button}><Text style={styles.label}>Fit route</Text></Pressable>
    <Pressable accessibilityRole="button" onPress={()=>{setReady(false);setOffline(!offline);}} style={styles.button}><Text style={styles.label}>{offline ? 'Load basemap' : 'Route only'}</Text></Pressable></View>
   {!offline && <Text style={styles.attribution}>OpenFreeMap · © OpenMapTiles · © OpenStreetMap contributors</Text>}
  </View>;

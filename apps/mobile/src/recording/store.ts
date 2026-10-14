@@ -10,6 +10,7 @@ const dbPromise = SQLite.openDatabaseAsync('sporeward-recorder.db').then(async d
  UPDATE segments SET ended=started WHERE ended < started;
  CREATE TABLE IF NOT EXISTS activity_uploads (activity TEXT PRIMARY KEY, state TEXT, receipt TEXT, error TEXT);
  CREATE TABLE IF NOT EXISTS events (time REAL, message TEXT);
+ CREATE TABLE IF NOT EXISTS world_cache (owner TEXT PRIMARY KEY, snapshot TEXT);
  CREATE TABLE IF NOT EXISTS recording_diagnostics (time REAL, activity TEXT, kind TEXT, data TEXT);`);
  return db;
 });
@@ -87,3 +88,6 @@ export async function recordingDiagnostics(id:string) {
 }
 
 export async function latestPoint(id:string) {return (await dbPromise).getFirstAsync<Fix>('SELECT timestamp,latitude,longitude,accuracy,segment FROM fixes WHERE activity=? ORDER BY timestamp DESC LIMIT 1',id);}
+
+export async function cachedWorld(owner:string) {const row=await (await dbPromise).getFirstAsync<{snapshot:string}>('SELECT snapshot FROM world_cache WHERE owner=?',owner);return row?JSON.parse(row.snapshot) as unknown:null;}
+export function cacheWorld(owner:string,snapshot:unknown){return write(async()=>{await (await dbPromise).runAsync('INSERT INTO world_cache VALUES (?,?) ON CONFLICT(owner) DO UPDATE SET snapshot=excluded.snapshot',owner,JSON.stringify(snapshot));});}
