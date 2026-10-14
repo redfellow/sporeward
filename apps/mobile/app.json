@@ -15,14 +15,20 @@
           "isAndroidForegroundServiceEnabled": true
         }
       ],
-      "@maplibre/maplibre-react-native"
+      "@maplibre/maplibre-react-native",
+      "./plugins/with-android-toolchain.cjs"
     ],
     "android": {
-      "package": "com.sporeward.app"
+      "package": "com.sporeward.app",
+      "permissions": [
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.POST_NOTIFICATIONS"
+      ]
     },
     "ios": {
       "bundleIdentifier": "com.sporeward.app",
       "supportsTablet": true
-    }
+    },
+    "scheme": "sporeward"
   }
 }

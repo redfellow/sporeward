@@ -7,7 +7,9 @@
     "start": "expo start --dev-client",
     "android": "expo run:android --device",
     "typecheck": "tsc -p tsconfig.json",
-    "android:field": "expo run:android --variant release --device --no-bundler"
+    "android:field": "expo run:android --variant release --device --no-bundler",
+    "android:emulator": "expo run:android --device emulator-5554",
+    "start:local": "expo start --dev-client --localhost --port 8081"
   },
   "dependencies": {
     "@maplibre/maplibre-react-native": "^11.5.0",
@@ -26,5 +28,10 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2"
+  },
+  "expo": {
+    "autolinking": {
+      "nativeModulesDir": "./modules"
+    }
   }
 }

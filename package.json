@@ -20,7 +20,10 @@
 		"check": "npm run typecheck && npm test && npm run check:lab",
 		"android:field": "npm run android:field --workspace @sporeward/mobile",
 		"build:lab": "node scripts/build-cleaning-lab.mjs",
-		"check:lab": "node scripts/build-cleaning-lab.mjs --check"
+		"check:lab": "node scripts/build-cleaning-lab.mjs --check",
+		"check:android": "node scripts/check-android-apk.mjs",
+		"android:emulator": "npm run android:emulator --workspace @sporeward/mobile",
+		"dev:mobile:local": "npm run start:local --workspace @sporeward/mobile"
 	},
 	"devDependencies": {
 		"@types/node": "^24.0.0",

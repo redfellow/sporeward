@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AppState, Linking, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import { notificationAction } from './src/recording/notification-action';
 import * as recorder from './src/recording/recorder';
 import * as store from './src/recording/store';
 import { type Fix, type Segment, recordingDuration, summarize } from './src/recording/model';
@@ -18,6 +19,7 @@ export default function App() {
  const [message,setMessage] = useState('Ready for a recording test.');
  const [busy,setBusy] = useState(false);
  const operation = useRef(false), selectedId=useRef<string|null>(null);
+ const handledNotificationActions=useRef(new Set<string>());
  const stats=useMemo(()=>summarize(fixes),[fixes]);
  async function refresh() {
   const a = await store.current(), list = await store.recent();
@@ -27,23 +29,51 @@ export default function App() {
   const e = await store.lastEvent(); if(e) setMessage(e.message);
  }
  async function run(action:()=>Promise<unknown>) {
-  if(operation.current) return;
+  if(operation.current) return false;
   operation.current = true; setBusy(true);
-  try { await action(); await refresh(); } catch(e) { setMessage(String(e)); Alert.alert('Recorder',String(e)); } finally { operation.current = false; setBusy(false); }
+  try { await action(); await refresh(); return true; } catch(e) { setMessage(String(e)); Alert.alert('Recorder',String(e)); return false; } finally { operation.current = false; setBusy(false); }
  }
  useEffect(() => {
   let alive = true;
   const update = async () => { if(operation.current) return; operation.current = true; try { await recorder.recover(); if(alive) await refresh(); } catch(e) { if(alive) setMessage(String(e)); } finally {operation.current = false;} };
-  void update();
+  const initialize=async()=> {
+   // Honor a notification action before automatic recovery changes its section identity.
+   const action=notificationAction(await Linking.getInitialURL());
+   if(action) {
+    const key=`${action.activity}:${action.action}:${action.nonce}`;
+    if(!handledNotificationActions.current.has(key)) {
+     handledNotificationActions.current.add(key);if(!await run(()=>recorder.applyNotificationAction(action))) handledNotificationActions.current.delete(key);
+    }
+   }
+   if(alive) await update();
+  };
+  void initialize();
+  let foregroundTimer:ReturnType<typeof setTimeout>|undefined;
   const timer = setInterval(()=> { if(AppState.currentState==='active') void update(); },2000);
-  const sub = AppState.addEventListener('change', state=> {if(state==='active') void update();});
-  return ()=> {alive=false;clearInterval(timer);sub.remove();};
+  const sub = AppState.addEventListener('change', state=> {void store.diagnostic('app-state',{state});if(state==='active') {clearTimeout(foregroundTimer);foregroundTimer=setTimeout(()=>void update(),250);}});
+  return ()=> {alive=false;clearInterval(timer);clearTimeout(foregroundTimer);sub.remove();};
+ },[]);
+ useEffect(()=> {
+  const handled=handledNotificationActions.current;
+  let queue=Promise.resolve();
+  const receive=(url:string|null)=> {
+   const action=notificationAction(url);if(!action) return;
+   const key=`${action.activity}:${action.action}:${action.nonce}`;if(handled.has(key)) return;handled.add(key);
+   // A cold launch may still be recovering SQLite/service state. Serialize the action after it.
+   queue=queue.then(async()=> {
+    while(operation.current) await new Promise(resolve=>setTimeout(resolve,50));
+    if(!await run(()=>recorder.applyNotificationAction(action))) handled.delete(key);
+   });
+  };
+  const sub=Linking.addEventListener('url',e=>receive(e.url));
+  void store.diagnostic('app-state',{state:AppState.currentState,source:'mount'});
+  return ()=>sub.remove();
  },[]);
  async function exportActivity(a:store.Activity) {
   if (!(await Sharing.isAvailableAsync())) throw new Error('Sharing is unavailable on this device.');
-  const [p,s,events]=await Promise.all([store.points(a.id),store.segments(a.id),store.diagnostics(a)]);
+  const [p,s,events,diagnostics]=await Promise.all([store.points(a.id),store.segments(a.id),store.diagnostics(a),store.recordingDiagnostics(a.id)]);
   const file = new File(Paths.cache,`sporeward-${a.id}.json`);
-  file.create({overwrite:true});file.write(JSON.stringify({version:2,activity:a,segments:s,fixes:p,events,summary:summarize(p)},null,2));
+  file.create({overwrite:true});file.write(JSON.stringify({version:3,activity:a,segments:s,fixes:p,events,diagnostics,summary:summarize(p)},null,2));
   await Sharing.shareAsync(file.uri,{mimeType:'application/json',dialogTitle:'Export private GPS recording'});
  }
  function exportPrompt(a:store.Activity) { Alert.alert('Export GPS route?', 'This file contains precise locations and timestamps. Choose where to save or share it.',[{text:'Cancel'},{text:'Export',onPress:()=>void run(()=>exportActivity(a))}]); }

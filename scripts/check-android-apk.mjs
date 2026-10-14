@@ -1,0 +1,11 @@
+import { execFileSync } from 'node:child_process';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+const sdk=process.env.ANDROID_HOME??join(homedir(),process.platform==='darwin'?'Library/Android/sdk':'Android/Sdk');
+const aapt=join(sdk,'build-tools',process.env.ANDROID_BUILD_TOOLS_VERSION??'36.0.0',process.platform==='win32'?'aapt2.exe':'aapt2');
+const apk=process.argv[2]??fileURLToPath(new URL('../apps/mobile/android/app/build/outputs/apk/release/app-release.apk',import.meta.url));
+const permissions=execFileSync(aapt,['dump','permissions',apk],{encoding:'utf8'});
+const required=['INTERNET','ACCESS_FINE_LOCATION','ACCESS_BACKGROUND_LOCATION','FOREGROUND_SERVICE','FOREGROUND_SERVICE_LOCATION','RECEIVE_BOOT_COMPLETED','POST_NOTIFICATIONS'];
+for(const name of required) if(!permissions.includes(`android.permission.${name}'`)) throw new Error(`APK is missing android.permission.${name}`);
+console.log('Packaged Android location/task permissions: PASS');
