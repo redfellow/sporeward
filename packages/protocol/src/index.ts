@@ -7,3 +7,5 @@ export interface HealthResponse {
 export * from './activities';
 
 export * from "./world";
+
+export * from "./replay";

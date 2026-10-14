@@ -1,5 +1,5 @@
 import type {Coordinate} from '@sporeward/protocol';
-export type TestOutbreak={id:string;name:string;ring:Coordinate[];accessWay:number};
+export type TestOutbreak={id:string;name:string;ring:Coordinate[];accessWay:number;cells?:import("./spatial/access.ts").Cell[];spawnedAt?:number;retiredAt?:number;heat?:Record<string,number>};
 const locations=[
  {id:'hatanpaa',name:'Hatanpää',position:[23.7619996,61.4839089],accessWay:1395823937,cells:[[0,0],[1,0],[-1,0],[0,1],[1,1]]},
  {id:'pyynikki',name:'Pyynikki',position:[23.7273125,61.5003719],accessWay:362855212,cells:[[0,0],[-1,0],[1,0],[0,-1],[0,-2]]},

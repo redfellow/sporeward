@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "id": "group-cleanup",
+  "baseline": "2026-10-14T08:00:00Z",
+  "seed": 73,
+  "players": [
+    {
+      "id": "rider-a",
+      "name": "Rider A"
+    },
+    {
+      "id": "rider-b",
+      "name": "Rider B"
+    },
+    {
+      "id": "rider-c",
+      "name": "Rider C"
+    },
+    {
+      "id": "rider-d",
+      "name": "Rider D"
+    }
+  ],
+  "rides": [
+    {
+      "id": "group-0",
+      "player": "rider-a",
+      "track": "../../../work/replay/field-phone.json",
+      "offsetMs": 0,
+      "uploadDelayMs": 0,
+      "retries": 2
+    },
+    {
+      "id": "group-1",
+      "player": "rider-b",
+      "track": "../../../work/replay/field-phone.json",
+      "offsetMs": 60000,
+      "uploadDelayMs": 0,
+      "retries": 2
+    },
+    {
+      "id": "group-2",
+      "player": "rider-c",
+      "track": "../../../work/replay/field-phone.json",
+      "offsetMs": 120000,
+      "uploadDelayMs": 0,
+      "retries": 2
+    },
+    {
+      "id": "group-3",
+      "player": "rider-d",
+      "track": "../../../work/replay/field-phone.json",
+      "offsetMs": 180000,
+      "uploadDelayMs": 0,
+      "retries": 2
+    }
+  ],
+  "settleMs": 46800000
+}

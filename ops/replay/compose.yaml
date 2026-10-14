@@ -1,0 +1,20 @@
+# Separate development database; never mounts the field API's data volume.
+services:
+  database:
+    image: postgis/postgis:17-3.5
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sporeward_replay
+      POSTGRES_USER: sporeward_replay
+      POSTGRES_PASSWORD: ${REPLAY_DB_PASSWORD:?Set a private replay database password}
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - replay-postgis:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sporeward_replay -d sporeward_replay"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+volumes:
+  replay-postgis:

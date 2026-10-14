@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "id": "delayed-overlap",
+  "baseline": "2026-10-31T22:30:00Z",
+  "seed": 73,
+  "players": [
+    {
+      "id": "rider-a",
+      "name": "Rider A"
+    },
+    {
+      "id": "rider-b",
+      "name": "Rider B"
+    }
+  ],
+  "rides": [
+    {
+      "id": "app",
+      "player": "rider-a",
+      "track": "../../../work/replay/field-phone.json",
+      "offsetMs": 0,
+      "uploadDelayMs": 0,
+      "retries": 1
+    },
+    {
+      "id": "watch",
+      "player": "rider-a",
+      "track": "../../../work/replay/field-phone.json",
+      "offsetMs": 0,
+      "uploadDelayMs": 3600000,
+      "retries": 1
+    },
+    {
+      "id": "late",
+      "player": "rider-b",
+      "track": "../../../work/replay/field-phone.json",
+      "offsetMs": 120000,
+      "uploadDelayMs": 72000000,
+      "retries": 1
+    }
+  ],
+  "settleMs": 43200000
+}

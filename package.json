@@ -23,7 +23,10 @@
 		"check:lab": "node scripts/build-cleaning-lab.mjs --check",
 		"check:android": "node scripts/check-android-apk.mjs",
 		"android:emulator": "npm run android:emulator --workspace @sporeward/mobile",
-		"dev:mobile:local": "npm run start:local --workspace @sporeward/mobile"
+		"dev:mobile:local": "npm run start:local --workspace @sporeward/mobile",
+		"replay": "node --import tsx scripts/replay/run.mts",
+		"world:access": "node --import tsx scripts/world/fetch-access.mts",
+		"check:database": "node --import tsx scripts/world/check-database.mts"
 	},
 	"devDependencies": {
 		"@types/node": "^24.0.0",
