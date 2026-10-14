@@ -8,6 +8,7 @@ const dbPromise = SQLite.openDatabaseAsync('sporeward-recorder.db').then(async d
  CREATE TABLE IF NOT EXISTS segments (id INTEGER PRIMARY KEY AUTOINCREMENT, activity TEXT, started REAL, ended REAL);
  CREATE TABLE IF NOT EXISTS fixes (activity TEXT, segment INTEGER, timestamp REAL, latitude REAL, longitude REAL, accuracy REAL, PRIMARY KEY(activity,timestamp));
  UPDATE segments SET ended=started WHERE ended < started;
+ CREATE TABLE IF NOT EXISTS activity_uploads (activity TEXT PRIMARY KEY, state TEXT, receipt TEXT, error TEXT);
  CREATE TABLE IF NOT EXISTS events (time REAL, message TEXT);
  CREATE TABLE IF NOT EXISTS recording_diagnostics (time REAL, activity TEXT, kind TEXT, data TEXT);`);
  return db;
@@ -69,6 +70,10 @@ export function saveFixes(batch: Omit<Fix,'segment'>[]) { return write(async()=>
 }
 export async function segments(id: string) { return (await dbPromise).getAllAsync<import('./model').Segment>('SELECT * FROM segments WHERE activity = ? ORDER BY started', id); }
 export async function diagnostics(a: Activity) { return (await dbPromise).getAllAsync<{time:number;message:string}>('SELECT * FROM events WHERE time >= ? AND time <= ? ORDER BY time',a.started,a.ended ?? Date.now()); }
+
+export type UploadState={activity:string;state:'pending'|'uploaded';receipt:string|null;error:string|null};
+export async function uploadState(id:string) {return (await dbPromise).getFirstAsync<UploadState>('SELECT * FROM activity_uploads WHERE activity = ?',id);}
+export function markUpload(id:string,state:UploadState['state'],receipt:unknown=null,error:string|null=null) {return write(async()=> {await (await dbPromise).runAsync('INSERT INTO activity_uploads VALUES (?,?,?,?) ON CONFLICT(activity) DO UPDATE SET state=excluded.state,receipt=excluded.receipt,error=excluded.error',id,state,receipt===null?null:JSON.stringify(receipt),error);});}
 
 export function diagnostic(kind:string,data:Record<string,unknown>,activityId?:string) { const time=Date.now();return write(async()=> {
  const activity=activityId ?? (await current())?.id;

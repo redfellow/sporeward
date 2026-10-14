@@ -9,6 +9,7 @@ COPY packages/protocol/package.json packages/protocol/package.json
 RUN npm ci --workspace @sporeward/server --workspace @sporeward/protocol --include-workspace-root=false
 COPY apps/server/src apps/server/src
 COPY packages/protocol/src packages/protocol/src
+RUN mkdir /data && chown node:node /data
 USER node
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=3001
 EXPOSE 3001

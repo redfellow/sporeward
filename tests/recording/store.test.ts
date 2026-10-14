@@ -55,10 +55,10 @@ describe('durable recorder storage', () => {
   const fix={timestamp:1001000,latitude:61.5,longitude:23.7,accuracy:5};
   await Promise.all([
    s.saveFixes([fix]),s.event('Background'),s.diagnostic('app-state',{state:'background'}),
-   s.saveFixes([{...fix,timestamp:1002000}]),s.transition('paused')
+   s.saveFixes([{...fix,timestamp:1002000}]),s.transition('paused'),s.markUpload(id,'pending')
   ]);
   expect(await s.points(id)).toHaveLength(2);expect((await s.current())!.status).toBe('paused');
-  expect(await s.recordingDiagnostics(id)).toHaveLength(1);
+  expect(await s.recordingDiagnostics(id)).toHaveLength(1);expect((await s.uploadState(id))!.state).toBe('pending');
  });
  it('continues accepting writes after a rejected operation',async()=> {
   const s=await import('../../apps/mobile/src/recording/store');await s.begin();await expect(s.begin()).rejects.toThrow('unfinished');

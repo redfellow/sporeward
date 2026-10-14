@@ -11,6 +11,9 @@ services:
       NODE_ENV: production
       HOST: 0.0.0.0
       PORT: "3001"
+      ACTIVITY_DATA_DIR: /data/activities
+    volumes:
+      - activity-data:/data
     read_only: true
     tmpfs:
       - /tmp
@@ -28,3 +31,6 @@ services:
       timeout: 5s
       start_period: 15s
       retries: 3
+
+volumes:
+  activity-data:

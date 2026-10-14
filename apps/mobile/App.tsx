@@ -8,6 +8,8 @@ import { notificationAction } from './src/recording/notification-action';
 import * as recorder from './src/recording/recorder';
 import * as store from './src/recording/store';
 import { type Fix, type Segment, recordingDuration, summarize } from './src/recording/model';
+import { ActivityUpload } from './src/components/ActivityUpload';
+import { ServerConnection } from './src/components/ServerConnection';
 import { RouteMap } from './src/components/RouteMap';
 const duration = (ms:number) => {const seconds=Math.floor(ms/1000);return `${Math.floor(seconds/3600)}h ${Math.floor(seconds/60)%60}m ${seconds%60}s`;};
 export default function App() {
@@ -80,7 +82,7 @@ export default function App() {
  const button = (label:string, action:()=>Promise<unknown>) => <Pressable accessibilityRole="button" disabled={busy} style={[styles.button,busy && {opacity:0.5}]} onPress={()=>void run(action)}><Text style={styles.buttonText}>{label}</Text></Pressable>;
  return <SafeAreaProvider><SafeAreaView style={styles.screen}><StatusBar style="light"/><ScrollView contentContainerStyle={styles.content}>
   <Text style={styles.title}>Sporeward</Text><Text style={styles.subtitle}>Field recorder</Text>
-  <Text style={styles.body}>Your route stays on this phone. Outbreaks and scoring are coming next.</Text>
+  <Text style={styles.body}>Your route stays on this phone until you choose to upload. Outbreaks and scoring are coming next.</Text>
   <View style={styles.actions}>{!activity ? button('Start recording',()=>recorder.start()) : <>{activity.status==='recording' ? button('Pause',()=>recorder.pause()) : button('Resume',()=>recorder.start(true))}{button('Finish & save',()=>recorder.pause(true))}</>}</View>
   <View style={styles.card}><Text style={styles.state}>{activity?.status.toUpperCase() ?? (displayed ? 'ACTIVITY RECAP' : 'READY')}</Text>
    {displayed && <Text style={styles.body}>{new Date(displayed.started).toLocaleString()}</Text>}
@@ -95,6 +97,8 @@ export default function App() {
   <RouteMap fixes={fixes} activityId={displayed?.id ?? null}/>
   {displayed?.status==='finished' && <Pressable accessibilityRole="button" disabled={busy} style={styles.secondary} onPress={()=>exportPrompt(displayed)}><Text style={styles.secondaryText}>Export this activity</Text></Pressable>}
   <Text style={styles.body}>Target: one fix per second. Android may deliver fixes in batches. Pause stops GPS collection; resumed sections stay separate.</Text>
+  {displayed?.status==='finished' && <ActivityUpload key={displayed.id} activity={displayed}/>}
+  <ServerConnection/>
   <Text style={styles.heading}>Recent saved activities</Text>
   {history.filter(a=>a.status==='finished').map(a=><Pressable key={a.id} disabled={busy || !!activity} style={styles.card} onPress={()=>void run(async()=>{selectedId.current=a.id;})} accessibilityRole="button"><Text style={styles.metric}>{new Date(a.started).toLocaleString()}</Text><Text style={styles.body}>{activity ? 'Finish recording to review this activity' : 'View route and recap'}</Text></Pressable>)}
   {!history.some(a=>a.status==='finished') && <Text style={styles.body}>Finish your first test to keep its recording here.</Text>}
