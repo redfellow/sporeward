@@ -23,9 +23,9 @@ iOS development and validation follow after Android reaches a suitable level of 
 
 ## Current implementation
 
-The Android recorder persists fixes and route sections in SQLite, shows a MapLibre route map and recap, and can build an APK with bundled JavaScript for independent field testing. Background GPS reliability remains a real-device acceptance gate.
+The Android recorder persists fixes and route sections in SQLite, shows a MapLibre route map and recap, and can build an APK with bundled JavaScript for independent field testing. The app includes secure tester credentials, an HTTPS connection check, and explicit uploads of finished recordings to persistent test-server storage. Background GPS reliability remains a real-device acceptance gate.
 
-`packages/game` now contains the deterministic cleaning simulation used by the interactive planning lab. Tests cover cooldowns, repeat scoring/cleaning, two-phase decay, finishing/group/protection awards, growth, disintegration/remnants, and split conservation/stabilization. Spatial rules, authoritative historical events, import reconciliation, and multiplayer server state remain outstanding.
+`packages/game` now contains the deterministic cleaning simulation used by the interactive planning lab. Tests cover cooldowns, repeat scoring/cleaning, two-phase decay, finishing/group/protection awards, growth, disintegration/remnants, and split conservation/stabilization. The [first outbreak encounter](first-outbreak-encounter.md) connects validated GPS contacts to fixed Tampere footprints, persistent cleaning/scoring, activity markers and confirmed recaps. Automatic geographic growth, full historical lifecycle processing, accounts and Strava reconciliation remain outstanding.
 
 ## 1. Reliable game engine
 
@@ -108,6 +108,8 @@ Acceptance criteria:
 
 ## Deferred features
 
+- Group multiple source recordings into one outing, with combined and separate track views.
+- Opt-in, link-free Strava activity text showing earned Sporeward points.
 - External route-planner browser extension.
 - Public world-state replay for a selected area over the past 24 hours.
 - Personal activity replay beyond the essential activity summary and recorded route.
@@ -116,11 +118,13 @@ Acceptance criteria:
 
 These remain concept ideas; they are not acceptance requirements for the first MVP.
 
-## Immediate next decisions
+## Immediate next work
 
-1. Define measurable Android recording-feasibility checks using Android 16 as the baseline; confirm device identifiers and installed versions when testing begins. Define the later iOS handoff milestone when Android is ready and a tester is available.
-2. Specify lifecycle-clock behaviour, contact reconciliation, and split allocation precisely enough for engine tests.
-3. Extract the deterministic engine and begin the minimal Android recording experiment using the selected stack and workspace checks.
+1. Complete field checks on the standalone Android recorder: screen-off GPS, pause/resume, recovery, fold transitions, battery use, and cellular HTTPS access. Initial recorder/engine extraction and server connectivity are implemented; real-device reliability remains unproven.
+2. Exercise explicit activity uploads, idempotent retries, persistent server receipts, and basic distance/time eligibility with real outings. The fixed encounter slice awards points for eligible contacts; ineligible recordings remain diagnostics.
+3. Extend the fixed encounter slice to automatic accessible spawning, geographic growth and historical boundary changes, with PostgreSQL/PostGIS persistence. Replace remaining minute-resolution prototype assumptions where authoritative processing needs greater precision.
+4. Add account-backed shared play and full out-of-order Strava reconciliation, building on the encounter slice’s persistent contributions and retry safety.
+
 
 Rules and balancing references: [Working game concept](game-concept.md) and [Player rules](player-rules.md).
 

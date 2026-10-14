@@ -117,4 +117,6 @@ Hidden contributions may appear anonymously as support-squad cleaning. Privacy s
 
 After an activity, see your points, visited outbreaks, cleanup bonuses, and ongoing cleaning. Later bonuses update that activity's recap and generate an in-game notification. Personal replay shows your route, contacts, and point events.
 
+Planned later: recordings of the same outing from multiple sources appear together, with a combined track or separate source views. You may also opt in to a friendly Sporeward score summary on your Strava activity, without a promotional link.
+
 Compete on **monthly, yearly, and all-time** leaderboards, globally and by country. Country points follow where each contact happened. Month and year follow local time at the contact location, even when points arrive later. Each award counts globally once.

@@ -2,7 +2,7 @@
 
 An outdoor game where recorded walks, runs, and rides help clear a shared world of spreading outbreaks. Players cooperate on cleaning and compete for points.
 
-The repository contains a native Android field recorder with local route maps and recaps, a deterministic cleaning simulation engine, and minimal web/server scaffolds. Accounts, Strava integration, authoritative GPS contact matching, and persistent shared outbreaks remain to be implemented. Background recording requires field validation.
+The repository contains a native Android field recorder with local route maps and recaps, a deterministic cleaning simulation engine, and minimal web/server scaffolds. The [first encounter slice](docs/first-outbreak-encounter.md) adds persistent Tampere test outbreaks, validated GPS contacts and activity scoring. Accounts, Strava integration and the full geographic lifecycle remain to be implemented. Background recording requires field validation.
 
 ## Workspace
 
@@ -68,7 +68,7 @@ Native dependency or app-configuration changes require rebuilding the developmen
 - `npm run check`: run both.
 - `npm run build --workspace @sporeward/web`: build browser assets.
 
-The current server test verifies the health endpoint without an external database. The shared cleaning engine and native recording/route helpers have deterministic regression tests. The [interactive planning simulation](docs/visualizations/sporeward-cleaning-lab.html) contains three repeatable scenarios with 17 assertions and runs the same extracted engine in `packages/game`. This minute-resolution balancing engine is not yet an authoritative GPS/world implementation. After changing shared rules, run `npm run build:lab` to refresh its embedded bundle; `npm run check` verifies it is current and runs the actual lab scenarios. Its source is an inline HTML fragment; standalone previews generated from it remain under ignored `work/visualizations`.
+Server tests cover upload persistence, timestamped contacts, duplicate contributions, delayed cleaning and confirmed encounter recaps without an external database. The shared cleaning engine and native recording/route helpers have deterministic regression tests. The [interactive planning simulation](docs/visualizations/sporeward-cleaning-lab.html) contains three repeatable scenarios with 17 assertions and runs the same extracted engine in `packages/game`. This minute-resolution balancing engine is not yet an authoritative GPS/world implementation. After changing shared rules, run `npm run build:lab` to refresh its embedded bundle; `npm run check` verifies it is current and runs the actual lab scenarios. Its source is an inline HTML fragment; standalone previews generated from it remain under ignored `work/visualizations`.
 
 ## Planning
 

@@ -157,9 +157,21 @@ The recap shows total points, outbreaks visited, cleanup bonuses earned, and cle
 
 Show potential additional points from pending finishing bonuses separately from earned points, for example "240 earned · up to +200 pending", with potential bonuses itemised and the player's finishing or group-window status explained. These are conditional: another accepted visitor can take the finishing position, although contributors within the group grace window can still share the bonus. Pending bonuses must not inflate confirmed totals or leaderboard scores.
 
+### One outing, multiple recording sources
+
+A future outing-level view groups recordings of the same real-world outing into one player-facing entry. Show the contributing sources explicitly (for example, Sporeward and Garmin via Strava). Let the player switch between a combined track and each source's separate track. Retain source recordings, their timestamps, and their pause/gap boundaries underneath; grouping the display must not duplicate points or cleaning. Valid contacts from one source can cover another source's pause or missing coverage under the existing reconciliation rules. Outing matching, user correction, and the exact combined-track selection algorithm remain to be defined.
+
+### Optional Strava score summary
+
+Players may opt in to having their Strava activity text include a friendly, inviting Sporeward score summary that lightly promotes the game. Include the earned score and the plain game name, with **no URL or promotional link**. This is disabled unless the player opts in, preserves existing activity text, and uses server-confirmed earned points rather than potential bonuses. Exact wording, placement, and handling of later bonus updates remain open. Example direction: “Sporeward: 350 points earned pushing back the spores.” This is a future integration feature, not permission to edit existing Strava activities now.
+
+### Replay
+
 Provide personal activity replay showing the player's recorded route, outbreak contacts, and point events, with play/pause and playback-speed controls. Shared replays respect protection areas; the exact event presentation and treatment of later-awarded bonuses remain open.
 
 A separate proposed feature is world-state replay for a selected map viewpoint/area over the past 24 hours. It would show historical outbreak evolution, including growth, cleaning, splitting, and destruction. Release priority, replay controls, event detail, and whether anonymous support squads appear remain open; historical player-location playback is not implied.
+
+### Leaderboard periods
 
 Leaderboard months and years follow calendar boundaries in the timezone of each outbreak contact, rather than uniformly using UTC or the player's device timezone. Cross-timezone activities attribute each award individually. Global periods finish progressively across timezones rather than at one worldwide instant. Recorded contact times determine period attribution; delayed award receipt does not. Final settlement must also account for the accepted import window and delayed cleanup awards.
 
@@ -195,7 +207,7 @@ After an activity has been open for 24 hours, stop collecting new location data 
 
 An in-app pause only suspends that recording source. Independently valid Strava contacts still count, including when the player forgot the app on pause. Reconcile overlapping contacts under the same earliest-contact and cooldown rules.
 
-Keep in-app and Strava recordings as separate activity records: either may contain only part of an outing. Combine their outbreak contacts without discarding contacts unique to either source. For the same player's duplicate contact with the same outbreak, use the earliest recorded contact timestamp once for scoring, cleaning, and cooldown accounting, regardless of receipt order. Later genuinely separate visits remain eligible under the 6-hour rule. Exact contact matching, duplicate GPS/heatmap handling, and reconciliation with already-granted points remain open.
+Keep in-app and Strava recordings as separate source records underneath the shared outing view: either may contain only part of an outing. Combine their outbreak contacts without discarding contacts unique to either source. For the same player's duplicate contact with the same outbreak, use the earliest recorded contact timestamp once for scoring, cleaning, and cooldown accounting, regardless of receipt order. Later genuinely separate visits remain eligible under the 6-hour rule. Exact contact matching, duplicate GPS/heatmap handling, and reconciliation with already-granted points remain open.
 
 Match imported visits against outbreak positions and eligibility at the recorded contact time, then start their treatment in the present without rewinding the live world. Historically eligible points remain awardable without revoking prior awards. For already cleared targets, award historically eligible points but apply no cleaning to unrelated replacements. For split targets, divide imported treatment among surviving descendants without multiplying its total effect; exact allocation remains open. Finishing order uses recorded visit time rather than import receipt or support-squad arrival time.
 
