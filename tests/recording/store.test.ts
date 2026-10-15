@@ -66,3 +66,21 @@ describe('durable recorder storage', () => {
  });
 
 });
+
+it('keeps local outings assigned to their recording account',async()=>{
+ const s=await import('../../apps/mobile/src/recording/store');const alice=await s.begin('alice');await s.transition('finished');
+ vi.mocked(Date.now).mockReturnValue(1001000);const bob=await s.begin('bob');await s.transition('finished');
+ expect((await s.recent('alice')).map(a=>a.id)).toEqual([alice]);expect((await s.recent('bob')).map(a=>a.id)).toEqual([bob]);
+ await expect(s.assertOwner(alice,'alice')).resolves.toBeUndefined();await expect(s.assertOwner(alice,'bob')).rejects.toThrow('another account');
+ expect(await s.points(alice)).toEqual([]);
+});
+it('explicit legacy transfer preserves GPS, sections and receipts without taking another account data',async()=>{
+ const s=await import('../../apps/mobile/src/recording/store'),legacy=await s.begin();
+ vi.mocked(Date.now).mockReturnValue(1001000);await s.saveFixes([{timestamp:1000500,latitude:61.5,longitude:23.7,accuracy:5}]);await s.transition('finished');await s.markUpload(legacy,'uploaded',{id:legacy,confirmedPoints:100});
+ vi.mocked(Date.now).mockReturnValue(1002000);const other=await s.begin('bob');await s.transition('finished');
+ vi.mocked(Date.now).mockReturnValue(1003000);await s.begin('alice');await expect(s.claimLegacyActivities('alice')).rejects.toThrow('active outing');await s.transition('finished');
+ const points=await s.points(legacy),sections=await s.segments(legacy),receipt=await s.uploadState(legacy);
+ expect(await s.legacyActivityCount()).toBe(1);expect(await s.claimLegacyActivities('alice')).toBe(1);expect(await s.claimLegacyActivities('alice')).toBe(0);
+ expect(await s.points(legacy)).toEqual(points);expect(await s.segments(legacy)).toEqual(sections);expect(await s.uploadState(legacy)).toEqual(receipt);
+ await expect(s.assertOwner(legacy,'alice')).resolves.toBeUndefined();await expect(s.assertOwner(other,'bob')).resolves.toBeUndefined();expect(await s.legacyActivityCount()).toBe(0);
+});

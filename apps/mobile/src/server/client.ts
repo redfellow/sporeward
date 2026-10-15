@@ -3,7 +3,7 @@ const localTestUrl=process.env.EXPO_PUBLIC_TEST_SERVER_URL;
 const development=typeof __DEV__!=='undefined'&&__DEV__;
 if(development&&localTestUrl&&!/^http:\/\/127\.0\.0\.1:[0-9]{2,5}$/.test(localTestUrl))throw new Error('Development test API must use Android-reversed loopback.');
 export const SERVER_URL=development&&localTestUrl?localTestUrl:'https://sporeward.redlan.co';
-export type Credentials={username:string;password:string};
+export type Credentials={username:string;password:string;session?:string;playerId?:string};
 export class ConnectionError extends Error {}
 export function authorization(c:Credentials) {
  if(!c.username || c.username.includes(':') || !c.password) throw new ConnectionError('Enter a username and password. The username cannot contain a colon.');
@@ -12,6 +12,7 @@ export function authorization(c:Credentials) {
  if(header.length>1024) throw new ConnectionError('These credentials are too long.');
  return header;
 }
+export function requestHeaders(c:Credentials):Record<string,string>{return {Authorization:authorization(c),...(c.session?{'X-Sporeward-Session':c.session}:{})};}
 export type HealthRequest=(url:string,options:RequestInit)=>Promise<Response>;
 export async function checkConnection(c:Credentials,request:HealthRequest=fetch,timeoutMs=8000) {
  const header=authorization(c),controller=new AbortController();

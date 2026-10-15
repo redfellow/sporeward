@@ -27,6 +27,6 @@ export function tampereTestOutbreaks():TestOutbreak[] {
   do {ring.push(cursor);cursor=chain.get(key(cursor))!;}while(key(cursor)!==key(first));
   for(let iteration=0;iteration<2;iteration++)ring=ring.flatMap((a,i)=>{const b=ring[(i+1)%ring.length];return [[a[0]*.75+b[0]*.25,a[1]*.75+b[1]*.25],[a[0]*.25+b[0]*.75,a[1]*.25+b[1]*.75]] as Coordinate[];});
   ring=ring.map(([x,y])=>[x/n*360-180,Math.atan(Math.sinh(Math.PI*(1-2*y/n)))*180/Math.PI]);
-  return {id:location.id,name:location.name,ring,accessWay:location.accessWay};
+  return {id:location.id,name:location.name,ring,accessWay:location.accessWay,cells:location.cells.map(([dx,dy])=>({x:x+dx,y:y+dy}))};
  });
 }

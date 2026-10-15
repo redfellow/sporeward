@@ -13,8 +13,9 @@ export function useWorld(activityId:string|null) {
   try {
    const credentials=await loadCredentials();if(!valid())return;
    if(!credentials){owner.current=null;setWorld(null);setStatus('Configure tester credentials to load outbreaks.');return;}
-   if(owner.current!==credentials.username){owner.current=credentials.username;const cached=await store.cachedWorld(credentials.username);if(valid())setWorld(cached?parseWorldView(cached):null);}
-   const snapshot=await fetchWorld(credentials);if(!valid())return;await store.cacheWorld(credentials.username,snapshot);setWorld(snapshot);setStatus(`Map updated ${new Date(snapshot.serverTime).toLocaleTimeString()}.`);
+   const player=credentials.playerId??credentials.username;
+   if(owner.current!==player){owner.current=player;setRecap(null);const cached=await store.cachedWorld(player);if(valid())setWorld(cached?parseWorldView(cached):null);}
+   const snapshot=await fetchWorld(credentials);if(!valid())return;await store.cacheWorld(player,snapshot);setWorld(snapshot);setStatus(`Map updated ${new Date(snapshot.serverTime).toLocaleTimeString()}.`);
    if(activityId){const uploaded=await store.uploadState(activityId);if(uploaded?.state==='uploaded') {const confirmed=await fetchRecap(activityId,credentials);if(valid()){setRecap(confirmed);const old=uploaded.receipt?JSON.parse(uploaded.receipt):{};await store.markUpload(activityId,'uploaded',{...old,encounters:confirmed});}}}
   }catch(e){if(valid())setStatus(e instanceof Error?e.message:'Could not update outbreaks.');}finally{busy.current=false;}
  },[activityId]);
@@ -25,5 +26,11 @@ export function useWorld(activityId:string|null) {
   void refresh();const timer=setInterval(()=>{if(AppState.currentState==='active')void refresh();},20000),sub=AppState.addEventListener('change',state=>{if(state==='active')void refresh();});
   return()=>{alive=false;generation.current++;clearInterval(timer);sub.remove();};
  },[activityId,refresh]);
- return {world,recap,status,refresh,acceptRecap:setRecap};
+ const latestRefresh=useRef(refresh);latestRefresh.current=refresh;
+ const resetIdentity=useCallback(async()=>{
+  generation.current++;owner.current=null;setWorld(null);setRecap(null);setStatus('Loading tester world…');
+  while(busy.current&&mounted.current)await new Promise(resolve=>setTimeout(resolve,25));
+  if(mounted.current)await latestRefresh.current();
+ },[]);
+ return {world,recap,status,refresh,resetIdentity,acceptRecap:setRecap};
 }

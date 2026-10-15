@@ -1,3 +1,4 @@
+vi.mock('../../apps/mobile/src/server/session',()=>({savedSession:async()=>null}));
 import {beforeEach,describe,expect,it,vi} from 'vitest';
 const f=vi.hoisted(()=>({status:'recording' as 'recording'|'paused'|'finished',service:true,nativeService:true,section:1,updated:vi.fn(),event:vi.fn(),diagnostic:vi.fn()}));
 vi.mock('react-native',()=>({AppState:{currentState:'active'},Alert:{alert:vi.fn()}}));

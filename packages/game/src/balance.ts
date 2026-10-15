@@ -25,3 +25,10 @@ export const BALANCE = {
 } as const;
 
 
+/** Provisional geographic-world tuning, separate from per-outbreak scoring. */
+export const SPATIAL_BALANCE={
+ replacementInitialDelayMs:60*60*1000,
+ replacementIntervalMs:30*60*1000,
+ remnantRadiusCells:8
+} as const;
+export type SpatialBalance={[K in keyof typeof SPATIAL_BALANCE]:number};

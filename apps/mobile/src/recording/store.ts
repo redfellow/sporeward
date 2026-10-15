@@ -8,6 +8,7 @@ const dbPromise = SQLite.openDatabaseAsync('sporeward-recorder.db').then(async d
  CREATE TABLE IF NOT EXISTS segments (id INTEGER PRIMARY KEY AUTOINCREMENT, activity TEXT, started REAL, ended REAL);
  CREATE TABLE IF NOT EXISTS fixes (activity TEXT, segment INTEGER, timestamp REAL, latitude REAL, longitude REAL, accuracy REAL, PRIMARY KEY(activity,timestamp));
  UPDATE segments SET ended=started WHERE ended < started;
+ CREATE TABLE IF NOT EXISTS activity_owners (activity TEXT PRIMARY KEY, owner TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS activity_uploads (activity TEXT PRIMARY KEY, state TEXT, receipt TEXT, error TEXT);
  CREATE TABLE IF NOT EXISTS events (time REAL, message TEXT);
  CREATE TABLE IF NOT EXISTS world_cache (owner TEXT PRIMARY KEY, snapshot TEXT);
@@ -30,15 +31,16 @@ async function transaction(operation:(tx:SQLite.SQLiteDatabase)=>Promise<void>) 
  });
 }
 export async function current() { return (await dbPromise).getFirstAsync<Activity>("SELECT * FROM activities WHERE status != 'finished' ORDER BY started DESC LIMIT 1"); }
-export async function recent() { return (await dbPromise).getAllAsync<Activity>('SELECT * FROM activities ORDER BY started DESC LIMIT 8'); }
+export async function recent(owner?:string) { if(owner)return (await dbPromise).getAllAsync<Activity>("SELECT a.* FROM activities a LEFT JOIN activity_owners o ON o.activity=a.id WHERE COALESCE(o.owner,'legacy-local')=? ORDER BY a.started DESC LIMIT 8",owner);return (await dbPromise).getAllAsync<Activity>('SELECT * FROM activities ORDER BY started DESC LIMIT 8'); }
 export async function points(id: string) { return (await dbPromise).getAllAsync<Fix>('SELECT timestamp, latitude, longitude, accuracy, segment FROM fixes WHERE activity = ? ORDER BY timestamp', id); }
 export function event(message: string) { const time=Date.now();return write(async()=>{await (await dbPromise).runAsync('INSERT INTO events VALUES (?,?)',time,message);}); }
 export async function lastEvent() { return (await dbPromise).getFirstAsync<{message: string}>('SELECT message FROM events ORDER BY time DESC LIMIT 1'); }
-export function begin() { return write(async()=> {
+export function begin(owner='legacy-local') { if(!owner||owner.length>150)throw new Error('Invalid recording owner.'); return write(async()=> {
  const now = Date.now(), id = `${now}-${Math.random().toString(36).slice(2)}`;
  await transaction(async tx => {
   if (await tx.getFirstAsync("SELECT id FROM activities WHERE status != 'finished'")) throw new Error('An unfinished activity already exists.');
   await tx.runAsync('INSERT INTO activities VALUES (?,?,?,?,NULL)', id, now, 'recording', now+86400000);
+  await tx.runAsync('INSERT INTO activity_owners VALUES (?,?)',id,owner);
   await tx.runAsync('INSERT INTO segments(activity,started) VALUES (?,?)', id, now);
  });
  return id;
@@ -91,3 +93,20 @@ export async function latestPoint(id:string) {return (await dbPromise).getFirstA
 
 export async function cachedWorld(owner:string) {const row=await (await dbPromise).getFirstAsync<{snapshot:string}>('SELECT snapshot FROM world_cache WHERE owner=?',owner);return row?JSON.parse(row.snapshot) as unknown:null;}
 export function cacheWorld(owner:string,snapshot:unknown){return write(async()=>{await (await dbPromise).runAsync('INSERT INTO world_cache VALUES (?,?) ON CONFLICT(owner) DO UPDATE SET snapshot=excluded.snapshot',owner,JSON.stringify(snapshot));});}
+
+export async function assertOwner(id:string,owner:string){
+ const row=await (await dbPromise).getFirstAsync<{owner:string}>("SELECT COALESCE(o.owner,'legacy-local') AS owner FROM activities a LEFT JOIN activity_owners o ON o.activity=a.id WHERE a.id=?",id);
+ if(!row||row.owner!==owner)throw new Error('This outing belongs to another account. Sign in with its recording account.');
+}
+
+export async function legacyActivityCount(){
+ const row=await (await dbPromise).getFirstAsync<{count:number}>("SELECT COUNT(*) AS count FROM activities a LEFT JOIN activity_owners o ON o.activity=a.id WHERE COALESCE(o.owner,'legacy-local')='legacy-local' AND a.status='finished'");return row?.count??0;
+}
+/** Explicitly confirmed owner migration. GPS, IDs, receipts and timing remain intact. */
+export function claimLegacyActivities(owner:string){
+ if(!owner||owner==='legacy-local'||owner.length>150)throw new Error('A linked tester account is required.');
+ return write(async()=>{let count=0;await transaction(async tx=>{
+  if(await tx.getFirstAsync("SELECT id FROM activities WHERE status!='finished' LIMIT 1"))throw new Error('Finish the active outing before transferring earlier recordings.');
+  const result=await tx.runAsync("INSERT INTO activity_owners(activity,owner) SELECT a.id,? FROM activities a LEFT JOIN activity_owners o ON o.activity=a.id WHERE COALESCE(o.owner,'legacy-local')='legacy-local' AND a.status='finished' ON CONFLICT(activity) DO UPDATE SET owner=excluded.owner WHERE activity_owners.owner='legacy-local'",owner);count=result.changes;
+ });return count;});
+}

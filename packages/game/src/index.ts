@@ -1,4 +1,4 @@
-export { BALANCE } from './balance';
+export { BALANCE, SPATIAL_BALANCE, type SpatialBalance } from './balance';
 export * from './engine';
 
 export * from "./contacts";

@@ -9,3 +9,4 @@ export * from './activities';
 export * from "./world";
 
 export * from "./replay";
+export * from './scores';

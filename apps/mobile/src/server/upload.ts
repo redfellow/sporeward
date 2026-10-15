@@ -1,11 +1,11 @@
 import { UPLOAD_BATCH_SIZE,parseEncounterRecap,type ActivityChunk,type ActivityReceipt } from '@sporeward/protocol';
-import { authorization,ConnectionError,SERVER_URL,type Credentials,type HealthRequest } from './client';
+import { requestHeaders,ConnectionError,SERVER_URL,type Credentials,type HealthRequest } from './client';
 export async function uploadActivity(payload:Omit<ActivityChunk,'fixes'|'chunkCount'> & {fixes:ActivityChunk['fixes']},credentials:Credentials,progress:(sent:number,total:number)=>void=()=>{},request:HealthRequest=fetch):Promise<ActivityReceipt> {
- const chunkCount=Math.max(1,Math.ceil(payload.fixes.length/UPLOAD_BATCH_SIZE)),header=authorization(credentials);
+ const chunkCount=Math.max(1,Math.ceil(payload.fixes.length/UPLOAD_BATCH_SIZE)),headers=requestHeaders(credentials);
  async function send(path:string,method:string,body:unknown) {
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);
   try {
-   const response=await request(SERVER_URL+path,{method,headers:{Authorization:header,'Content-Type':'application/json'},body:JSON.stringify(body),signal:controller.signal,redirect:'error'});
+   const response=await request(SERVER_URL+path,{method,headers:{...headers,'Content-Type':'application/json'},body:JSON.stringify(body),signal:controller.signal,redirect:'error'});
    if(response.status===401)throw new ConnectionError('Authentication failed. Configure tester credentials again.');
    if(response.status===429)throw new ConnectionError('Too many requests. Wait a minute and retry the upload.');
    if(response.status===409)throw new ConnectionError('The server has incomplete or different data for this activity.');

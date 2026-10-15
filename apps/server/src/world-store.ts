@@ -1,5 +1,9 @@
+import {generateOutbreaks} from './spatial/generate.ts';
+import {cellKey as spatialCellKey} from './spatial/access.ts';
+import {createOutbreak} from '@sporeward/game';
 import {tilePosition,cellKey} from './spatial/access.ts';
 import {advanceSpatial} from './spatial/lifecycle.ts';
+import {SPATIAL_BALANCE,type SpatialBalance} from '@sporeward/game';
 import type {AccessibleCell} from './spatial/access.ts';
 import {captureFootprint} from './spatial/history.ts';
 import type {Footprint} from '@sporeward/game';
@@ -12,14 +16,14 @@ import type {ActivityChunk,ActivityReceipt,EncounterRecap,EncounterResult,WorldV
 import {tampereTestOutbreaks,type TestOutbreak} from './test-outbreaks.ts';
 type Contribution={id:string;player:string;activityId:string;outbreakId:string;contactAt:number;visitPoints:number};
 type SavedActivity={player:string;started:number;ended:number;results:EncounterResult[]};
-export type Persisted={version:1;resetGeneration?:number;footprints?:Footprint[];spatialRuntime?:{density:number;sequence:number;nextSpawn:number};startedAt:number;fixtures:TestOutbreak[];engine:WorldState;contributions:Contribution[];bonuses:Record<string,string>;activities:Record<string,SavedActivity>};
+export type Persisted={version:1;resetGeneration?:number;spatialUpgrade?:{version:1;at:number};footprints?:Footprint[];spatialBalance?:SpatialBalance;spatialRuntime?:{density:number;sequence:number;nextSpawn:number};startedAt:number;fixtures:TestOutbreak[];engine:WorldState;contributions:Contribution[];bonuses:Record<string,string>;activities:Record<string,SavedActivity>};
 /** Single-process test-world store. One atomic snapshot includes world effects,
  * source observations and rewards. A failed write leaves the previous state intact.
  * PostgreSQL transactions will replace this adapter for multiple server instances.
  */
 export class WorldStore {
  private queue=Promise.resolve();
- constructor(private root:string,private now:()=>number=Date.now,private fixtures:()=>TestOutbreak[]=tampereTestOutbreaks,private options:{spatial?:AccessibleCell[];persistence?:WorldPersistence;seed?:number;allowSimulationReset?:boolean;contributionId?:(contact:{player:string;activityId:string;outbreakId:string;contactAt:number})=>string}={}) {}
+ constructor(private root:string,private now:()=>number=Date.now,private fixtures:()=>TestOutbreak[]=tampereTestOutbreaks,private options:{spatial?:AccessibleCell[];spatialBalance?:Partial<SpatialBalance>;persistence?:WorldPersistence;seed?:number;allowSimulationReset?:boolean;contributionId?:(contact:{player:string;activityId:string;outbreakId:string;contactAt:number})=>string}={}) {}
  private async locked<T>(operation:(state:Persisted)=>Promise<T>):Promise<T> {
   const result=this.queue.then(async()=>{
    if(this.options.persistence)return this.options.persistence.transaction(()=>{
@@ -55,10 +59,29 @@ export class WorldStore {
   return this.locked(async s=>{
    s.resetGeneration=(s.resetGeneration??0)+1;s.startedAt=Math.floor(this.now()/60000)*60000;s.fixtures=this.fixtures();
    s.engine=createWorld({ids:s.fixtures.map(f=>f.id),seed:this.options.seed,effort:4,balance:this.options.spatial?{splitProbability:0}:{maximumCells:5,growthDurationMs:100*365*86400000,splitProbability:0}});
-   s.contributions=[];s.bonuses={};s.activities={};s.footprints=[];s.spatialRuntime=undefined;this.capture(s);return {startedAt:s.startedAt,outbreaks:s.fixtures.length};
+   s.contributions=[];s.bonuses={};s.activities={};s.footprints=[];s.spatialRuntime=undefined;s.spatialBalance=undefined;s.spatialUpgrade=undefined;this.capture(s);return {startedAt:s.startedAt,outbreaks:s.fixtures.length};
   });
  }
- private advance(s:Persisted,minutes:number){if(this.options.spatial)advanceSpatial(s,minutes,this.options.spatial);else advanceWorld(s.engine,minutes);}
+ async prepareSpatialWorld(){
+  if(!this.options.spatial)throw new Error('Spatial access data is required.');
+  return this.locked(async s=>{
+   if(s.spatialUpgrade)return {alreadyPrepared:true,outbreaks:s.fixtures.filter(f=>f.retiredAt===undefined).length};
+   const prototypes=tampereTestOutbreaks(),now=s.startedAt+s.engine.time*60000;
+   for(const f of s.fixtures){if(!f.cells){const prototype=prototypes.find(p=>p.id===f.id);if(!prototype?.cells)throw new Error('Unknown legacy outbreak geometry; migration stopped.');f.cells=prototype.cells.map(c=>({...c}));}}
+   s.engine.balance={...s.engine.balance,maximumCells:BALANCE.maximumCells,growthDurationMs:BALANCE.growthDurationMs,splitProbability:0};
+   for(const o of s.engine.targets)if(!o.remnant&&o.cleared===null){o.cap=BALANCE.maximumCells;o.deadline=Math.max(s.engine.time+s.engine.balance.disintegrationDurationMs/60000,(s.engine.balance.growthDurationMs+s.engine.balance.disintegrationDurationMs)/60000+o.extension);}
+   const live=s.engine.targets.filter(o=>!o.remnant&&o.cleared===null),needed=Math.max(0,20-live.length);
+   const occupied=new Set(s.fixtures.filter(f=>{const o=s.engine.targets.find(o=>o.id===f.id);return f.retiredAt===undefined&&o&&(o.cleared===null||s.engine.time<=o.cleared+s.engine.balance.cleanupProtectionMs/60000);}).flatMap(f=>(f.cells??[]).map(spatialCellKey)));
+   if(needed){for(const f of generateOutbreaks(this.options.spatial!,this.options.seed??73,needed,occupied)){
+    if(s.engine.targets.some(o=>o.id===f.id))throw new Error('Spatial migration outbreak identity collision.');
+    const o=createOutbreak(f.id,s.engine.effort,s.engine.balance);o.deadline+=s.engine.time;s.engine.targets.push(o);s.fixtures.push({...f,spawnedAt:now});
+    s.footprints??=[];captureFootprint(s.footprints,{id:f.id,ring:f.ring,validFrom:now,validUntil:null});
+   }}
+   s.spatialBalance??={...SPATIAL_BALANCE,...this.options.spatialBalance};s.spatialRuntime={density:20,sequence:0,nextSpawn:s.engine.time+s.spatialBalance.replacementInitialDelayMs/60000};s.spatialUpgrade={version:1,at:now};
+   return {alreadyPrepared:false,outbreaks:live.length+needed};
+  });
+ }
+ private advance(s:Persisted,minutes:number){if(this.options.spatial){s.spatialBalance??={...SPATIAL_BALANCE,...this.options.spatialBalance};advanceSpatial(s,minutes,this.options.spatial);}else advanceWorld(s.engine,minutes);}
  private capture(s:Persisted){
   const existing=s.footprints!==undefined;s.footprints??=[];
   for(const f of s.fixtures){const target=s.engine.targets.find(o=>o.id===f.id);if(!target||f.retiredAt!==undefined)continue;
@@ -110,6 +133,8 @@ export class WorldStore {
    return this.recap(s,player,activity.id);
   });
  }
+ async tick(){return this.locked(async s=>({time:s.engine.time,outbreaks:s.fixtures.length}));}
+ async standings(){return this.locked(async s=>Object.entries(s.engine.scores).map(([playerId,points])=>({playerId,points})).sort((a,b)=>b.points-a.points||a.playerId.localeCompare(b.playerId)).slice(0,1000));}
  async activity(player:string,id:string):Promise<EncounterRecap|null> {return this.locked(async s=>Object.hasOwn(s.activities,this.key(player,id))?this.recap(s,player,id):null);}
  private settleBonuses(s:Persisted) {
   for(const o of s.engine.targets)for(const player of o.awarded) {
