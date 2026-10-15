@@ -37,16 +37,22 @@ Set disposable `REPLAY_USERNAME`/`REPLAY_PASSWORD` matching the emulator, as des
 
 Database operations lock one world and save the engine snapshot, PostGIS footprint intervals, contributions and stable bonus attribution in one transaction using a single checked-out client. Schema initialization is serialized separately. Resets carry an explicit generation and remove only the selected world's mirrored records. The repeatable database check creates a uniquely named disposable world, verifies valid geometry, persistence through adapter restart, rollback and reset, then removes only that check's records. It uses private GPS data and is separate from ordinary unit checks.
 
-## Remaining lifecycle work
+## Implemented lifecycle and replay evidence
 
-Geographic growth, non-uniform withering, replacement scheduling, historical matching against changing shapes, disintegration/remnant geometry and field-data migration remain unfinished. The generated world currently retains the same disabled geographic growth experiment as the earlier encounter slice. PostgreSQL persistence is a foundation for this work, not proof that the complete lifecycle has been implemented.
+The authoritative store can advance geographic growth and connected, non-uniform branch removal alongside each rule tick. Accepted contact heat guides which branch withers first. Neighbours use occupied-cell exclusion and growth searches around them. Disintegration places nearby separated remnants, conserves the parent bonus budget and retains parent identity for existing records. A constrained placement can fall back to one remnant using its previous footprint.
+
+Historical shape transitions are retained as half-open timestamp intervals in the snapshot and PostGIS. GPS matching uses the footprint at the contact time. The geographic lifecycle runs in both the isolated native API and the `living-tampere` virtual scenario. Reset and replay reproduce the full scenario result, including group cleanup and replacement. The real database checks preserve changing geometry, contributions and rewards across adapter restart and rollback.
+
+Ordinary density is replenished independently of remnants. The provisional 60-minute initial replacement delay, 30-minute check interval and remnant reach now live in shared `SPATIAL_BALANCE` and persist with the world. They can be configured for new worlds without changing scoring rules. Normal native recorder replay is separate from accelerated engine time; a faithful account-owned 120-second recording/upload check confirmed 100 points.
+
+## Field migration preparation
+
+The read-only private field backup contains both existing recordings and the five-outbreak world. Its exact snapshot has been imported into a separate PostGIS namespace without advancing game time or issuing points. The importer records a source digest, is idempotent for the same source, and rejects a changed source or a populated destination.
+
+A separate spatial preview retains existing outbreak and contribution identities, history and scores, recovers the original prototype cell layouts, enables the ordinary lifecycle and adds new five-cell outbreaks to reach 20. Retained legacy footprints keep their original positions; newly generated spawns use the bounded access area. No live field cutover has been performed. See [Field migration](field-migration.md).
+
+## Remaining work
+
+Continuous contour motion, full long-running overlap/performance checks and historical treatment after retirement remain unfinished. The existing field API still uses its original file store until an atomic cutover is ready. PostgreSQL persistence and the preview are verified foundations, not completion of the full active goal.
 
 Spatial operations follow the [PostGIS documentation](https://postgis.net/docs/), and transactions follow [node-postgres's single-client transaction guidance](https://node-postgres.com/features/transactions).
-
-The geographic resize module now grows connected regions into available access cells around occupied neighbours and removes branches according to local cleaning heat while retaining a connected, hole-free contour. Its focused checks pass. It is not yet connected to authoritative lifecycle ticks or historical footprint capture; the live replay map still uses static geometry. Continuous contour animation, replacement scheduling and remnant placement remain to be implemented.
-
-The authoritative world store now captures shape versions as half-open timestamp intervals and matches activity contacts against those historical versions. Both file snapshots and PostGIS retain the same history. Checks verify that a contact before a contour transition uses the old shape and the transition timestamp uses the new shape, without rewriting earlier positions. Geographic lifecycle tick integration remains pending, so this establishes historical matching semantics rather than demonstrating a fully evolving world.
-
-Spatial lifecycle advancement is now available in the authoritative store when supplied the access-cell graph. Each minute advances the engine and captures actual contour changes. Accepted-contact heat guides connected branch removal. Disintegration places separated nearby remnants, conserves the parent bonus budget, retires the parent footprint and retains its engine identity for existing contribution/recap references. A constrained placement falls back to one remnant using the former footprint. Focused tick/geometry/bonus checks pass. Replacement spawning, continuous boundary motion, historical treatment after retirement and deployment of this lifecycle into the active replay API remain unfinished.
-
-The geographic lifecycle is now enabled in both the isolated native API and the `living-tampere` virtual scenario (`world: "tampere"`). The native API uses a separate `native-living` database namespace, preserving earlier replay snapshots. Ordinary density is replenished independently of remnants; the initial provisional schedule checks for one replacement after 60 minutes, then every 30 minutes. A five-rider private-track scenario earns 200 points per rider, clears an outbreak and creates a five-cell replacement, returning to 20 ordinary outbreaks. Reset and re-run reproduce the full result object. These scheduling values still need to join the shared configurable balance rather than remain local constants.

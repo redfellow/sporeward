@@ -1,4 +1,4 @@
-import {execFile} from 'node:child_process';
+import {execFile,spawn} from 'node:child_process';
 import {promisify} from 'node:util';
 import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import {join} from 'node:path';
@@ -30,6 +30,16 @@ async function command(action:string){
 async function fix(longitude:number,latitude:number){await adb(['emu','geo','fix',String(longitude),String(latitude)]);}
 try{
  const initial=await status();if(initial.activity&&initial.activity.status!=='finished')throw new Error('Finish the existing emulator activity first.');
+ const accountPath=process.argv.find(a=>a.startsWith('--account='))?.slice(10);
+ if(accountPath){
+  const account=JSON.parse(await readFile(accountPath,'utf8'));if(typeof account.username!=='string'||typeof account.password!=='string'||account.username.length>40||account.password.length>256)throw new Error('Invalid private replay account file.');
+  await new Promise<void>((resolve,reject)=>{
+   const args=['run-as','com.sporeward.app','sh','-c','umask 077; cat > files/sporeward-replay-account.json'];
+   const child=spawn(adbPath,['-s',serial,'shell',args.map(quote).join(' ')],{stdio:['pipe','ignore','ignore']});
+   child.on('error',()=>reject(new Error('Could not stage private emulator account.')));child.on('close',code=>code===0?resolve():reject(new Error('Could not stage private emulator account.')));child.stdin.on('error',()=>{});child.stdin.end(JSON.stringify({username:account.username,password:account.password}));
+  });
+  await command('sign-in');
+ }
  if(!process.argv.includes('--keep-world'))await command('reset-world');
  await fix(plan.first.longitude,plan.first.latitude);
  const recording=await command('start');activity=recording.activity.id;started=true;
@@ -38,7 +48,10 @@ try{
  console.log('Native replay started at 1× on '+serial+'; using today’s Android recorder clock.');
  for(const [index,event] of plan.events.entries()){
   while(performance.now()-baseline<event.at&&!interrupted)await wait(Math.min(100,event.at-(performance.now()-baseline)));
-  if(interrupted)break;maxLateness=Math.max(maxLateness,performance.now()-baseline-event.at);
+  if(interrupted)break;
+  const lateness=performance.now()-baseline-event.at;maxLateness=Math.max(maxLateness,lateness);
+  if(lateness>2000){interrupted=true;console.error('Replay stopped: scheduler fell more than 2 seconds behind. Recording preserved; automatic upload skipped.');break;}
+
   if(event.action==='fix')await fix(event.fix!.longitude,event.fix!.latitude);else await command(event.action);
   if(performance.now()-lastProgress>30000){lastProgress=performance.now();console.log(JSON.stringify({elapsedSeconds:Math.round((performance.now()-baseline)/1000),event:index+1,total:plan.events.length}));}
  }

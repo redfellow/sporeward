@@ -74,3 +74,9 @@ A normal-speed 140-second window from the private paused walk completed on the e
 The isolated native replay API now starts with the generated 20-outbreak Tampere layout. For the public access snapshot and optional PostgreSQL/PostGIS setup, see [Spatial test world](spatial-test-world.md). Accelerated scenario fixtures and living geographic lifecycle are still being integrated.
 
 Run `npm run replay -- scripts/replay/scenarios/living-tampere.json` for the generated geographic world with group cleanup and replenishment. The other definitions retain fixed fixtures for focused scoring comparisons.
+
+For an account-enabled emulator API, add `--account=work/replay/emulator-account.json` to native replay. The private file supplies a disposable username/password through ADB stdin directly into the app sandbox; a development-only loopback command invokes the real account client and deletes the temporary app file. Credentials are not placed in the intent URL. This bootstraps automation and does not establish that the interactive sign-in form has been verified.
+
+Native replay now stops if event delivery falls more than two seconds behind schedule, preserves the partial recording and skips automatic upload. It never compresses a long host stall into a burst of claimed normal-speed travel. An earlier account-owned pipeline run uploaded successfully but had a 132-second scheduler delay; it is not evidence of faithful normal-speed recording.
+
+A subsequent account-owned 120-second original TCX window completed faithfully: 102 native fixes, 641 m, one section, maximum GPS gap 1.875 s and scheduler lateness 1 ms. Upload confirmed 100 visit points and the expected tester identity. The recording remains private.

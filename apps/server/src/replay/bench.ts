@@ -1,3 +1,4 @@
+import {AccountStore} from '../accounts/store.ts';
 import {mkdir,readFile,writeFile,lstat,readdir} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {join} from 'node:path';
@@ -17,8 +18,9 @@ const auth={username:process.env.REPLAY_USERNAME??'emulator',password:process.en
 const {fixtures,access}=await tampereWorldFixtures(73,20);
 const persistence=process.env.DATABASE_URL?new PostgresWorldPersistence(process.env.DATABASE_URL,'native-living'):undefined;
 const world=new WorldStore(join(root,'world-living'),Date.now,()=>fixtures,{seed:73,allowSimulationReset:true,persistence,spatial:access.cells});
-const app=await createApp({auth,activityStore:new ActivityStore(join(root,'activities'),auth.username),worldStore:world});
-app.get('/replay/environment',async()=>({mode:'native-replay',clock:'wall',lifecycle:'geographic',seed:73,resettable:true,storage:persistence?'postgis':'files'}));
+const accounts=persistence?new AccountStore(persistence.pool,'native-living'):undefined;
+const app=await createApp({auth,accounts,...(accounts?{activityStoreFor:(player:string)=>new ActivityStore(join(root,'activities'),player)}:{activityStore:new ActivityStore(join(root,'activities'),auth.username)}),worldStore:world});
+app.get('/replay/environment',async()=>({mode:'native-replay',clock:'wall',lifecycle:'geographic',accounts:!!accounts,seed:73,resettable:true,storage:persistence?'postgis':'files'}));
 app.post('/replay/reset',async()=>{if(JSON.parse(await readFile(marker,'utf8')).kind!=='sporeward-native-replay')throw new Error('Replay marker changed.');return world.resetForSimulation();});
 await app.listen({host:'127.0.0.1',port});console.log(`Native replay API: http://127.0.0.1:${port} (isolated data; wall clock).`);
 for(const signal of ['SIGINT','SIGTERM'] as const)process.once(signal,async()=>{await app.close();await persistence?.close();process.exit();});

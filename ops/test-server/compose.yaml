@@ -13,6 +13,17 @@ services:
       PORT: "3001"
       ACTIVITY_DATA_DIR: /data/activities
       WORLD_DATA_DIR: /data/world
+      DATABASE_HOST: database
+      DATABASE_USER: sporeward
+      DATABASE_NAME: sporeward
+      DATABASE_PASSWORD: ${DB_PASSWORD:?Set a separate private DB_PASSWORD}
+      WORLD_ID: tampere-field
+      ACCOUNT_REALM: field-test
+      ACCOUNT_PRIVATE_DIR: /data/private-onboarding
+      IMPORT_LEGACY_WORLD: ${IMPORT_LEGACY_WORLD:-0}
+    depends_on:
+      database:
+        condition: service_healthy
     volumes:
       - activity-data:/data
     read_only: true
@@ -33,5 +44,21 @@ services:
       start_period: 15s
       retries: 3
 
+  database:
+    image: postgis/postgis:17-3.5
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sporeward
+      POSTGRES_USER: sporeward
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set a separate private DB_PASSWORD}
+    volumes:
+      - world-database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sporeward -d sporeward"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
 volumes:
   activity-data:
+  world-database:
