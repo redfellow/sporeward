@@ -63,3 +63,36 @@ describe('rule boundaries and replay',()=> {
   s.time=4320+20160;expect(nextVisit(s,o,'A')).toMatchObject({points:100,power:0.75,wait:0});
  });
 });
+it('credits a retired historical repeat at its diminished value without cleanup or present treatment',()=>{
+ const s=createWorld({ids:['old']}),o=s.targets[0];
+ o.history.A={count:1,last:0};o.cleared=500;o.strength=0;s.time=600;
+ const before={deadline:o.deadline,extension:o.extension};
+ expect(applyVisit(s,'old','A',{contactTime:400,historicalOnly:true})).toMatchObject({accepted:true,points:50,power:0});
+ expect(s.scores.A).toBe(50);expect(o.awarded).toEqual([]);expect(o.treatments).toEqual([]);
+ expect({deadline:o.deadline,extension:o.extension}).toEqual(before);
+ expect(applyVisit(s,'old','A',{contactTime:401,historicalOnly:true}).reason).toBe('cooldown');
+});
+
+describe('historical visit ordering',()=>{
+ it('keeps the pre-cleanup finishing group separate from post-cleanup protection arrivals',()=>{
+  const s=createWorld({ids:['old'],effort:1});applyVisit(s,'old','original');advanceWorld(s,720);
+  const o=target(s,'old');expect(o.cleared).toBe(720);
+  s.time=722;applyVisit(s,'old','protection');
+  expect(applyVisit(s,'old','late-friend',{contactTime:5}).accepted).toBe(true);
+  expect(s.scores['late-friend']).toBe(200);expect(s.scores.original).toBe(200);expect(s.scores.protection).toBe(200);
+ });
+ it('accepts an older independent visit without moving the latest cooldown backwards',()=>{
+  const s=createWorld({ids:['old'],effort:10});s.time=500;applyVisit(s,'old','rider',{contactTime:400});
+  expect(applyVisit(s,'old','rider',{contactTime:0})).toMatchObject({accepted:true,points:100,power:1});
+  const o=target(s,'old');expect(o.history.rider).toEqual({count:2,last:400});
+  expect(applyVisit(s,'old','rider',{contactTime:50}).reason).toBe('cooldown');
+  expect(applyVisit(s,'old','rider',{contactTime:760})).toMatchObject({accepted:true,points:25,power:.6});
+ });
+});
+
+it('uses historical diminished visit points before cleanup while retaining full post-cleanup points',()=>{
+ const s=createWorld({ids:['old'],effort:2});applyVisit(s,'old','rider');advanceWorld(s,11);applyVisit(s,'old','other');advanceWorld(s,720);
+ expect(target(s,'old').cleared).not.toBeNull();
+ expect(applyVisit(s,'old','rider',{contactTime:400})).toMatchObject({accepted:true,points:50,power:0});
+ expect(s.scores.rider).toBe(250);expect(target(s,'old').treatments).toEqual([]);
+});

@@ -61,7 +61,7 @@ Spatial operations follow the [PostGIS documentation](https://postgis.net/docs/)
 
 Run `node --import tsx scripts/world/check-lifecycle.mts --days=14` for an isolated, source-free geographic lifecycle check. It advances the seeded 20-outbreak world hourly, checks live/protected cell ownership for collisions, and requires at least 15 visible routing choices. The observed run maintained 20–100 visible targets, produced two generations of remnants/replacements and returned to 20 ordinary outbreaks by day 14. This checks occupied cells, not continuous polygon contour overlap.
 
-Player-facing world responses now expose remnant/disintegration/stabilization states and relevant deadlines. Remnants advertise zero visit points and their one-touch cleanup bonus.
+Player-facing world responses now expose remnant/disintegration/stabilization states and relevant deadlines. Remnants advertise zero visit points and their one-touch cleanup bonus. Historical contacts on naturally retired parents receive visit credit without a false cleanup bonus or treatment of unrelated replacements; the preserved parent contribution remains idempotent. Further historical finishing-order reconciliation and continuous contour verification remain open.
 
 ## Fractional procedural contours
 

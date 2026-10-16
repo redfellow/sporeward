@@ -12,7 +12,7 @@ import type {WorldPersistence} from './database/world.ts';
 import {mkdir,readFile,writeFile,rename,open} from 'node:fs/promises';
 import {join} from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
-import {BALANCE,createWorld,advanceWorld,applyVisit,matchContacts,pendingCleaning,type WorldState} from '@sporeward/game';
+import {BALANCE,reconcileCleanupBonuses,createWorld,advanceWorld,applyVisit,matchContacts,pendingCleaning,type WorldState} from '@sporeward/game';
 import type {ActivityChunk,ActivityReceipt,EncounterRecap,EncounterResult,WorldView} from '@sporeward/protocol';
 import {tampereTestOutbreaks,type TestOutbreak} from './test-outbreaks.ts';
 type Contribution={id:string;player:string;activityId:string;outbreakId:string;contactAt:number;visitPoints:number};
@@ -117,9 +117,10 @@ export class WorldStore {
         previous.contactAt=contact.timestamp;
         if(o.history[player]?.last===old)o.history[player].last=newTime;
         const visit=o.visits.find(v=>v.player===player&&v.time===old);if(visit)visit.time=newTime;
+        if(f.retiredAt===undefined)reconcileCleanupBonuses(s.engine,o);
        }
       } else {
-       const applied=applyVisit(s.engine,f.id,player,{contactTime:(contact.timestamp-s.startedAt)/60000});
+       const applied=applyVisit(s.engine,f.id,player,{contactTime:(contact.timestamp-s.startedAt)/60000,historicalOnly:f.retiredAt!==undefined});
        result.accepted=applied.accepted;result.reason=applied.accepted?'accepted':applied.reason==='expired'?'expired':'cooldown';result.visitPoints=applied.points;
        if(applied.accepted){
         if(f.cells){const fix=fixes.find(fix=>fix.timestamp>=contact.timestamp);if(fix){const [x,y]=tilePosition([fix.longitude,fix.latitude]),key=cellKey({x:Math.floor(x),y:Math.floor(y)});f.heat??={};f.heat[key]=(f.heat[key]??0)+applied.power;}}

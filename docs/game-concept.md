@@ -117,6 +117,9 @@ Players may upload recorded routes within 24 hours after activity completion. GP
 
 Delayed uploads can reveal that an apparently available outbreak was already cleared. Award historically earned points to the late uploader without revoking points previously granted to others, accepting that additional bonuses can increase total payouts. Attribute delayed awards to the recorded visit's month/year. Historical event ordering and leaderboard settlement details remain open; present-time cleaning is described under activity sources.
 
+For historical matching, keep the pre-destruction finishing group separate from arrivals in the post-cleanup protection window. A protection arrival does not move the earlier group's reference time. Late evidence can add qualifying group bonuses without removing existing awards. A pre-cleanup historical repeat retains its diminished visit value; only contacts recorded in the protection window receive the full protection-window visit value. An independently eligible older visit must not move the latest recorded cooldown backwards. Price it using the known visits preceding its recorded time, while retaining already granted points. Compare the six-hour boundary at timestamp precision so rounding in the simulation's minute units cannot reject an exact-boundary visit.
+
+
 ## Disintegration and remnants
 
 Unresolved outbreaks eventually enter a clearly announced "outbreak disintegrating" phase with a visible countdown, provisionally 24 hours before remnants form. Players can continue cleaning under normal effect and eligibility rules and can destroy the parent before it breaks apart. Eligible cleaning can extend the countdown within the finite lifetime extension allowance.

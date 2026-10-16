@@ -1,5 +1,5 @@
 import {afterEach,describe,it,expect} from 'vitest';
-import {mkdtemp,rm} from 'node:fs/promises';
+import {mkdtemp,rm,readFile,writeFile} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {WorldStore} from './world-store';
@@ -71,4 +71,44 @@ it('the Tampere fixture footprints include their publicly checked access paths',
  const access:[[number,number],[number,number],[number,number],[number,number],[number,number]]=[[23.7619996,61.4839089],[23.7273125,61.5003719],[23.7638238,61.5019885],[23.810108,61.5102042],[23.8013183,61.4978981]];
  const zones=tampereTestOutbreaks();expect(zones).toHaveLength(5);
  zones.forEach((zone,i)=>expect(matchContacts([{timestamp:1000,longitude:access[i][0],latitude:access[i][1],segment:1}],[{id:zone.id,ring:zone.ring,validFrom:0,validUntil:null}])).toHaveLength(1));
+});
+
+it('awards a historical retired-parent visit without granting a false cleanup bonus or touching replacements',async()=>{
+ const s=await setup(),path=join(s.dir,'world','world.json'),state=JSON.parse(await readFile(path,'utf8'));
+ const parent=state.fixtures.find((f:{id:string})=>f.id==='west'),target=state.engine.targets.find((o:{id:string})=>o.id==='west');
+ parent.retiredAt=T+100000;target.cleared=100000/60000;target.strength=0;
+ for(const footprint of state.footprints)if(footprint.id==='west')footprint.validUntil=parent.retiredAt;
+ await writeFile(path,JSON.stringify(state));s.setNow(T+20*60000);
+ const p=payload('late-parent'),receipt=activityReceipt(p.activity,p.fixes,s.clock());
+ const result=await s.world.process('late-rider',p.activity,p.fixes,receipt);
+ expect(result.encounters.find(e=>e.outbreakId==='west')).toMatchObject({accepted:true,visitPoints:100,cleanupPoints:0});
+ const saved=JSON.parse(await readFile(path,'utf8')),retired=saved.engine.targets.find((o:{id:string})=>o.id==='west');
+ expect(retired.treatments).toEqual([]);expect(retired.awarded).toEqual([]);expect(retired.strength).toBe(0);
+ const again=await s.world.process('late-rider',p.activity,p.fixes,receipt);expect(again).toEqual(result);
+});
+
+it('preserves historical finishing-group awards after protection arrivals and restart',async()=>{
+ const s=await setup(),path=join(s.dir,'world','world.json'),state=JSON.parse(await readFile(path,'utf8'));
+ for(const o of state.engine.targets){o.strength=1;o.unit=.2;}state.engine.effort=1;
+ await writeFile(path,JSON.stringify(state));const p=payload('original');s.setNow(p.activity.ended);
+ await s.world.process('original',p.activity,p.fixes,activityReceipt(p.activity,p.fixes,s.clock()));
+ s.setNow(s.clock()+12*3600000);await s.world.tick();
+ const protection=payload('protection',s.clock()+1000);s.setNow(protection.activity.ended);
+ expect((await s.world.process('protection',protection.activity,protection.fixes,activityReceipt(protection.activity,protection.fixes,s.clock()))).confirmedCleanupPoints).toBe(200);
+ const late=payload('late-friend',p.activity.started+5*60000);
+ const recap=await s.world.process('late-friend',late.activity,late.fixes,activityReceipt(late.activity,late.fixes,s.clock()));
+ expect(recap.confirmedCleanupPoints).toBe(200);
+ const restart=new WorldStore(join(s.dir,'world'),s.clock);
+ expect((await restart.activity('original','original'))!.confirmedCleanupPoints).toBe(200);
+ expect((await restart.activity('protection','protection'))!.confirmedCleanupPoints).toBe(200);
+ expect(await restart.process('late-friend',late.activity,late.fixes,activityReceipt(late.activity,late.fixes,s.clock()))).toEqual(recap);
+});
+it('accepts older independent source contacts without resetting the newest cooldown',async()=>{
+ const s=await setup(),later=payload('later',T+7*3600000);s.setNow(later.activity.ended);
+ await s.world.process('rider',later.activity,later.fixes,activityReceipt(later.activity,later.fixes,s.clock()));
+ const earlier=payload('earlier');expect((await s.world.process('rider',earlier.activity,earlier.fixes,activityReceipt(earlier.activity,earlier.fixes,s.clock()))).confirmedVisitPoints).toBe(200);
+ const blocked=payload('too-soon',T+8*3600000);s.setNow(blocked.activity.ended);
+ expect((await s.world.process('rider',blocked.activity,blocked.fixes,activityReceipt(blocked.activity,blocked.fixes,s.clock()))).encounters.every(e=>e.reason==='cooldown')).toBe(true);
+ const next=payload('next',T+13*3600000);s.setNow(next.activity.ended);
+ const result=await s.world.process('rider',next.activity,next.fixes,activityReceipt(next.activity,next.fixes,s.clock()));expect(result.encounters.map(e=>({reason:e.reason,points:e.visitPoints,at:e.contactAt}))).toEqual([{reason:'accepted',points:25,at:expect.any(Number)},{reason:'accepted',points:25,at:expect.any(Number)}]);
 });
