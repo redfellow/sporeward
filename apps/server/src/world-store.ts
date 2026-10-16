@@ -1,3 +1,4 @@
+import {outbreakView} from './outbreak-view.ts';
 import {generateOutbreaks} from './spatial/generate.ts';
 import {cellKey as spatialCellKey} from './spatial/access.ts';
 import {createOutbreak} from '@sporeward/game';
@@ -11,7 +12,7 @@ import type {WorldPersistence} from './database/world.ts';
 import {mkdir,readFile,writeFile,rename,open} from 'node:fs/promises';
 import {join} from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
-import {BALANCE,createWorld,advanceWorld,applyVisit,matchContacts,nextVisit,pendingCleaning,type WorldState} from '@sporeward/game';
+import {BALANCE,createWorld,advanceWorld,applyVisit,matchContacts,pendingCleaning,type WorldState} from '@sporeward/game';
 import type {ActivityChunk,ActivityReceipt,EncounterRecap,EncounterResult,WorldView} from '@sporeward/protocol';
 import {tampereTestOutbreaks,type TestOutbreak} from './test-outbreaks.ts';
 type Contribution={id:string;player:string;activityId:string;outbreakId:string;contactAt:number;visitPoints:number};
@@ -92,8 +93,7 @@ export class WorldStore {
  private key(player:string,id:string){return createHash('sha256').update(player+'\0'+id).digest('hex');}
  async view(player:string):Promise<WorldView> {
   return this.locked(async s=>({version:1,serverTime:this.now(),worldStartedAt:s.startedAt,outbreaks:s.fixtures.filter(f=>f.retiredAt===undefined&&(s.engine.targets.find(o=>o.id===f.id)?.cleared===null||this.now()<=s.startedAt+(s.engine.targets.find(o=>o.id===f.id)?.cleared??0)*60000+s.engine.balance.cleanupProtectionMs)).map(f=>{
-   const o=s.engine.targets.find(o=>o.id===f.id)!,next=nextVisit(s.engine,o,player,(this.now()-s.startedAt)/60000),committed=pendingCleaning(o);
-   return {id:o.id,name:f.name,ring:f.ring,spawnedAt:f.spawnedAt??s.startedAt,clearedAt:o.cleared===null?null:s.startedAt+o.cleared*60000,status:o.cleared!==null?'cleared':committed>=o.strength?'clearing':committed>0?'withering':'active',strength:o.strength,committedCleaning:committed,visitsRemaining:Math.max(0,Math.ceil((o.strength-committed)/next.power)),visitPoints:next.points,cleanupBonus:o.bonus,eligibleAt:o.history[player]?s.startedAt+o.history[player].last*60000+BALANCE.visitCooldownMs:0};
+   return outbreakView(s.engine,s.engine.targets.find(o=>o.id===f.id)!,f,player,s.startedAt,this.now());
   })}));
  }
  async process(player:string,activity:ActivityChunk['activity'],fixes:ActivityChunk['fixes'],receipt:ActivityReceipt):Promise<EncounterRecap> {
@@ -106,7 +106,7 @@ export class WorldStore {
      const f=s.fixtures.find(o=>o.id===contact.outbreakId)!,o=s.engine.targets.find(o=>o.id===f.id)!;
      const result:EncounterResult={outbreakId:f.id,name:f.name,contactAt:contact.timestamp,visitPoints:0,cleanupPoints:0,accepted:false,reason:'ineligible',contributionId:null};
      if(receipt.eligibleForGame) {
-      const previous=s.contributions.filter(v=>v.player===player&&v.outbreakId===f.id&&Math.abs(v.contactAt-contact.timestamp)<BALANCE.visitCooldownMs).sort((a,b)=>a.contactAt-b.contactAt)[0];
+      const previous=s.contributions.filter(v=>v.player===player&&v.outbreakId===f.id&&Math.abs(v.contactAt-contact.timestamp)<s.engine.balance.visitCooldownMs).sort((a,b)=>a.contactAt-b.contactAt)[0];
       if(previous) {
        const source=s.activities[this.key(player,previous.activityId)];
        const overlap=source&&activity.started<=source.ended&&activity.ended>=source.started;

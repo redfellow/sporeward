@@ -56,3 +56,17 @@ A separate spatial preview retains existing outbreak and contribution identities
 Continuous contour motion, full long-running overlap/performance checks and historical treatment after retirement remain unfinished. The existing field API still uses its original file store until an atomic cutover is ready. PostgreSQL persistence and the preview are verified foundations, not completion of the full active goal.
 
 Spatial operations follow the [PostGIS documentation](https://postgis.net/docs/), and transactions follow [node-postgres's single-client transaction guidance](https://node-postgres.com/features/transactions).
+
+## Long-running lifecycle evidence
+
+Run `node --import tsx scripts/world/check-lifecycle.mts --days=14` for an isolated, source-free geographic lifecycle check. It advances the seeded 20-outbreak world hourly, checks live/protected cell ownership for collisions, and requires at least 15 visible routing choices. The observed run maintained 20–100 visible targets, produced two generations of remnants/replacements and returned to 20 ordinary outbreaks by day 14. This checks occupied cells, not continuous polygon contour overlap.
+
+Player-facing world responses now expose remnant/disintegration/stabilization states and relevant deadlines. Remnants advertise zero visit points and their one-touch cleanup bonus.
+
+## Fractional procedural contours
+
+Ordinary outbreaks now evolve through a fractional edge cell rather than snapping a complete cell onto or off the footprint. Withering prioritises removable branches using contact heat while preserving the connected core. A selected fractional branch persists across updates. Fractions are quantized to 1/32 of a cell to bound geometric history, and deterministic per-outbreak edge rounding supplies variation without a silhouette library. At Tampere this is a few metres per step, rather than a whole level-17 cell. The map and historical matching consume the same resulting polygon.
+
+Growth, replacement and remnant placement reserve separation from other live/protected footprints. The read-only PostGIS command `node --env-file=work/replay/database.env --import tsx scripts/world/check-contours.mts` verified 1,800 polygons across ten seeds and nine growth/shrink sizes, with no invalid rings or overlaps above 0.01 square metres. The database adapter now batches only changed footprint-history rows; restart, rollback and isolated reset checks still pass.
+
+Regenerate [the interactive contour preview](visualizations/outbreak-contours.html) with `node --import tsx scripts/world/render-contours.mts`. It shows the real geometry algorithm, not an activity or scoring simulation. The mobile map adds a subtle foreground-only opacity pulse without moving the contact boundary; its timer stops when backgrounded. Full in-app lifecycle/layout verification remains open.

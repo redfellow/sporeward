@@ -1,12 +1,14 @@
 import {travelHeading} from '../recording/heading';
 import type {WorldView} from '@sporeward/protocol';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { AppState, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Map as NativeMap, Camera, type CameraRef, GeoJSONSource, Layer, type StyleSpecification } from '@maplibre/maplibre-react-native';
 import { type Fix, routeGeometry } from '../recording/model';
 const BASEMAP = 'https://tiles.openfreemap.org/styles/liberty';
 const OFFLINE_STYLE: StyleSpecification = {version:8,sources:{},layers:[{id:'background',type:'background',paint:{'background-color':'#152e26'}}]};
 export function RouteMap({fixes, activityId,world,visited,recording,fullscreen=false,bottomInset=280}:{fixes:Fix[];activityId:string | null;world:WorldView|null;visited:Set<string>;recording:boolean;fullscreen?:boolean;bottomInset?:number}) {
+ const [pulse,setPulse]=useState(1);
+ useEffect(()=>{let timer:ReturnType<typeof setInterval>|undefined;const resume=()=>{clearInterval(timer);if(fullscreen&&AppState.currentState==='active')timer=setInterval(()=>setPulse(.94+.06*Math.sin(Date.now()/1800)),2500);};resume();const sub=AppState.addEventListener('change',resume);return()=>{clearInterval(timer);sub.remove();};},[fullscreen]);
  const [selected,setSelected]=useState<string|null>(null);
  const selectedOutbreak=world?.outbreaks.find(o=>o.id===selected);
  const camera=useRef<CameraRef>(null), fitted=useRef<string|null>(null);
@@ -21,8 +23,8 @@ export function RouteMap({fixes, activityId,world,visited,recording,fullscreen=f
  },[offline,ready]);
  useEffect(()=>{setFollow(recording);followedActivity.current=null;},[activityId]);
  const route=useMemo(()=>routeGeometry(fixes),[fixes]);
- const outbreaks=useMemo(()=>({type:'FeatureCollection' as const,features:world?.outbreaks.map(o=>({type:'Feature' as const,properties:{id:o.id,visited:visited.has(o.id),unavailable:o.status==='cleared'&&o.clearedAt!==null&&Date.now()>o.clearedAt+600000||o.eligibleAt>Date.now(),clearing:o.status==='clearing',intensity:Math.max(.18,Math.min(.65,o.strength/4*.65))},geometry:{type:'Polygon' as const,coordinates:[[...o.ring,o.ring[0]]]}}))??[]}),[world,visited]);
- const labels=useMemo(()=>({type:'FeatureCollection' as const,features:world?.outbreaks.map(o=>({type:'Feature' as const,properties:{label:visited.has(o.id)?'VISITED':o.status==='cleared'?'CLEARED':o.eligibleAt>Date.now()?'WAIT':String(o.visitsRemaining)+' visits'},geometry:{type:'Point' as const,coordinates:[o.ring.reduce((n,p)=>n+p[0],0)/o.ring.length,o.ring.reduce((n,p)=>n+p[1],0)/o.ring.length]}}))??[]}),[world,visited]);
+ const outbreaks=useMemo(()=>({type:'FeatureCollection' as const,features:world?.outbreaks.map(o=>({type:'Feature' as const,properties:{id:o.id,visited:visited.has(o.id),unavailable:o.status==='cleared'&&o.clearedAt!==null&&Date.now()>o.clearedAt+600000||o.eligibleAt>Date.now(),clearing:o.status==='clearing',disintegrating:o.lifecycle==='disintegrating',remnant:o.lifecycle==='remnant',intensity:o.status==='cleared'?.12:o.lifecycle==='remnant'?.12+.45*Math.min(1,o.strength/.25):Math.max(.18,Math.min(.65,o.strength/4*.65))},geometry:{type:'Polygon' as const,coordinates:[[...o.ring,o.ring[0]]]}}))??[]}),[world,visited]);
+ const labels=useMemo(()=>({type:'FeatureCollection' as const,features:world?.outbreaks.map(o=>({type:'Feature' as const,properties:{label:visited.has(o.id)?'VISITED':o.status==='cleared'?'CLEARED':o.eligibleAt>Date.now()?'WAIT':o.lifecycle==='remnant'?'+'+o.cleanupBonus+' cleanup':o.lifecycle==='disintegrating'?'DISINTEGRATING':String(o.visitsRemaining)+' visits'},geometry:{type:'Point' as const,coordinates:[o.ring.reduce((n,p)=>n+p[0],0)/o.ring.length,o.ring.reduce((n,p)=>n+p[1],0)/o.ring.length]}}))??[]}),[world,visited]);
  const fitOutbreaks=()=>{setFollow(false);const points=world?.outbreaks.flatMap(o=>o.ring)??[];if(points.length)camera.current?.fitBounds([Math.min(...points.map(p=>p[0]))-.002,Math.min(...points.map(p=>p[1]))-.002,Math.max(...points.map(p=>p[0]))+.002,Math.max(...points.map(p=>p[1]))+.002],{padding:fullscreen?{top:180,right:30,bottom:bottomInset+50,left:30}:{top:30,right:30,bottom:30,left:30},duration:300});};
  const fit = () => {setFollow(false);if(route.bounds) camera.current?.fitBounds(route.bounds,{padding:fullscreen?{top:180,right:32,bottom:bottomInset+50,left:32}:{top:32,right:32,bottom:32,left:32},duration:300});};
  useEffect(()=> {if(ready && activityId && route.bounds && fitted.current!==activityId && !recording) {fit();fitted.current=activityId;}},[ready,activityId,route.bounds,recording]);
@@ -33,7 +35,7 @@ export function RouteMap({fixes, activityId,world,visited,recording,fullscreen=f
    onRegionWillChange={event=>{if(event.nativeEvent.userInteraction)setFollow(false);}} attribution logo={false}>
    <Camera ref={camera} initialViewState={{center:[23.761,61.498],zoom:12}} maxZoom={19}/>
    <GeoJSONSource id="outbreaks" data={outbreaks} onPress={event=>{const id=event.nativeEvent.features[0]?.properties?.id;if(typeof id==='string')setSelected(id);event.stopPropagation();}}>
-    <Layer id="outbreak-fill" type="fill" paint={{'fill-color':['case',['get','visited'],'#21dcca',['get','unavailable'],'#8a9492',['get','clearing'],'#ab9fe8','#a847de'],'fill-opacity':['get','intensity']}}/>
+    <Layer id="outbreak-fill" type="fill" paint={{'fill-color':['case',['get','visited'],'#21dcca',['get','unavailable'],'#8a9492',['get','clearing'],'#ab9fe8',['get','remnant'],'#e0b54e',['get','disintegrating'],'#ed7c48','#a847de'],'fill-opacity':['*',['get','intensity'],pulse]}}/>
     <Layer id="outbreak-edge" type="line" paint={{'line-color':['case',['get','visited'],'#70fff0',['get','unavailable'],'#a9b7af','#dca1ff'],'line-width':['case',['get','visited'],4,2]}}/>
    </GeoJSONSource>
    <GeoJSONSource id="outbreak-labels" data={labels}>
@@ -51,7 +53,8 @@ export function RouteMap({fixes, activityId,world,visited,recording,fullscreen=f
   {selectedOutbreak && <View style={[styles.detail,fullscreen&&{position:'absolute',top:160,left:12,right:12}]}>
    <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}><Text style={styles.detailTitle}>{selectedOutbreak.name}</Text><Pressable accessibilityRole="button" accessibilityLabel="Close outbreak details" onPress={()=>setSelected(null)} style={styles.button}><Text style={styles.label}>Close</Text></Pressable></View>
    <Text style={styles.label}>{visited.has(selectedOutbreak.id)?'Visited during this outing':selectedOutbreak.eligibleAt>Date.now()?'Revisit available '+new Date(selectedOutbreak.eligibleAt).toLocaleTimeString():selectedOutbreak.status==='cleared'?'Cleared':'Available'} · {selectedOutbreak.status}</Text>
-   <Text style={styles.label}>{selectedOutbreak.visitPoints} visit points + {selectedOutbreak.cleanupBonus} cleanup bonus</Text>
+   <Text style={styles.label}>{selectedOutbreak.lifecycle==='remnant'?`${selectedOutbreak.cleanupBonus} cleanup points · one touch clears this remnant`:`${selectedOutbreak.visitPoints} visit points + ${selectedOutbreak.cleanupBonus} cleanup bonus`}</Text>
+   {!!selectedOutbreak.phaseEndsAt&&<Text style={styles.label}>{selectedOutbreak.lifecycle==='disintegrating'?'Disintegrates':selectedOutbreak.lifecycle==='remnant'?'Expires':'Ready'} {new Date(selectedOutbreak.phaseEndsAt).toLocaleString()}</Text>}
    <Text style={styles.legend}>~{selectedOutbreak.visitsRemaining} visits remaining after committed cleaning</Text>
   </View>}
   {!fullscreen && <><Text style={styles.legend}>Purple: eligible outbreak · Gray: unavailable · Turquoise outline: touched during this activity · Pale purple: clearing.</Text>

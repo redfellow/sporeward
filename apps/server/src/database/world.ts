@@ -46,15 +46,20 @@ export class PostgresWorldPersistence implements WorldPersistence {
  }
  private async save(client:PoolClient,state:Persisted){
   const existing=await client.query('SELECT snapshot FROM sw_worlds WHERE id=$1',[this.worldId]);
-  if(existing.rows.length&&(existing.rows[0].snapshot.resetGeneration??0)!==(state.resetGeneration??0)){
+  const resetting=existing.rows.length&&(existing.rows[0].snapshot.resetGeneration??0)!==(state.resetGeneration??0);
+  if(resetting){
    for(const table of ['sw_bonus_owners','sw_contributions','sw_footprints'])await client.query(`DELETE FROM ${table} WHERE world_id=$1`,[this.worldId]);
   }
   await client.query('INSERT INTO sw_worlds(id,snapshot,updated_at) VALUES($1,$2,$3) ON CONFLICT(id) DO UPDATE SET snapshot=EXCLUDED.snapshot,updated_at=EXCLUDED.updated_at',[this.worldId,state,this.now()]);
   if(state.footprints){
-   for(const footprint of state.footprints){
-    const ring=[...footprint.ring,footprint.ring[0]],fingerprint=createHash('sha256').update(JSON.stringify(ring)).digest('hex');
-    await client.query('INSERT INTO sw_footprints(world_id,outbreak_id,valid_from,valid_until,shape,fingerprint) VALUES($1,$2,$3,$4,ST_SetSRID(ST_GeomFromGeoJSON($5),4326),$6) ON CONFLICT(world_id,outbreak_id,valid_from) DO UPDATE SET valid_until=EXCLUDED.valid_until,shape=EXCLUDED.shape,fingerprint=EXCLUDED.fingerprint',[this.worldId,footprint.id,footprint.validFrom,footprint.validUntil,JSON.stringify({type:'Polygon',coordinates:[ring]}),fingerprint]);
-   }
+   const previous=new Map<string,NonNullable<Persisted['footprints']>[number]>((resetting?[]:existing.rows[0]?.snapshot.footprints??[]).map((f:NonNullable<Persisted['footprints']>[number])=>[f.id+':'+f.validFrom,f]));
+   const changed=state.footprints.filter(f=>{const old=previous.get(f.id+':'+f.validFrom);return !old||old.validUntil!==f.validUntil||JSON.stringify(old.ring)!==JSON.stringify(f.ring);}).map(f=>{
+    const ring=[...f.ring,f.ring[0]];return {id:f.id,from:f.validFrom,until:f.validUntil,shape:{type:'Polygon',coordinates:[ring]},fingerprint:createHash('sha256').update(JSON.stringify(ring)).digest('hex')};
+   });
+   if(changed.length)await client.query(`INSERT INTO sw_footprints(world_id,outbreak_id,valid_from,valid_until,shape,fingerprint)
+    SELECT $1,p.id,p."from",p.until,ST_SetSRID(ST_GeomFromGeoJSON(p.shape::text),4326),p.fingerprint
+    FROM jsonb_to_recordset($2::jsonb) AS p(id text,"from" bigint,until bigint,shape jsonb,fingerprint text)
+    ON CONFLICT(world_id,outbreak_id,valid_from) DO UPDATE SET valid_until=EXCLUDED.valid_until,shape=EXCLUDED.shape,fingerprint=EXCLUDED.fingerprint`,[this.worldId,JSON.stringify(changed)]);
   }
   for(const fixture of state.footprints?[]:state.fixtures){
    const ring=[...fixture.ring,fixture.ring[0]],fingerprint=createHash('sha256').update(JSON.stringify(ring)).digest('hex');
