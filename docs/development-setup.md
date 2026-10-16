@@ -148,6 +148,10 @@ The tests found and fixed native intent routing, concurrent SQLite writers, and 
 
 The standalone field APK also passed cold-launch Finish: the requested outing was saved before automatic recovery could create another section, and its GPS foreground service and recording notification were absent afterward. The final standalone APK was installed as an update on the Fold5. The emulator was returned to the development client for subsequent Fast Refresh work.
 
+## Tester session recovery
+
+On account-enabled servers, sign in once before heading out. A saved account keeps ownership of offline recordings even if its session expires during an outing. Setup retains the account name and offers **Sign in again**; pending uploads wait for a valid session and keep their local GPS data. Signing out is blocked during an unfinished outing. After signing into another account, only that account's outings, cached world and score should appear. Development gateway credentials are separate from these personal sessions.
+
 ## First outbreak encounter
 
 The app now loads a persistent five-zone Tampere test world, shows activity-specific contacts and a provisional tally, and obtains a confirmed recap through finished-activity uploads. See [First outbreak encounter](first-outbreak-encounter.md) for locations, implemented rules, API persistence and the field checklist. Cached map data works offline; changes to shared world state are applied when the activity is uploaded.

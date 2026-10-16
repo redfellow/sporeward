@@ -1,6 +1,7 @@
 export interface HealthResponse {
 	readonly service: "sporeward";
 	readonly status: "ok";
+ readonly accounts?: boolean;
 }
 
 // Add runtime validation when activity and outbreak API contracts are defined.

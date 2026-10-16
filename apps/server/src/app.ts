@@ -74,6 +74,6 @@ export async function createApp(options: AppOptions = {}): Promise<FastifyInstan
    const recap=await world.activity(player(req),req.params.id);return recap??reply.code(404).send({error:'Activity has not been processed.'});
   });
  }
- app.get('/health',async():Promise<HealthResponse>=>({service:'sporeward',status:'ok'}));
+ app.get('/health',async():Promise<HealthResponse>=>({service:'sporeward',status:'ok',accounts:!!options.accounts}));
  return app;
 }

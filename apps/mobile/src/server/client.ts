@@ -25,6 +25,8 @@ export async function checkConnection(c:Credentials,request:HealthRequest=fetch,
   let body:unknown;
   try {body=await response.json();} catch {throw new ConnectionError('The server returned an unexpected response.');}
   if(typeof body!=='object'||body===null||!('service' in body)||body.service!=='sporeward'||!('status' in body)||body.status!=='ok') throw new ConnectionError('The server returned an unexpected response.');
+  if('accounts' in body&&typeof body.accounts!=='boolean')throw new ConnectionError('The server returned an unexpected response.');
+  return {accounts:'accounts' in body&&body.accounts===true};
  } catch(e) {
   if(e instanceof ConnectionError) throw e;
   throw new ConnectionError(controller.signal.aborted?'Connection timed out. Recording can continue offline.':'Cannot reach the test server. Recording can continue offline.');

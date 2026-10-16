@@ -45,6 +45,18 @@ describe('automatic score confirmation',()=>{
    expect(uploadNotification).toHaveBeenLastCalledWith(0,0,false,true);
   }finally{vi.clearAllTimers();vi.useRealTimers();Object.assign(AppState,{currentState:'background'});}
  });
+ it('keeps an expired account outing pending without sending an unauthenticated upload',async()=>{
+  f.credentials.mockResolvedValue({username:'gateway',password:'test',playerId:'rider'});
+  const {syncActivity}=await import('../apps/mobile/src/server/sync');
+  await expect(syncActivity('outing')).rejects.toThrow('Sign in to your tester account again');
+  expect(f.upload).not.toHaveBeenCalled();expect(f.mark).toHaveBeenLastCalledWith('outing','pending',null,expect.stringContaining('Sign in'));
+ });
+ it('can still read an already confirmed receipt after session expiry',async()=>{
+  f.credentials.mockResolvedValue({username:'gateway',password:'test',playerId:'rider'});
+  f.state.mockResolvedValue({state:'uploaded',receipt:JSON.stringify(receipt)});
+  const {syncActivity}=await import('../apps/mobile/src/server/sync');
+  expect(await syncActivity('outing')).toEqual(receipt);expect(f.upload).not.toHaveBeenCalled();expect(f.mark).not.toHaveBeenCalled();
+ });
  it('neither uploads nor changes the outbox for another owner',async()=>{
   const {syncActivity}=await import('../apps/mobile/src/server/sync');f.owner.mockRejectedValue(new Error('wrong owner'));
   await expect(syncActivity('outing')).rejects.toThrow();expect(f.upload).not.toHaveBeenCalled();expect(f.mark).not.toHaveBeenCalled();

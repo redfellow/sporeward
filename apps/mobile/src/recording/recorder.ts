@@ -1,5 +1,5 @@
 import {syncPendingActivities} from '../server/sync';
-import {savedSession} from '../server/session';
+import {recordingIdentity} from '../server/session';
 import {SERVER_URL} from '../server/client';
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
@@ -44,7 +44,7 @@ export async function start(resume = false) {
  replayGpsSuspended=false;
  await permissions();
  const notificationsAllowed=await requestNotificationPermission();
- if (resume) await store.transition('recording'); else await store.begin((await savedSession(true))?.tester.id??'legacy-local');
+ if (resume) await store.transition('recording'); else await store.begin(await recordingIdentity());
  try { await startService(); await store.event(resume ? 'Recording resumed.' : 'Recording started.'); await store.diagnostic('service-start',{resume,notificationsAllowed}); await updateNotification(true); if(!notificationsAllowed) await store.event('Recording started; notifications are disabled. Enable them in Android settings for recording controls.'); }
  catch (e) { await store.transition('paused'); throw e; }
 }

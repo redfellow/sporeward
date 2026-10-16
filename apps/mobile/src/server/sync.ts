@@ -28,6 +28,7 @@ export function syncActivity(id:string,progress:Progress=()=>{}):Promise<Activit
    await store.assertOwner(id,credentials.playerId??'legacy-local');
    const saved=await store.uploadState(id);
    if(saved?.state==='uploaded'&&saved.receipt)return JSON.parse(saved.receipt) as ActivityReceipt;
+   if(credentials.playerId&&!credentials.session)throw new ConnectionError('Sign in to your tester account again to upload. Your recording remains saved.');
    const activity=await store.activity(id);
    if(!activity||activity.status!=='finished'||activity.ended===null)throw new ConnectionError('Finish the activity before uploading.');
    await store.markUpload(id,'pending');

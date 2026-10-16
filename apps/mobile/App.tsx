@@ -7,7 +7,7 @@ import {replayCommand,applyReplayCommand,publishReplayStatus,restoreReplayContro
 import {useWorld} from './src/server/use-world';
 import {previewEncounters} from './src/recording/encounters';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, Linking, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AppState, Linking, Alert, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { File, Paths } from 'expo-file-system';
@@ -28,10 +28,12 @@ export default function App() {
  const [segments,setSegments] = useState<Segment[]>([]);
  const [identityGeneration,setIdentityGeneration]=useState(0);
  const [hudHeight,setHudHeight]=useState(260);
+ const compact=useWindowDimensions().width<380;
  const [screen,setScreen]=useState<'map'|'details'|'recap'>('map');
  const [message,setMessage] = useState('Ready for a recording test.');
  const [busy,setBusy] = useState(false);
  const [details,setDetails]=useState(false);
+ const recordingActive=useRef(false);
  const operation = useRef(false), selectedId=useRef<string|null>(null);
  const handledNotificationActions=useRef(new Set<string>());
  const encounterWorld=useWorld(displayed?.id??null);
@@ -42,6 +44,7 @@ export default function App() {
   const a = await store.current(), list = await store.recent(owner);
   const shown = a ?? list.find(item=>item.id===selectedId.current) ?? list[0] ?? null;
   const [p,s]=shown ? await Promise.all([store.points(shown.id),store.segments(shown.id)]) : [[],[]];
+  recordingActive.current=a?.status==='recording';
   setActivity(a);setHistory(list);setDisplayed(shown);setFixes(p);setSegments(s);
   const e = await store.lastEvent(); if(e) setMessage(e.message);
   await publishReplayStatus();
@@ -76,7 +79,7 @@ export default function App() {
   };
   void initialize();
   let foregroundTimer:ReturnType<typeof setTimeout>|undefined;
-  const timer = setInterval(()=> { if(AppState.currentState==='active') void update(); },2000);
+  const timer = setInterval(()=> { if(AppState.currentState==='active'&&recordingActive.current) void update(); },2000);
   const sub = AppState.addEventListener('change', state=> {void store.diagnostic('app-state',{state});if(state==='active') {clearTimeout(foregroundTimer);foregroundTimer=setTimeout(()=>void update(),250);}});
   return ()=> {alive=false;clearInterval(timer);clearTimeout(foregroundTimer);sub.remove();};
  },[]);
@@ -108,25 +111,30 @@ export default function App() {
  function exportPrompt(a:store.Activity) { Alert.alert('Export GPS route?', 'This file contains precise locations and timestamps. Choose where to save or share it.',[{text:'Cancel'},{text:'Export',onPress:()=>void run(()=>exportActivity(a))}]); }
  const button = (label:string, action:()=>Promise<unknown>) => <Pressable accessibilityRole="button" disabled={busy} style={[styles.button,busy && {opacity:0.5}]} onPress={()=>void run(action)}><Text style={styles.buttonText}>{label}</Text></Pressable>;
  if(screen==='recap'&&displayed?.status==='finished')return <SafeAreaProvider><SafeAreaView style={styles.screen}><StatusBar style="light"/><OutingRecap activity={displayed} distance={stats.meters} elapsed={duration(recordingDuration(segments,Date.now()))} recap={encounterWorld.recap} provisional={encounterPreview.provisionalPoints} touched={encounterPreview.visited.size} onMap={()=>setScreen('map')} onUploaded={receipt=>{if(receipt.encounters)encounterWorld.acceptRecap(receipt.encounters);void encounterWorld.refresh();}}/></SafeAreaView></SafeAreaProvider>;
- if(screen==='map')return <SafeAreaProvider><SafeAreaView style={styles.screen}><StatusBar style="light"/>
+ if(screen==='map')return <SafeAreaProvider><SafeAreaView style={styles.screen}><StatusBar style="light"/><View style={{flex:1}}>
   <RouteMap fixes={fixes} activityId={displayed?.id??null} world={encounterWorld.world} visited={encounterPreview.visited} recording={activity?.status==='recording'} fullscreen bottomInset={hudHeight}/>
   <View style={styles.gameTop} pointerEvents="box-none"><View style={styles.gamePanel}>
-   <View style={styles.gameRow}><Text style={styles.gameTitle}>Sporeward</Text><Pressable accessibilityRole="button" onPress={()=>setScreen('details')} style={styles.gameMenu}><Text style={styles.secondaryText}>Outings & setup</Text></Pressable></View>
+   <View style={styles.gameRow}><Text style={[styles.gameTitle,compact&&{fontSize:22}]}>Sporeward</Text><Pressable accessibilityRole="button" onPress={()=>setScreen('details')} style={styles.gameMenu}><Text style={styles.secondaryText}>{compact?'Menu':'Outings & setup'}</Text></Pressable></View>
    <Text style={styles.state}>{activity?.status.toUpperCase()??'EXPLORE · PLAN · CLEAN'}</Text>
    <Text style={styles.body}>{encounterWorld.world?.outbreaks.filter(o=>o.status!=='cleared').length??'—'} outbreaks nearby · choose your detour</Text>
+   {!encounterWorld.status.startsWith('Map updated')&&<Text style={styles.body} accessibilityLiveRegion="polite">{encounterWorld.status}</Text>}
   </View></View>
   <View style={styles.gameBottom} onLayout={event=>setHudHeight(Math.ceil(event.nativeEvent.layout.height)+24)}><View style={styles.gameRow}>
-   <Text style={styles.distance}>{(stats.meters/1000).toFixed(2)} <Text style={styles.metric}>km</Text></Text>
-   <View><Text style={styles.gameScore}>{encounterWorld.recap?encounterWorld.recap.confirmedVisitPoints+encounterWorld.recap.confirmedCleanupPoints:encounterPreview.provisionalPoints} pts</Text><Text style={styles.body}>{encounterWorld.recap?'Confirmed':'Provisional'} · {encounterPreview.visited.size} touched</Text></View>
+   <Text style={[styles.distance,compact&&{fontSize:32}]}>{(stats.meters/1000).toFixed(2)} <Text style={styles.metric}>km</Text></Text>
+   <View style={{flexShrink:1}}><Text style={styles.gameScore}>{encounterWorld.recap?encounterWorld.recap.confirmedVisitPoints+encounterWorld.recap.confirmedCleanupPoints:encounterPreview.provisionalPoints} pts</Text><Text style={styles.body}>{encounterWorld.recap?'Confirmed':'Provisional'} · {encounterPreview.visited.size} touched</Text></View>
   </View><Text style={styles.metric}>{duration(recordingDuration(segments,Date.now()))}{activity?.status==='paused'?' · Paused':''}</Text>
    {encounterWorld.recap?.pendingCleanupPoints? <Text style={styles.body}>+{encounterWorld.recap.pendingCleanupPoints} possible cleanup points pending</Text>:null}
    <View style={styles.actions}>{!activity?button('Start outing',()=>recorder.start()):<>{activity.status==='recording'?button('Pause',()=>recorder.pause()):button('Resume',()=>recorder.start(true))}{button('Finish',async()=>{await recorder.pause(true);setScreen('recap');})}</>}</View>
    {!activity&&displayed?.status==='finished'&&<Pressable accessibilityRole="button" onPress={()=>setScreen('recap')} style={styles.gameMenu}><Text style={styles.secondaryText}>View outing recap</Text></Pressable>}
   </View>
- </SafeAreaView></SafeAreaProvider>;
+ </View></SafeAreaView></SafeAreaProvider>;
  return <SafeAreaProvider><SafeAreaView style={styles.screen}><StatusBar style="light"/><ScrollView contentContainerStyle={styles.content}>
   <Pressable accessibilityRole="button" onPress={()=>setScreen('map')} style={styles.secondary}><Text style={styles.secondaryText}>Back to map</Text></Pressable><Text style={styles.title}>Sporeward</Text><Text style={styles.subtitle}>Outbreak field test</Text>
-  <Text style={styles.body}>Touch purple outbreaks. Upload your finished outing to confirm points.</Text>
+  <Text style={styles.body}>Choose a detour, push back the spores, and finish your outing to confirm your score.</Text>
+  <TesterAccount disabled={!!activity} onChanged={()=>{setIdentityGeneration(n=>n+1);selectedId.current=null;setDisplayed(null);setHistory([]);setFixes([]);setSegments([]);void refresh();void encounterWorld.resetIdentity();}}/>
+  <ServerConnection locked={!!activity} onChanged={()=>void encounterWorld.refresh()}/>
+  <TesterScores key={identityGeneration}/>
+
   <View style={styles.actions}>{!activity ? button('Start recording',()=>recorder.start()) : <>{activity.status==='recording' ? button('Pause',()=>recorder.pause()) : button('Resume',()=>recorder.start(true))}{button('Finish & save',()=>recorder.pause(true))}</>}</View>
   <View style={styles.card}><Text style={styles.state}>{activity?.status.toUpperCase() ?? (displayed ? 'ACTIVITY RECAP' : 'READY')}</Text>
    {displayed && !activity && <Text style={styles.body}>{new Date(displayed.started).toLocaleString()}</Text>}
@@ -143,17 +151,14 @@ export default function App() {
    </>}
 
   </View>
-  <RouteMap fixes={fixes} activityId={displayed?.id ?? null} world={encounterWorld.world} visited={encounterPreview.visited} recording={activity?.status==='recording'}/>
+  {details&&<RouteMap fixes={fixes} activityId={displayed?.id ?? null} world={encounterWorld.world} visited={encounterPreview.visited} recording={activity?.status==='recording'}/>}
   <Text style={styles.body}>{encounterWorld.status}</Text>
   <Pressable accessibilityRole="button" style={styles.secondary} onPress={()=>void encounterWorld.refresh()}><Text style={styles.secondaryText}>Refresh outbreaks & recap</Text></Pressable>
-  {encounterWorld.world && <View style={styles.card}><Text style={styles.metric}>Test outbreaks</Text>{encounterWorld.world.outbreaks.map(o=><Text key={o.id} style={styles.body}>{o.name}{encounterPreview.visited.has(o.id)?' · touched':''}: {o.status==='cleared'?`cleared${o.clearedAt!==null&&Date.now()<=o.clearedAt+600000?' · 10-minute protection window':''}`:`${o.visitPoints} + ${o.cleanupBonus} bonus · ~${o.visitsRemaining} visits · ${o.status}`}{o.eligibleAt>Date.now()?` · revisit ${new Date(o.eligibleAt).toLocaleTimeString()}`:''}</Text>)}</View>}
+  {details&&encounterWorld.world && <View style={styles.card}><Text style={styles.metric}>Test outbreaks</Text>{encounterWorld.world.outbreaks.map(o=><Text key={o.id} style={styles.body}>{o.name}{encounterPreview.visited.has(o.id)?' · touched':''}: {o.status==='cleared'?`cleared${o.clearedAt!==null&&Date.now()<=o.clearedAt+600000?' · 10-minute protection window':''}`:`${o.visitPoints} + ${o.cleanupBonus} bonus · ~${o.visitsRemaining} visits · ${o.status}`}{o.eligibleAt>Date.now()?` · revisit ${new Date(o.eligibleAt).toLocaleTimeString()}`:''}</Text>)}</View>}
   {encounterWorld.recap?.encounters.map(e=><Text key={e.outbreakId} style={styles.body}>{e.name}: {e.visitPoints+e.cleanupPoints} confirmed points · {e.reason}{e.cleanupPoints?' · cleanup bonus':''}</Text>)}
   {displayed?.status==='finished' && <Pressable accessibilityRole="button" disabled={busy} style={styles.secondary} onPress={()=>exportPrompt(displayed)}><Text style={styles.secondaryText}>Export this activity</Text></Pressable>}
   <Text style={styles.body}>Target: one fix per second. Android may deliver fixes in batches. Pause stops GPS collection; resumed sections stay separate.</Text>
   {displayed?.status==='finished' && <ActivityUpload key={displayed.id} activity={displayed} onUploaded={receipt=>{if(receipt.encounters)encounterWorld.acceptRecap(receipt.encounters);void encounterWorld.refresh();}}/>}
-  <TesterScores key={identityGeneration}/>
-  <TesterAccount disabled={!!activity} onChanged={()=>{setIdentityGeneration(n=>n+1);selectedId.current=null;setDisplayed(null);setHistory([]);setFixes([]);setSegments([]);void refresh();void encounterWorld.resetIdentity();}}/>
-  <ServerConnection onChanged={()=>void encounterWorld.refresh()}/>
   <Text style={styles.heading}>Recent saved activities</Text>
   {history.filter(a=>a.status==='finished').map(a=><Pressable key={a.id} disabled={busy || !!activity} style={styles.card} onPress={()=>void run(async()=>{selectedId.current=a.id;})} accessibilityRole="button"><Text style={styles.metric}>{new Date(a.started).toLocaleString()}</Text><Text style={styles.body}>{activity ? 'Finish recording to review this activity' : 'View route and recap'}</Text></Pressable>)}
   {!history.some(a=>a.status==='finished') && <Text style={styles.body}>Finish your first test to keep its recording here.</Text>}

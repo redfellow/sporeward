@@ -5,17 +5,17 @@ import {loadCredentials} from './credentials';
 import {fetchWorld,fetchRecap} from './world';
 import * as store from '../recording/store';
 export function useWorld(activityId:string|null) {
- const [world,setWorld]=useState<WorldView|null>(null),[recap,setRecap]=useState<EncounterRecap|null>(null),[status,setStatus]=useState('Configure tester credentials to load outbreaks.');
+ const [world,setWorld]=useState<WorldView|null>(null),[recap,setRecap]=useState<EncounterRecap|null>(null),[status,setStatus]=useState('Open Menu to connect and sign in.');
  const busy=useRef(false),generation=useRef(0),mounted=useRef(true),owner=useRef<string|null>(null);
  const refresh=useCallback(async()=>{
   if(busy.current)return;busy.current=true;const token=generation.current;
   const valid=()=>mounted.current&&generation.current===token;
   try {
    const credentials=await loadCredentials();if(!valid())return;
-   if(!credentials){owner.current=null;setWorld(null);setStatus('Configure tester credentials to load outbreaks.');return;}
+   if(!credentials){owner.current=null;setWorld(null);setStatus('Open Menu to connect and sign in.');return;}
    const player=credentials.playerId??credentials.username;
    if(owner.current!==player){owner.current=player;setRecap(null);const cached=await store.cachedWorld(player);if(valid())setWorld(cached?parseWorldView(cached):null);}
-   const snapshot=await fetchWorld(credentials);if(!valid())return;await store.cacheWorld(player,snapshot);setWorld(snapshot);setStatus(`Map updated ${new Date(snapshot.serverTime).toLocaleTimeString()}.`);
+   const snapshot=await fetchWorld(credentials);if(!valid())return;await store.cacheWorld(player,snapshot);if(!valid())return;setWorld(snapshot);setStatus(`Map updated ${new Date(snapshot.serverTime).toLocaleTimeString()}.`);
    if(activityId){const uploaded=await store.uploadState(activityId);if(uploaded?.state==='uploaded') {const confirmed=await fetchRecap(activityId,credentials);if(valid()){setRecap(confirmed);const old=uploaded.receipt?JSON.parse(uploaded.receipt):{};await store.markUpload(activityId,'uploaded',{...old,encounters:confirmed});}}}
   }catch(e){if(valid())setStatus(e instanceof Error?e.message:'Could not update outbreaks.');}finally{busy.current=false;}
  },[activityId]);

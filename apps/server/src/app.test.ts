@@ -12,7 +12,7 @@ test("health is available without an external database or network listener", asy
 	app = await createApp();
 	const response = await app.inject({ method: "GET", url: "/health" });
 	expect(response.statusCode).toBe(200);
-	expect(response.json()).toEqual({ service: "sporeward", status: "ok" });
+	expect(response.json()).toEqual({ service: "sporeward", status: "ok", accounts: false });
 });
 
 test('network API rejects missing, invalid, and malformed credentials before routing',async()=> {

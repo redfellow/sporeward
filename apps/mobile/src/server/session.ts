@@ -9,6 +9,12 @@ export function parseSession(value:unknown):TesterSession{
  return s;
 }
 export async function savedSession(includeExpired=false){const raw=await SecureStore.getItemAsync(KEY);if(!raw)return null;const session=parseSession(JSON.parse(raw));return includeExpired||session.expiresAt>Date.now()?session:null;}
+export async function rememberAccountMode(required:boolean){await SecureStore.setItemAsync(KEY+'.accounts',required?'1':'0');}
+export async function recordingIdentity(){
+ const session=await savedSession(true);if(session)return session.tester.id;
+ if(await SecureStore.getItemAsync(KEY+'.accounts')==='1')throw new ConnectionError('Sign in to your tester account before starting an outing.');
+ return 'legacy-local';
+}
 export async function clearSession(){await SecureStore.deleteItemAsync(KEY);}
 async function accountRequest(path:string,c:Credentials,body:unknown,token?:string){
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
@@ -17,6 +23,6 @@ async function accountRequest(path:string,c:Credentials,body:unknown,token?:stri
   const result=await response.json();if(!response.ok)throw new ConnectionError(typeof result.error==='string'?result.error:'Account request failed.');return result;
  }catch(e){if(e instanceof ConnectionError)throw e;throw new ConnectionError('Cannot reach the account server. Your recordings remain saved.');}finally{clearTimeout(timer);}
 }
-export async function signIn(c:Credentials,username:string,password:string){const session=parseSession(await accountRequest('login',c,{username,password}));await SecureStore.setItemAsync(KEY,JSON.stringify(session));return session;}
+export async function signIn(c:Credentials,username:string,password:string){const session=parseSession(await accountRequest('login',c,{username,password}));await SecureStore.setItemAsync(KEY,JSON.stringify(session));await rememberAccountMode(true);return session;}
 export async function redeemInvite(c:Credentials,invite:string,username:string,name:string,password:string){await accountRequest('register',c,{invite,username,name,password});return signIn(c,username,password);}
 export async function signOut(c:Credentials){const session=await savedSession();if(session)await accountRequest('logout',c,{},session.token);await clearSession();}
