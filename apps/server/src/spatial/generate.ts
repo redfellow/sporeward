@@ -3,7 +3,7 @@ import type {Coordinate} from '@sporeward/protocol';
 import {cellKey,neighbours,type AccessibleCell,type Cell} from './access.ts';
 export type SpatialOutbreak={id:string;name:string;cells:Cell[];ring:Coordinate[];accessWay:number;partial?:PartialCell};
 export function generateOutbreaks(access:AccessibleCell[],seed=73,count=20,blocked:ReadonlySet<string>=new Set()):SpatialOutbreak[]{
- if(!Number.isSafeInteger(count)||count<1||count>25||!Number.isInteger(seed))throw new Error('Invalid spawn settings.');
+ if(!Number.isSafeInteger(count)||count<1||count>1000||!Number.isInteger(seed))throw new Error('Invalid spawn settings.');
  let rng=seed>>>0;const random=()=>{rng=(Math.imul(rng,1664525)+1013904223)>>>0;return rng/4294967296;};
  const available=new Map(access.map(c=>[cellKey(c),c])),occupied=new Set<string>(blocked),result:SpatialOutbreak[]=[];
  const candidates=[...access].sort((a,b)=>a.x-b.x||a.y-b.y);

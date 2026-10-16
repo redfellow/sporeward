@@ -1,8 +1,11 @@
 import {mkdir,writeFile} from 'node:fs/promises';
 import {gzipSync} from 'node:zlib';
-const bounds={west:23.728,south:61.4745,east:23.822,north:61.5195};
+const region=process.argv.includes('--region');
+const bounds=region?{west:23.38,south:61.38,east:24.20,north:61.62}:{west:23.728,south:61.4745,east:23.822,north:61.5195};
+const output=region?'tampere-region-access.json.gz':'tampere-access.json.gz';
 let ways:any[],snapshot:string;
 if(process.argv.includes('--osm-api')){
+ if(region)throw new Error('Use Overpass for the regional extract; the editing API fallback is restricted to the small baseline area.');
  const elements=new Map<string,any>();
  // Small bounded extracts stay below the public API's 50,000-node limit.
  for(let y=0;y<3;y++)for(let x=0;x<3;x++){
@@ -28,5 +31,5 @@ if(process.argv.includes('--osm-api')){
 const keys=['highway','access','foot','bicycle','construction','proposed','service'];
 ways=ways.map(w=>({...w,tags:Object.fromEntries(keys.filter(k=>w.tags[k]!==undefined).map(k=>[k,w.tags[k]]))})).sort((a,b)=>a.id-b.id);
 const directory=new URL('../../apps/server/data/',import.meta.url);await mkdir(directory,{recursive:true});
-await writeFile(new URL('tampere-access.json.gz',directory),gzipSync(JSON.stringify({version:1,bounds,source:'https://www.openstreetmap.org',license:'ODbL-1.0',attribution:'© OpenStreetMap contributors',snapshot,ways})));
+await writeFile(new URL(output,directory),gzipSync(JSON.stringify({version:1,bounds,source:'https://www.openstreetmap.org',license:'ODbL-1.0',attribution:'© OpenStreetMap contributors',snapshot,ways})));
 console.log(JSON.stringify({ways:ways.length,bounds,snapshot}));
