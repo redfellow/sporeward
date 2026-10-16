@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "id": "cycling-cooperation",
+  "baseline": "2026-10-14T08:00:00Z",
+  "seed": 73,
+  "players": [
+    {
+      "id": "rider-a",
+      "name": "Rider A"
+    },
+    {
+      "id": "rider-b",
+      "name": "Rider B"
+    },
+    {
+      "id": "rider-c",
+      "name": "Rider C"
+    },
+    {
+      "id": "rider-d",
+      "name": "Rider D"
+    },
+    {
+      "id": "rider-e",
+      "name": "Rider E"
+    }
+  ],
+  "rides": [
+    {
+      "id": "cycling-0",
+      "player": "rider-a",
+      "track": "../../../work/replay/catalog-cycle-pauses.json",
+      "offsetMs": 0,
+      "uploadDelayMs": 0,
+      "retries": 2
+    },
+    {
+      "id": "cycling-1",
+      "player": "rider-b",
+      "track": "../../../work/replay/catalog-cycle-pauses.json",
+      "offsetMs": 60000,
+      "uploadDelayMs": 0,
+      "retries": 2
+    },
+    {
+      "id": "cycling-2",
+      "player": "rider-c",
+      "track": "../../../work/replay/catalog-cycle-pauses.json",
+      "offsetMs": 120000,
+      "uploadDelayMs": 0,
+      "retries": 2
+    },
+    {
+      "id": "cycling-3",
+      "player": "rider-d",
+      "track": "../../../work/replay/catalog-cycle-pauses.json",
+      "offsetMs": 180000,
+      "uploadDelayMs": 0,
+      "retries": 2
+    },
+    {
+      "id": "cycling-4",
+      "player": "rider-e",
+      "track": "../../../work/replay/catalog-cycle-pauses.json",
+      "offsetMs": 240000,
+      "uploadDelayMs": 1800000,
+      "retries": 2
+    }
+  ],
+  "settleMs": 46800000,
+  "world": "tampere"
+}

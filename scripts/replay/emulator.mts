@@ -22,14 +22,19 @@ const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
 async function status(){const raw=await shell(['run-as','com.sporeward.app','cat','files/sporeward-replay-status.json']);const value=JSON.parse(raw);if(value.version!==1||!/^http:\/\/127\.0\.0\.1:[0-9]+$/.test(value.server))throw new Error('Emulator needs the replay-enabled development build and isolated loopback API.');return value;}
 async function command(action:string){
  const request=randomBytes(16).toString('hex'),url=new URL('sporeward://replay/'+action);url.searchParams.set('session',session);url.searchParams.set('request',request);if(activity)url.searchParams.set('activity',activity);
- await shell(['am','start','-a','android.intent.action.VIEW','-d',url.toString(),'com.sporeward.app']);
- const deadline=Date.now()+20000;
- while(Date.now()<deadline){try{const value=await status();if(value.control.request===request){if(value.control.error)throw new Error(value.control.error);return value;}}catch(e){if(e instanceof Error&&!(e.message.includes('ENOENT')||e.message.includes('JSON')||e.message.includes('No such file')))throw e;}await wait(150);}
+ const dispatch=()=>shell(['am','start','-a','android.intent.action.VIEW','-d',url.toString(),'com.sporeward.app']);
+ await dispatch();let nextDispatch=Date.now()+2000;
+ const deadline=Date.now()+60000;
+ while(Date.now()<deadline){if(Date.now()>=nextDispatch){await dispatch();nextDispatch=Date.now()+2000;}try{const value=await status();if(value.control.request===request){if(value.control.error)throw new Error(value.control.error);return value;}}catch(e){if(e instanceof Error&&!(e.message.includes('ENOENT')||e.message.includes('JSON')||e.message.includes('No such file')))throw e;}await wait(150);}
  throw new Error('Native replay command timed out: '+action);
 }
 async function fix(longitude:number,latitude:number){await adb(['emu','geo','fix',String(longitude),String(latitude)]);}
 try{
  const initial=await status();if(initial.activity&&initial.activity.status!=='finished')throw new Error('Finish the existing emulator activity first.');
+ const metroPort=Number(process.argv.find(a=>a.startsWith('--metro-port='))?.slice(13)??8081);
+ if(!Number.isInteger(metroPort)||metroPort<1||metroPort>65535)throw new Error('Invalid Metro port.');
+ await shell(['am','start','-a','android.intent.action.VIEW','-d','sporeward://expo-development-client/?url='+encodeURIComponent('http://127.0.0.1:'+metroPort),'com.sporeward.app']);
+ await command('status');
  const accountPath=process.argv.find(a=>a.startsWith('--account='))?.slice(10);
  if(accountPath){
   const account=JSON.parse(await readFile(accountPath,'utf8'));if(typeof account.username!=='string'||typeof account.password!=='string'||account.username.length>40||account.password.length>256)throw new Error('Invalid private replay account file.');
@@ -41,7 +46,15 @@ try{
   await command('sign-in');
  }
  if(!process.argv.includes('--keep-world'))await command('reset-world');
- await fix(plan.first.longitude,plan.first.latitude);
+ let positioned=false;
+ for(let attempt=0;attempt<5;attempt++){
+  await fix(plan.first.longitude,plan.first.latitude);
+  const ready=await command('prepare'),p=ready.control.position;
+  const metres=p?Math.hypot((p.longitude-plan.first.longitude)*Math.cos(plan.first.latitude*Math.PI/180),p.latitude-plan.first.latitude)*111320:Infinity;
+  if(metres<=30){positioned=true;break;}
+  await wait(500);
+ }
+ if(!positioned)throw new Error('Emulator GPS has not settled at the source start. No recording was created.');
  const recording=await command('start');activity=recording.activity.id;started=true;
  if(plan.initiallyPaused)await command('pause');
  const baseline=performance.now();let lastProgress=0,maxLateness=0;

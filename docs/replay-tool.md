@@ -13,7 +13,15 @@ work/replay/.venv/bin/pip install -r scripts/replay/requirements.txt
 work/replay/.venv/bin/python scripts/replay/import-track.py --catalog work/replay/catalog.json --activity ACTIVITY_ID --output work/replay/selected-track.json
 ```
 
-The catalogue lists activity IDs, modes, calendar dates and available original files. Candidate modes do not guarantee GPS coverage; the importer rejects recordings without timestamped positions. It excludes unrelated profile, social, health and message data from catalogue output. Use original activity files for baseline evidence.
+The catalogue lists activity IDs, modes, calendar dates and available original files. Candidate modes do not guarantee GPS coverage. Inspect originals to build a validated, resumable GPS catalogue; the scan uses the actual replay normalizer, distinguishes usable tracks, no-GPS recordings and invalid timelines, and checkpoints every 25 sources. Re-running reuses only content-hash-matched inspection results. It does not save normalized tracks or GPS fixes in the catalogue, though the private catalogue includes coverage bounds for selection. It excludes unrelated profile, social, health and message data from catalogue output. Use original activity files for baseline evidence.
+
+```sh
+work/replay/.venv/bin/python scripts/replay/catalog-strava.py /path/to/strava-export --inspect-gps --output work/replay/catalog.json
+work/replay/.venv/bin/python scripts/replay/catalog-strava.py /path/to/strava-export --output work/replay/catalog.json --list-gps --bounds=23.728,61.4745,23.822,61.5195 --limit=20
+python3 -m unittest discover -s tests/replay -p '*test.py'
+```
+
+The picker prints activity IDs, modes, fix counts, durations and GPS gaps, without coordinates. Its optional bounds filter tests recording-extent intersection; importing a chosen ID still retains every original fix and gap. It is a shortlist, not proof that the entire route stays inside the simulation area. Use `--workers=1` through `4` to control inspection concurrency (default 2).
 
 A GPX, TCX, FIT, gzip-compressed variant or finished Sporeward JSON recording can also be imported directly:
 
@@ -63,7 +71,7 @@ npm run replay:emulator -- work/replay/field-watch.json --from=110 --duration=14
 npm run replay:emulator -- work/replay/field-phone.json --upload
 ```
 
-The runner targets `emulator-5554` by default (`--device=emulator-NNNN` can select another emulator). It refuses physical devices and requires the app's development-only loopback replay bridge. It resets the disposable world before recording unless `--keep-world` is supplied, operates the real Start/Pause/Resume/Finish recorder controls, and optionally uploads through the normal activity pipeline. Ctrl+C finishes the recording without uploading. A private exported recording is saved under `work/replay/native`.
+The runner targets `emulator-5554` by default (`--device=emulator-NNNN` can select another emulator). It reconnects the development client to loopback Metro before sending commands (`--metro-port=8081` by default). Commands allow up to 60 seconds for cold startup and redeliver the same request ID; the bridge ignores already completed requests, so redelivery cannot repeat a world reset or recording action. It refuses physical devices and requires the app's development-only loopback replay bridge. It resets the disposable world before recording unless `--keep-world` is supplied, operates the real Start/Pause/Resume/Finish recorder controls, and optionally uploads through the normal activity pipeline. Before Start, the runner waits for an actual GPS fix within 30 metres of the source start, without opening optional location-enhancement dialogs. A warm-up failure creates no recording. Replay Finish keeps uploads explicit: only `--upload` sends a completed run; Ctrl+C finishes the recording without uploading. Normal user Finish still queues an automatic upload. A private exported recording is saved under `work/replay/native`.
 
 Positions arrive at normal speed using today's recorder clock; source dates do not affect eligibility. Explicit section pauses invoke recorder pause/resume. Sparse source intervals simulate GPS-delivery interruptions, keeping a recovery boundary rather than drawing an invented continuous track. This tests interruption handling, not the full behaviour of a physical receiver losing satellite reception. Native sampling and command latency can differ from the source; the result reports scheduler lateness, fix counts, segments and gaps. Accelerated server scenarios retain the original source timestamps relative to their virtual baseline instead.
 
@@ -80,3 +88,16 @@ For an account-enabled emulator API, add `--account=work/replay/emulator-account
 Native replay now stops if event delivery falls more than two seconds behind schedule, preserves the partial recording and skips automatic upload. It never compresses a long host stall into a burst of claimed normal-speed travel. An earlier account-owned pipeline run uploaded successfully but had a 132-second scheduler delay; it is not evidence of faithful normal-speed recording.
 
 A subsequent account-owned 120-second original TCX window completed faithfully: 102 native fixes, 641 m, one section, maximum GPS gap 1.875 s and scheduler lateness 1 ms. Upload confirmed 100 visit points and the expected tester identity. The recording remains private.
+
+## Catalogue-selected cycling cooperation
+
+The private inspected export contains 505 replay-ready candidate-mode recordings. Another 221 have no usable GPS; 234 are excluded pending explicit timeline/XML investigation. Source-content hashes let a repeat inspection reuse all unchanged results.
+
+Select the cycling original with seven sections and a one-second maximum within-section gap, then run:
+
+```sh
+work/replay/.venv/bin/python scripts/replay/import-track.py --catalog work/replay/catalog-inspected.json --activity 20342503301 --output work/replay/catalog-cycle-pauses.json
+npm run replay -- scripts/replay/scenarios/cycling-cooperation.json
+```
+
+This definition rebases the original onto its fixed simulation baseline and uses the generated 20-outbreak world. Five riders, duplicate retries and one 30-minute delayed upload yield 100 visit plus 100 shared cleanup points per rider. Reset and rerun were verified equal across complete result objects, including contribution identities; replacement restores 20 visible outbreaks. It exercises cycling with actual pause boundaries, complementing the shorter walking scenario. No synthetic contributions reach the field API.

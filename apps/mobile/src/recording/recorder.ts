@@ -83,3 +83,13 @@ export async function setReplayGpsAvailable(available:boolean){
  if(!available)await stopService();else if((await store.current())?.status==='recording'){await store.transition('recording',true);await startService();}
  await store.diagnostic('replay-gps-availability',{available});
 }
+
+/** Prime the emulator receiver before Start, so a fresh device cannot inject
+ * its cached default location into a replay outing. No fix is persisted here. */
+export async function prepareReplayPosition(){
+ if(!replayAllowed())throw new Error('Position warm-up requires the isolated development API.');
+ await permissions();
+ let timer:ReturnType<typeof setTimeout>|undefined;
+ try{const position=await Promise.race([Location.getCurrentPositionAsync({accuracy:Location.Accuracy.BestForNavigation,mayShowUserSettingsDialog:false}),new Promise<never>((_,reject)=>{timer=setTimeout(()=>reject(new Error('GPS warm-up timed out before recording.')),10000);})]);return {longitude:position.coords.longitude,latitude:position.coords.latitude};}
+ finally{clearTimeout(timer);}
+}

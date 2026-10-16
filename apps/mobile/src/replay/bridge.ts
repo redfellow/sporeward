@@ -7,10 +7,11 @@ import {loadCredentials} from '../server/credentials';
 import {uploadActivity} from '../server/upload';
 import {summarize} from '../recording/model';
 const enabled=typeof __DEV__!=='undefined'&&__DEV__&&/^http:\/\/127\.0\.0\.1:[0-9]+$/.test(SERVER_URL);
-export type ReplayCommand={action:'start'|'pause'|'resume'|'gps-off'|'gps-on'|'finish'|'upload'|'reset-world'|'sign-in'|'status';session:string;request:string;activity:string|null};
-type Control={session:string|null;activity:string|null;request:string|null;action:string|null;gpsAvailable:boolean;error:string|null};
+export type ReplayCommand={action:'prepare'|'start'|'pause'|'resume'|'gps-off'|'gps-on'|'finish'|'upload'|'reset-world'|'sign-in'|'status';session:string;request:string;activity:string|null};
+type Control={session:string|null;activity:string|null;request:string|null;action:string|null;gpsAvailable:boolean;error:string|null;position?:{longitude:number;latitude:number}};
 let control:Control={session:null,activity:null,request:null,action:null,gpsAvailable:true,error:null};
 let restored=false;
+const completedRequests=new Set<string>();
 async function replayFetch(path:string,options:RequestInit){
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
  try{return await fetch(SERVER_URL+path,{...options,signal:controller.signal});}finally{clearTimeout(timer);}
@@ -19,7 +20,7 @@ const statusFile=()=>new File(Paths.document,'sporeward-replay-status.json');
 export function replayCommand(url:string|null):ReplayCommand|null {
  if(!enabled||!url)return null;
  try{const u=new URL(url),action=u.pathname.slice(1),session=u.searchParams.get('session'),request=u.searchParams.get('request'),activity=u.searchParams.get('activity');
-  if(u.protocol!=='sporeward:'||u.hostname!=='replay'||!['start','pause','resume','gps-off','gps-on','finish','upload','reset-world','sign-in','status'].includes(action)||!session||!/^[a-f0-9]{32}$/.test(session)||!request||!/^[a-f0-9]{32}$/.test(request)||activity!==null&&!/^[A-Za-z0-9-]{1,100}$/.test(activity))return null;
+  if(u.protocol!=='sporeward:'||u.hostname!=='replay'||!['prepare','start','pause','resume','gps-off','gps-on','finish','upload','reset-world','sign-in','status'].includes(action)||!session||!/^[a-f0-9]{32}$/.test(session)||!request||!/^[a-f0-9]{32}$/.test(request)||activity!==null&&!/^[A-Za-z0-9-]{1,100}$/.test(activity))return null;
   return {action:action as ReplayCommand['action'],session,request,activity};
  }catch{return null;}
 }
@@ -39,10 +40,13 @@ export async function publishReplayStatus(){
 /** Only debug builds pointed at an isolated loopback API accept replay commands. */
 export async function applyReplayCommand(command:ReplayCommand){
  if(!enabled)throw new Error('Native replay requires a development build using a loopback test API.');
- await restoreReplayControl();if(command.request===control.request)return;
+ await restoreReplayControl();if(command.request===control.request||completedRequests.has(command.request))return;
  try{
   const a=await store.current();
-  if(command.action==='start'){
+  if(command.action==='prepare'){
+   if(a)throw new Error('Finish the emulator recording before preparing its location.');
+   control.position=await recorder.prepareReplayPosition();
+  }else if(command.action==='start'){
    if(a)throw new Error('Finish the existing emulator recording before starting a replay.');
    control={session:command.session,activity:null,request:null,action:null,gpsAvailable:true,error:null};
    await recorder.start();control.activity=(await store.current())!.id;
@@ -83,6 +87,7 @@ export async function applyReplayCommand(command:ReplayCommand){
   }
   control.request=command.request;control.action=command.action;control.error=null;
  }catch(e){control.request=command.request;control.action=command.action;control.error=e instanceof Error?e.message:String(e);}
+ completedRequests.add(command.request);if(completedRequests.size>256)completedRequests.delete(completedRequests.values().next().value!);
  await publishReplayStatus();
  if(command.action==='finish'&&control.error===null){const activity=(await store.recent()).find(a=>a.id===control.activity)!;const [fixes,segments,diagnostics]=await Promise.all([store.points(activity.id),store.segments(activity.id),store.recordingDiagnostics(activity.id)]);const file=new File(Paths.document,'sporeward-replay-recording.json');file.create({overwrite:true});file.write(JSON.stringify({version:3,activity,segments,fixes,diagnostics}));}
 }
