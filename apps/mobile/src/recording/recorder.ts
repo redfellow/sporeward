@@ -1,3 +1,4 @@
+import {syncPendingActivities} from '../server/sync';
 import {savedSession} from '../server/session';
 import {SERVER_URL} from '../server/client';
 import * as Location from 'expo-location';
@@ -47,7 +48,7 @@ export async function start(resume = false) {
  try { await startService(); await store.event(resume ? 'Recording resumed.' : 'Recording started.'); await store.diagnostic('service-start',{resume,notificationsAllowed}); await updateNotification(true); if(!notificationsAllowed) await store.event('Recording started; notifications are disabled. Enable them in Android settings for recording controls.'); }
  catch (e) { await store.transition('paused'); throw e; }
 }
-export async function pause(finish = false) { if(finish)replayGpsSuspended=false;await store.transition(finish ? 'finished' : 'paused'); await stopService(); await store.event(finish ? 'Activity saved.' : 'Recording paused.'); await updateNotification(true); }
+export async function pause(finish = false, autoUpload = true) { if(finish)replayGpsSuspended=false;await store.transition(finish ? 'finished' : 'paused',false,autoUpload); await stopService(); await store.event(finish ? 'Activity saved.' : 'Recording paused.'); await updateNotification(true); if(finish&&autoUpload)void syncPendingActivities().catch(()=>{}); }
 export async function recover() {
  await updateNotification();
  const a = await store.current();

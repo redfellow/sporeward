@@ -3,18 +3,19 @@ import type {EncounterRecap,ActivityReceipt} from '@sporeward/protocol';
 import type {Activity} from '../recording/store';
 import {ActivityUpload} from './ActivityUpload';
 export function OutingRecap({activity,distance,elapsed,recap,provisional,touched,onMap,onUploaded}:{activity:Activity;distance:number;elapsed:string;recap:EncounterRecap|null;provisional:number;touched:number;onMap:()=>void;onUploaded:(receipt:ActivityReceipt)=>void}){
+ const count=recap?recap.encounters.filter(e=>e.accepted).length:touched;
  const points=recap?recap.confirmedVisitPoints+recap.confirmedCleanupPoints:provisional;
  return <ScrollView contentContainerStyle={styles.content}>
   <Text style={styles.eyebrow}>OUTING COMPLETE</Text><Text style={styles.title}>Your outing</Text>
   <Text style={styles.body}>{new Date(activity.started).toLocaleString()}</Text>
-  <View style={styles.card}><Text style={styles.score}>{points} pts</Text><Text style={styles.body}>{recap?'Confirmed':'Provisional · upload to confirm'}</Text>
+  <View style={styles.card}><Text style={styles.score}>{points} pts</Text><Text style={styles.body}>{recap?'Confirmed':'Provisional · confirming automatically'}</Text>
    <View style={styles.row}><Text style={styles.metric}>{(distance/1000).toFixed(2)} km</Text><Text style={styles.metric}>{elapsed}</Text></View>
-   <Text style={styles.body}>{recap?recap.encounters.filter(e=>e.accepted).length:touched} {recap?'outbreaks helped':'outbreak contacts'}</Text>
+   <Text style={styles.body}>{count} {recap?(count===1?'outbreak helped':'outbreaks helped'):(count===1?'outbreak contact':'outbreak contacts')}</Text>
    {recap&&<Text style={styles.body}>{recap.confirmedVisitPoints} from visits · {recap.confirmedCleanupPoints} from cleanup</Text>}
    {!!recap?.pendingCleanupPoints&&<View style={styles.pending}><Text style={styles.metric}>+{recap.pendingCleanupPoints} possible cleanup points</Text><Text style={styles.body}>Your cleaning is still working. Another visit may change who earns the finish.</Text></View>}
   </View>
   {recap?.encounters.map(e=><View key={e.outbreakId} style={styles.encounter}><Text style={styles.metric}>{e.name}</Text><Text style={styles.body}>{e.accepted?`${e.visitPoints+e.cleanupPoints} points${e.cleanupPoints?' · cleanup bonus':''}`:e.reason==='cooldown'?'Already visited recently':e.reason==='duplicate'?'Counted from another recording':e.reason==='ineligible'?'Activity did not qualify':'Contact outside the eligible window'}</Text></View>)}
-  {!recap&&<Text style={styles.body}>Your recording is saved on this device. Confirm your score when connected.</Text>}
+  {!recap&&<Text style={styles.body}>Your recording is saved on this device. Your score confirms automatically when connected.</Text>}
   <ActivityUpload activity={activity} onUploaded={onUploaded} compact/>
   <Pressable accessibilityRole="button" style={styles.button} onPress={onMap}><Text style={styles.label}>Back to the world</Text></Pressable>
  </ScrollView>;

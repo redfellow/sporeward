@@ -24,6 +24,16 @@ describe('durable recorder storage', () => {
   await s.saveFixes([{...f,timestamp:1006000}]);
   const p = await s.points(id);expect(p).toHaveLength(2);expect(p[0].segment).not.toBe(p[1].segment);
   await s.transition('finished');expect(await s.current()).toBeNull();expect(await s.points(id)).toHaveLength(2);
+  expect((await s.uploadState(id))?.state).toBe('pending');expect((await s.pendingUploads('legacy-local')).map(a=>a.id)).toContain(id);expect(await s.pendingUploads('other-rider')).toEqual([]);
+  await s.setUploadRetry(id,1234567);expect(await s.uploadRetry(id)).toBe(1234567);expect((await s.pendingUploads('legacy-local'))[0].retryAt).toBe(1234567);
+  await s.markUpload(id,'uploaded',{});expect(await s.uploadRetry(id)).toBe(0);expect(await s.pendingUploads('legacy-local')).toEqual([]);
+ });
+ it('keeps a finished debug replay out of the automatic upload outbox',async()=>{
+  const s=await import('../../apps/mobile/src/recording/store');const id=await s.begin('replay-tester');
+  vi.mocked(Date.now).mockReturnValue(1002000);await s.transition('finished',false,false);
+  expect(await s.current()).toBeNull();expect(await s.uploadState(id)).toBeNull();
+  expect(await s.pendingUploads('replay-tester')).toEqual([]);
+  expect((await s.recent('replay-tester'))[0].status).toBe('finished');
  });
  it('preserves the original deadline when recovering an interrupted recording',async()=> {
   const s=await import('../../apps/mobile/src/recording/store'); await s.begin();const original=(await s.current())!;

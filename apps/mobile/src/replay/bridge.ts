@@ -77,7 +77,7 @@ export async function applyReplayCommand(command:ReplayCommand){
      case 'resume':await recorder.start(true);control.gpsAvailable=true;break;
      case 'gps-off':await recorder.setReplayGpsAvailable(false);control.gpsAvailable=false;break;
      case 'gps-on':await recorder.setReplayGpsAvailable(true);control.gpsAvailable=true;break;
-     case 'finish':await recorder.pause(true);control.gpsAvailable=true;break;
+     case 'finish':await recorder.pause(true,false);control.gpsAvailable=true;break;
     }
    }
   }

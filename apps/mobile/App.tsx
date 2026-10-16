@@ -1,3 +1,4 @@
+import {syncPendingActivities} from './src/server/sync';
 import {TesterScores} from './src/components/TesterScores';
 import {savedSession} from './src/server/session';
 import {TesterAccount} from './src/components/TesterAccount';
@@ -50,6 +51,12 @@ export default function App() {
   operation.current = true; setBusy(true);
   try { await action(); await refresh(); return true; } catch(e) { setMessage(String(e)); Alert.alert('Recorder',String(e)); return false; } finally { operation.current = false; setBusy(false); }
  }
+ useEffect(() => {
+  const synchronize=()=>{if(AppState.currentState==='active')void syncPendingActivities().then(()=>encounterWorld.refresh()).catch(()=>{});};
+  synchronize();const retryTimer=setInterval(synchronize,60000);
+  const retrySub=AppState.addEventListener('change',state=>{if(state==='active')synchronize();});
+  return()=>{clearInterval(retryTimer);retrySub.remove();};
+ },[]);
  useEffect(() => {
   let alive = true;
   const update = async () => { if(operation.current) return; operation.current = true; try { await recorder.recover(); if(alive) await refresh(); } catch(e) { if(alive) setMessage(String(e)); } finally {operation.current = false;} };

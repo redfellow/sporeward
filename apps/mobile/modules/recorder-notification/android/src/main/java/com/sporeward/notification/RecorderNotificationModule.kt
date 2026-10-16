@@ -51,6 +51,25 @@ class RecorderNotificationModule : Module() {
       if (id != FALLBACK_ID) manager.cancel(FALLBACK_ID)
       true
     }
+    AsyncFunction("publishUpload") { count: Int, nextAttempt: Double, uploading: Boolean, active: Boolean ->
+      val context = appContext.reactContext ?: return@AsyncFunction
+      val manager = context.getSystemService(NotificationManager::class.java)
+      if (count <= 0) { manager.cancel(UPLOAD_ID); return@AsyncFunction }
+      manager.createNotificationChannel(NotificationChannel(UPLOAD_CHANNEL, "Outing uploads", NotificationManager.IMPORTANCE_LOW))
+      val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)!!
+      intent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+      val open = PendingIntent.getActivity(context, UPLOAD_ID, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+      val countdown = active && !uploading && nextAttempt > System.currentTimeMillis()
+      val text = if (uploading) "Confirming score…" else if (!active) "Open Sporeward to resume upload retries" else if (countdown) "Retrying when the countdown reaches zero" else "Waiting to retry upload"
+      manager.notify(UPLOAD_ID, Notification.Builder(context, UPLOAD_CHANNEL)
+        .setSmallIcon(android.R.drawable.stat_sys_upload)
+        .setContentTitle("Sporeward · $count outing${if (count == 1) "" else "s"} pending")
+        .setContentText(text).setStyle(Notification.BigTextStyle().bigText("$text. Your recordings are saved on this phone."))
+        .setCategory(Notification.CATEGORY_PROGRESS).setOngoing(true).setOnlyAlertOnce(true)
+        .setContentIntent(open).setShowWhen(countdown).setUsesChronometer(countdown)
+        .setChronometerCountDown(true).setWhen(if (countdown) nextAttempt.toLong() else System.currentTimeMillis())
+        .setProgress(0, 0, uploading).build())
+    }
     AsyncFunction("locationServiceRunning") {
       val context = appContext.reactContext
       @Suppress("DEPRECATION")
@@ -63,6 +82,8 @@ class RecorderNotificationModule : Module() {
     }
   }
   companion object {
+    private const val UPLOAD_ID = 73002
+    private const val UPLOAD_CHANNEL = "sporeward-uploads"
     private const val CHANNEL = "sporeward-recorder"
     private const val FALLBACK_ID = 73001
   }
