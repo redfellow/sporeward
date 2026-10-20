@@ -2,7 +2,7 @@
 
 ## Current scope
 
-Sporeward has an Android field recorder with local route maps/recaps and a deterministic cleaning simulation shared with the planning lab. Native recording still needs field validation. A fixed Tampere encounter slice persists world/contribution snapshots, matches GPS contacts and shows provisional/confirmed scores. The full geographic lifecycle, accounts, spatial database, and Strava integration remain to be implemented. Follow `docs/architecture.md` and `docs/development-roadmap.md` for the selected stack and milestones.
+Sporeward has an Android field recorder with a fullscreen game map, automatic uploads and recaps, an account-owned PostgreSQL/PostGIS world with geographic growth/cleaning, and reusable recorded-GPS simulations and emulator replay. The field world covers the urban Tampere riding region; isolated replay uses a deterministic central Tampere baseline. Personal/group field validation and later product stages remain separate from completed implementation milestones. Follow `docs/architecture.md` and `docs/development-roadmap.md` for the selected stack and broader progression.
 
 The active development scope is maintained in `docs/current-goal.md`. Re-read it when continuing goal work and before declaring completion; preserve user changes to that file.
 

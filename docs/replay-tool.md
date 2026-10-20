@@ -1,6 +1,6 @@
 # Recorded activity replay tool
 
-The replay tool is being built under [Current goal](current-goal.md). Catalogue and track normalization are available; scenario controls, emulator replay and the living-world integration are still in progress.
+The replay tool provides private source selection/normalization, repeatable virtual scenarios and normal-speed native emulator replay. Living-world and account integration use a separate replay database. Remaining milestone work is tracked in [Current goal](current-goal.md).
 
 ## Prepare private sources
 
@@ -48,6 +48,7 @@ npm run replay -- scripts/replay/scenarios/solo-repeat.json
 npm run replay -- scripts/replay/scenarios/group-cleanup.json
 npm run replay -- scripts/replay/scenarios/delayed-overlap.json
 npm run replay -- scripts/replay/scenarios/group-cleanup.json --interactive
+npm run replay -- scripts/replay/scenarios/cycling-cooperation.json --verify-repeat
 ```
 
 The interactive runner supports `start`, `pause`, `resume`, `next`, `advance MINUTES`, `run`, `reset`, `status` and `quit`. A paused runner holds its virtual clock; `next` processes the next scheduled upload, and advancing time processes each upload at its own delivery time before continuing. Clock advancement after the outings finish continues cleaning. Loading a definition starts a fresh disposable run.
@@ -101,3 +102,39 @@ npm run replay -- scripts/replay/scenarios/cycling-cooperation.json
 ```
 
 This definition rebases the original onto its fixed simulation baseline and uses the generated 20-outbreak world. Five riders, duplicate retries and one 30-minute delayed upload yield 100 visit plus 100 shared cleanup points per rider. Reset and rerun were verified equal across complete result objects, including contribution identities; replacement restores 20 visible outbreaks. It exercises cycling with actual pause boundaries, complementing the shorter walking scenario. No synthetic contributions reach the field API.
+
+## Lifecycle presentation for UI work
+
+Prepare examples of light/heavy effort, withering, clearing, protected cleanup, a remnant, disintegration and stabilization without importing user GPS data:
+
+```sh
+node --import tsx scripts/replay/prepare-map.mts --output=work/replay/map-presentation.json
+```
+
+Export refuses to overwrite an existing file and changes no server or database. For the actual emulator map, use the dedicated account-enabled PostGIS replay API and its private local credentials:
+
+```sh
+node --env-file=work/replay/database.env --import tsx scripts/replay/prepare-map.mts --reset --account=work/replay/emulator-account.json
+```
+
+Set `REPLAY_USERNAME` and `REPLAY_PASSWORD` to the local gateway values if they differ from the replay defaults. This mode authenticates a disposable account, verifies the local replay environment and resets only `native-living`. Do not run concurrently with a recorder replay. The temporary session is logged out afterward. These are presentation fixtures, not evidence of GPS eligibility or earned scores. Ordinary replay without `--keep-world` restores the normal seeded world.
+
+`--verify-repeat` runs the scenario, resets its isolated world and runs it again, comparing the complete result objects. A mismatch fails the command; success prints a repeatability confirmation and the result summary. It cannot be combined with interactive controls.
+
+The source-free map presentation includes one clearing outbreak near completion. Its committed cleaning clears it on the next ordinary minute tick, letting the emulator show the cleanup notice through a server update. These staged lifecycle examples are visual fixtures, not recorded-outing or balance evidence.
+
+## Fast-forwarding a completed native outing's game effects
+
+The isolated loopback native replay API supports authenticated `POST /replay/advance` with JSON `{ "offsetMinutes": 780 }`. This is an **absolute forward offset** from wall time, not an increment, so retrying the same request does not apply another thirteen hours. It is for observing cleaning/bonus updates after recording; it does not accelerate GPS collection or establish battery/screen-off reliability. The offset persists in the private replay clock file across API restart. Use offsets from 1 to 10,080 minutes; smaller offsets require a reset.
+
+`GET /replay/environment` explicitly reports `clock: "accelerated"` and the offset. Reset restores wall-clock mode and the seeded world. The native runner checks clock mode before starting GPS, including with `--keep-world`, and refuses an accelerated world until it is reset. This control exists only on the isolated loopback bench, never the field API. Authenticate using its disposable gateway and personal tester session.
+
+Use the reusable authenticated clock command rather than copying session tokens into shell commands. Set the disposable replay gateway variables to match the running bench:
+
+```sh
+npm run replay:clock -- --status --account=work/replay/emulator-account.json
+npm run replay:clock -- --offset-minutes=780 --account=work/replay/emulator-account.json
+npm run replay:clock -- --reset --account=work/replay/emulator-account.json
+```
+
+Reset is destructive only to the explicitly isolated replay world; finish native recording before using clock controls. Field data is not a target of these commands.

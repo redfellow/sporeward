@@ -36,6 +36,32 @@ try{
  for(const session of sessions){const recap=await app.inject({url:'/activities/shared-outing-id/encounters',headers:{...gateway,'x-sporeward-session':session.token}});assert.equal(recap.json().confirmedCleanupPoints,100);}
  const scoreboard=await app.inject({url:'/scores',headers:{...gateway,'x-sporeward-session':sessions[0].token}});assert.equal(scoreboard.statusCode,200);assert.equal(scoreboard.json().entries.length,5);assert.ok(scoreboard.json().entries.every((e:{points:number})=>e.points===200));
  console.log(JSON.stringify({accounts:5,sameIdUploadsIsolated:true,delayedUpload:true,retriesIdempotent:true,sharedCleanupBonus:true,scoreboard:scoreboard.json().entries.map((e:{name:string;points:number})=>({name:e.name,points:e.points}))}));
+
+ // A separate seeded world exercises competition, rather than assuming that
+ // cooperation proves who receives the finish outside the ten-minute cohort.
+ const competitionId=id+'-finish',competitionDb=new PostgresWorldPersistence(url,competitionId,()=>now);
+ const fresh=await tampereWorldFixtures();now=1800000000000;
+ const competitionWorld=new WorldStore('',()=>now,()=>fresh.fixtures,{persistence:competitionDb,spatial:fresh.access.cells,seed:73});
+ const competitionApp=await createApp({auth:{username:'group-gateway',password:'disposable-group-check'},accounts,activityStoreFor:player=>new ActivityStore(root,player,()=>now),worldStore:competitionWorld});
+ try{
+  await competitionWorld.view(sessions[0].tester.id);
+  for(const [i,session] of sessions.entries()){
+   const p=rebaseReplay(track,1800000000000+60000+i*30*60000,'competing-outing');now=p.activity.ended;
+   const headers={...gateway,'x-sporeward-session':session.token};
+   for(let chunk=0;chunk<p.chunkCount;chunk++)assert.equal((await competitionApp.inject({method:'PUT',url:`/activities/${p.activity.id}/chunks/${chunk}`,headers,payload:{...p,fixes:p.fixes.slice(chunk*1000,(chunk+1)*1000)}})).statusCode,200);
+   const complete=await competitionApp.inject({method:'POST',url:`/activities/${p.activity.id}/complete`,headers});assert.equal(complete.statusCode,200);assert.equal(complete.json().encounters.confirmedVisitPoints,100);
+  }
+  now+=13*3600000;
+  const bonuses=[];
+  for(const session of sessions){
+   const recap=await competitionApp.inject({url:'/activities/competing-outing/encounters',headers:{...gateway,'x-sporeward-session':session.token}});assert.equal(recap.statusCode,200);bonuses.push(recap.json().confirmedCleanupPoints);
+  }
+  assert.deepEqual(bonuses,[0,0,0,0,100]);
+  console.log(JSON.stringify({competitionAccounts:5,visitsSeparatedMinutes:30,lastVisitorEarnsFinish:true,earlierVisitorsKeepVisitPoints:true,cleanupBonuses:bonuses}));
+ }finally{
+  await competitionApp.close();const c=await competitionDb.pool.connect();
+  try{await c.query('BEGIN');for(const table of ['sw_bonus_owners','sw_contributions','sw_footprints'])await c.query(`DELETE FROM ${table} WHERE world_id=$1`,[competitionId]);await c.query('DELETE FROM sw_worlds WHERE id=$1',[competitionId]);await c.query('COMMIT');}catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();await competitionDb.close();}
+ }
 }finally{
  await app.close();const c=await database.pool.connect();try{await c.query('BEGIN');for(const table of ['sw_bonus_owners','sw_contributions','sw_footprints'])await c.query(`DELETE FROM ${table} WHERE world_id=$1`,[id]);await c.query('DELETE FROM sw_worlds WHERE id=$1',[id]);await c.query('DELETE FROM sw_sessions s USING sw_testers t WHERE s.tester_id=t.id AND t.realm=$1',[id]);await c.query('DELETE FROM sw_invites WHERE realm=$1',[id]);await c.query('DELETE FROM sw_testers WHERE realm=$1',[id]);await c.query('COMMIT');}catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();await database.close();await rm(root,{recursive:true,force:true});}
 }

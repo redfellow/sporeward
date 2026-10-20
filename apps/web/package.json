@@ -9,7 +9,9 @@
 		"typecheck": "tsc -p tsconfig.json"
 	},
 	"dependencies": {
+    "@sporeward/rendering": "0.1.0",
 		"@sporeward/game": "0.1.0",
+		"polygon-clipping": "^0.15.7",
 		"react": "19.2.3",
 		"react-dom": "19.2.3"
 	},

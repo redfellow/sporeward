@@ -6,13 +6,15 @@ COPY apps/web/package.json apps/web/package.json
 COPY apps/mobile/package.json apps/mobile/package.json
 COPY packages/game/package.json packages/game/package.json
 COPY packages/protocol/package.json packages/protocol/package.json
-RUN npm ci --workspace @sporeward/server --workspace @sporeward/protocol --workspace @sporeward/game --include-workspace-root=false
+COPY packages/rendering/package.json packages/rendering/package.json
+RUN npm ci --workspace @sporeward/server --workspace @sporeward/protocol --workspace @sporeward/game --workspace @sporeward/rendering --include-workspace-root=false
 COPY apps/server/src apps/server/src
 COPY apps/server/data apps/server/data
 COPY scripts/accounts scripts/accounts
 COPY scripts/migration scripts/migration
 COPY packages/protocol/src packages/protocol/src
 COPY packages/game/src packages/game/src
+COPY packages/rendering/src packages/rendering/src
 RUN mkdir /data && chown node:node /data
 USER node
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=3001

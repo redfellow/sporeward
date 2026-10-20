@@ -154,7 +154,7 @@ On account-enabled servers, sign in once before heading out. A saved account kee
 
 ## First outbreak encounter
 
-The app now loads a persistent five-zone Tampere test world, shows activity-specific contacts and a provisional tally, and obtains a confirmed recap through finished-activity uploads. See [First outbreak encounter](first-outbreak-encounter.md) for locations, implemented rules, API persistence and the field checklist. Cached map data works offline; changes to shared world state are applied when the activity is uploaded.
+The app loads the persistent 500-outbreak urban Tampere field world using individual tester accounts, shows activity-specific contacts and a provisional tally, and automatically uploads finished outings for a confirmed recap. See [First outbreak encounter](first-outbreak-encounter.md) for locations, implemented rules, API persistence and the field checklist. Cached map data works offline; changes to shared world state are applied when the activity is uploaded.
 
 For emulator-only encounter development, run a separate local API with disposable data and tester credentials. Set `EXPO_PUBLIC_TEST_SERVER_URL=http://127.0.0.1:3102` when starting Metro, then run `adb -s emulator-5554 reverse tcp:3102 tcp:3102`. This override is accepted only in development builds and only for loopback HTTP; standalone field builds always use `https://sporeward.redlan.co`. Use separate local tester credentials in the emulator. Synthetic visits must not alter the shared field-test world.
 

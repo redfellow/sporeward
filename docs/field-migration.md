@@ -1,6 +1,8 @@
-# Field data migration — prepared, not deployed
+# Field data migration
 
-The field API remains running on its original file store. A private read-only backup under ignored `work/field-backups/2026-10-15` retains its world snapshot and activity files. Both stored recordings match the preserved canonical owner; every contribution-referenced upload has its manifest, receipt and chunks. Raw tracks and the archive are not committed.
+The field API switched to PostgreSQL and individual tester accounts on 2026-10-16. The final quiesced backup is stored privately under ignored `work/field-backups/2026-10-16-final`. It contains four upload receipts and three processed activities. After import, scores, contributions and processed activity records were verified unchanged. The original activity volume remains mounted, and the original image and compose configuration are retained for recovery.
+
+The owner's account is bound to the original canonical player identity. Login over public HTTPS was verified without exposing credentials. The urban access map is active with a target density of 600 ordinary outbreak fixtures across the expanded Tampere riding area. Credentials are stored only in a private ignored onboarding file; they are not embedded in the app.
 
 ## Guarded snapshot import
 
@@ -20,8 +22,18 @@ The preview preserves existing outbreak identities, cooldowns, contributions and
 
 Use `scripts/migration/check-import.mts` against the isolated database to verify repeat import, changed-source rejection, populated-destination preservation and corrupt-reward rejection. Its disposable namespaces are cleaned up after the check.
 
-## Remaining cutover
+## Phone onboarding
 
-The production entry point and container configuration still need database/account wiring. Before switching the field API, take a final quiesced snapshot so requests accepted after the earlier backup are retained, import it into the intended destination, preserve the original activity volume and provision the administrator-bound owner account/invite. Keep the original files and backup available for rollback. Link local phone recordings only through the explicit confirmation flow described in [Tester accounts](tester-accounts.md).
+Sign in through **Outings & setup → Tester account**. Use **Link earlier outings** and its explicit confirmation to associate unassigned local phone recordings with the linked account. This preserves recording data and receipts; it does not replay historical GPS or award points twice. See [Tester accounts](tester-accounts.md).
 
-The preview is separate from the live field world. No field data has been replaced, and no real owner account has been assigned silently.
+The older baseline spatial preview above remains an isolated migration example. The deployed configuration uses `WORLD_ACCESS=urban` and `WORLD_DENSITY=600`.
+
+The southern extension includes Säijä, Nurmi and Lempoinen. Its idempotent migration added 100 outbreaks, preserving existing scores, contributions, bonuses and activities. Current fluid silhouettes retain earlier contours in footprint history for delayed GPS matching.
+
+## Offline shoreline preflight
+
+```sh
+node --import tsx scripts/migration/preview-shorelines.mts PRIVATE_SNAPSHOT.json
+```
+
+This command freezes the snapshot clock and runs continuous-surface and shoreline preparation on an in-memory copy. It does not connect to a database or write migrated world state. Keep source snapshots under ignored private storage. It checks that scores, contributions, bonuses and activities are unchanged and reports elapsed time and peak memory. A 500-fixture regional preview took 46.6 seconds for continuous surfaces and 1.53 seconds for shorelines locally; the current public field world has not yet been preflighted or migrated.

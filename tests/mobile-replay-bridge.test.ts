@@ -30,3 +30,13 @@ it('acknowledges an environment rejection once without retrying its mutation',as
  const status=JSON.parse(f.files.get('private/sporeward-replay-status.json')!);
  expect(status.control.request).toBe(command.request);expect(status.control.error).toContain('not the dedicated');
 });
+
+it('requires resetting an accelerated world before a normal GPS replay',async()=>{
+ f.fetch.mockResolvedValue(new Response(JSON.stringify({mode:'native-replay',clock:'accelerated',offsetMinutes:780})));
+ const {applyReplayCommand}=await import('../apps/mobile/src/replay/bridge');
+ await applyReplayCommand({action:'check-clock',session:'a'.repeat(32),request:'d'.repeat(32),activity:null});
+ expect(JSON.parse(f.files.get('private/sporeward-replay-status.json')!).control.error).toContain('Reset the accelerated');
+ f.fetch.mockResolvedValue(new Response(JSON.stringify({mode:'native-replay',clock:'wall',offsetMinutes:0})));
+ await applyReplayCommand({action:'check-clock',session:'a'.repeat(32),request:'e'.repeat(32),activity:null});
+ expect(JSON.parse(f.files.get('private/sporeward-replay-status.json')!).control.error).toBeNull();
+});

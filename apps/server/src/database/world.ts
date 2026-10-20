@@ -1,7 +1,8 @@
+import type {Footprint} from '@sporeward/game';
 import {Pool,type PoolClient} from 'pg';
 import {createHash} from 'node:crypto';
 import type {Persisted} from '../world-store.ts';
-export interface WorldPersistence {transaction<T>(initial:()=>Persisted,operation:(state:Persisted)=>Promise<T>):Promise<T>}
+export interface WorldPersistence {transaction<T>(initial:()=>Persisted,operation:(state:Persisted)=>Promise<T>):Promise<T>;historicalFootprints?(from:number,until:number):Promise<Footprint[]>}
 const schema=`
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE TABLE IF NOT EXISTS sw_worlds(id text PRIMARY KEY, snapshot jsonb NOT NULL, updated_at bigint NOT NULL);
@@ -45,21 +46,31 @@ export class PostgresWorldPersistence implements WorldPersistence {
   }catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}
  }
  private async save(client:PoolClient,state:Persisted){
-  const existing=await client.query('SELECT snapshot FROM sw_worlds WHERE id=$1',[this.worldId]);
-  const resetting=existing.rows.length&&(existing.rows[0].snapshot.resetGeneration??0)!==(state.resetGeneration??0);
+  // Do not parse a second complete geometry history just to inspect reset metadata.
+  const existing=await client.query("SELECT snapshot->>'resetGeneration' AS reset_generation FROM sw_worlds WHERE id=$1",[this.worldId]);
+  const resetting=existing.rows.length&&Number(existing.rows[0].reset_generation??0)!==(state.resetGeneration??0);
   if(resetting){
    for(const table of ['sw_bonus_owners','sw_contributions','sw_footprints'])await client.query(`DELETE FROM ${table} WHERE world_id=$1`,[this.worldId]);
   }
-  await client.query('INSERT INTO sw_worlds(id,snapshot,updated_at) VALUES($1,$2,$3) ON CONFLICT(id) DO UPDATE SET snapshot=EXCLUDED.snapshot,updated_at=EXCLUDED.updated_at',[this.worldId,state,this.now()]);
+  await client.query('INSERT INTO sw_worlds(id,snapshot,updated_at) VALUES($1,$2,$3) ON CONFLICT(id) DO UPDATE SET snapshot=EXCLUDED.snapshot,updated_at=EXCLUDED.updated_at',[this.worldId,{...state,footprints:state.footprints?.filter(f=>f.validUntil===null||f.validUntil>=state.startedAt+state.engine.time*60000)},this.now()]);
   if(state.footprints){
-   const previous=new Map<string,NonNullable<Persisted['footprints']>[number]>((resetting?[]:existing.rows[0]?.snapshot.footprints??[]).map((f:NonNullable<Persisted['footprints']>[number])=>[f.id+':'+f.validFrom,f]));
-   const changed=state.footprints.filter(f=>{const old=previous.get(f.id+':'+f.validFrom);return !old||old.validUntil!==f.validUntil||JSON.stringify(old.ring)!==JSON.stringify(f.ring);}).map(f=>{
-    const ring=[...f.ring,f.ring[0]];return {id:f.id,from:f.validFrom,until:f.validUntil,shape:{type:'Polygon',coordinates:[ring]},fingerprint:createHash('sha256').update(JSON.stringify(ring)).digest('hex')};
-   });
-   if(changed.length)await client.query(`INSERT INTO sw_footprints(world_id,outbreak_id,valid_from,valid_until,shape,fingerprint)
+   // PostGIS already stores each history fingerprint. Compare compact metadata instead
+   // of loading and stringifying another full snapshot of every historical ring.
+   const saved=resetting?{rows:[]}:await client.query('SELECT outbreak_id,valid_from,valid_until,fingerprint FROM sw_footprints WHERE world_id=$1',[this.worldId]);
+   const previous=new Map(saved.rows.map(f=>[f.outbreak_id+':'+f.valid_from,f]));
+   const changed:{id:string;from:number;until:number|null;shape:unknown;fingerprint:string}[]=[];
+   const flush=async()=>{if(!changed.length)return;await client.query(`INSERT INTO sw_footprints(world_id,outbreak_id,valid_from,valid_until,shape,fingerprint)
     SELECT $1,p.id,p."from",p.until,ST_SetSRID(ST_GeomFromGeoJSON(p.shape::text),4326),p.fingerprint
     FROM jsonb_to_recordset($2::jsonb) AS p(id text,"from" bigint,until bigint,shape jsonb,fingerprint text)
-    ON CONFLICT(world_id,outbreak_id,valid_from) DO UPDATE SET valid_until=EXCLUDED.valid_until,shape=EXCLUDED.shape,fingerprint=EXCLUDED.fingerprint`,[this.worldId,JSON.stringify(changed)]);
+    ON CONFLICT(world_id,outbreak_id,valid_from) DO UPDATE SET valid_until=EXCLUDED.valid_until,shape=EXCLUDED.shape,fingerprint=EXCLUDED.fingerprint`,[this.worldId,JSON.stringify(changed)]);changed.length=0;};
+   for(const f of state.footprints){
+    const ring=[...f.ring,f.ring[0]],fingerprint=createHash('sha256').update(JSON.stringify(ring)).digest('hex');
+    const old=previous.get(f.id+':'+f.validFrom);
+    if(old&&(old.valid_until===null?null:Number(old.valid_until))===f.validUntil&&old.fingerprint===fingerprint)continue;
+    changed.push({id:f.id,from:f.validFrom,until:f.validUntil,shape:{type:'Polygon',coordinates:[ring]},fingerprint});
+    if(changed.length>=256)await flush();
+   }
+   await flush();
   }
   for(const fixture of state.footprints?[]:state.fixtures){
    const ring=[...fixture.ring,fixture.ring[0]],fingerprint=createHash('sha256').update(JSON.stringify(ring)).digest('hex');
@@ -76,6 +87,14 @@ export class PostgresWorldPersistence implements WorldPersistence {
   }
   for(const c of state.contributions)await client.query('INSERT INTO sw_contributions(world_id,id,player_id,activity_id,outbreak_id,contact_at,visit_points) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(world_id,id) DO UPDATE SET contact_at=EXCLUDED.contact_at',[this.worldId,c.id,c.player,c.activityId,c.outbreakId,c.contactAt,c.visitPoints]);
   for(const [key,id] of Object.entries(state.bonuses))await client.query('INSERT INTO sw_bonus_owners(world_id,award_key,contribution_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING',[this.worldId,key,id]);
+ }
+ /** Fetch the historical geometry an eligible activity needs beyond the live snapshot.
+  * All archived intervals remain in PostGIS; snapshot compaction never deletes them. */
+ async historicalFootprints(from:number,until:number):Promise<Footprint[]>{
+  if(!Number.isFinite(from)||!Number.isFinite(until)||until<from)throw new Error('Invalid history range.');
+  await this.initialize();
+  const result=await this.pool.query('SELECT outbreak_id,valid_from,valid_until,ST_AsGeoJSON(shape)::json AS shape FROM sw_footprints WHERE world_id=$1 AND valid_from<=$3 AND (valid_until IS NULL OR valid_until>=$2) ORDER BY valid_from,outbreak_id',[this.worldId,from,until]);
+  return result.rows.map(f=>({id:f.outbreak_id,validFrom:Number(f.valid_from),validUntil:f.valid_until===null?null:Number(f.valid_until),ring:f.shape.coordinates[0].slice(0,-1)}));
  }
  async importSnapshot(state:Persisted,sourceHash:string){
   if(!/^[a-f0-9]{64}$/.test(sourceHash))throw new Error('Invalid snapshot digest.');await this.initialize();const client=await this.pool.connect();

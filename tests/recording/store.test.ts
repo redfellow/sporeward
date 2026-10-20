@@ -94,3 +94,15 @@ it('explicit legacy transfer preserves GPS, sections and receipts without taking
  expect(await s.points(legacy)).toEqual(points);expect(await s.segments(legacy)).toEqual(sections);expect(await s.uploadState(legacy)).toEqual(receipt);
  await expect(s.assertOwner(legacy,'alice')).resolves.toBeUndefined();await expect(s.assertOwner(other,'bob')).resolves.toBeUndefined();expect(await s.legacyActivityCount()).toBe(0);
 });
+
+it('persists first observed contacts per outing without replacing them on a later map update',async()=>{
+ const s=await import('../../apps/mobile/src/recording/store'),id=await s.begin('rider-a');
+ await s.rememberContacts(id,[{outbreakId:'spore',timestamp:1001000,visitPoints:100}]);
+ await s.rememberContacts(id,[{outbreakId:'spore',timestamp:1002000,visitPoints:50}]);
+ expect(await s.contactPreviews(id)).toEqual([{outbreakId:'spore',timestamp:1001000,visitPoints:100}]);
+ await s.transition('finished');vi.mocked(Date.now).mockReturnValue(2000000);
+ const other=await s.begin('rider-b');expect(await s.contactPreviews(other)).toEqual([]);
+ await s.rememberContacts(id,[{outbreakId:'spore',timestamp:1000500,visitPoints:75}]);
+ expect((await s.contactPreviews(id))[0]).toMatchObject({timestamp:1000500,visitPoints:75});
+ await expect(s.rememberContacts('missing',[{outbreakId:'spore',timestamp:1,visitPoints:10}])).rejects.toThrow('Unknown outing');
+});

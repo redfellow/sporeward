@@ -108,6 +108,8 @@ Acceptance criteria:
 
 ## Deferred features
 
+- Android Back navigation returns through screens to the start screen. Back there opens an exit confirmation; pressing Back again exits. Cancel or tapping outside the dialog keeps the app open.
+
 - Group multiple source recordings into one outing, with combined and separate track views.
 - Opt-in, link-free Strava activity text showing earned Sporeward points.
 - External route-planner browser extension.

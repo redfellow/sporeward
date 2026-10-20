@@ -22,6 +22,10 @@ docker compose -p sporeward-test -f ops/test-server/compose.yaml logs --tail=50 
 
 The deployed directory is `/home/red/sporeward-test`. The image runs Node.js 24 as a non-root user, with a read-only filesystem, temporary writable `/tmp`, dropped capabilities, a memory limit, and rotated logs. Docker checks the authenticated health endpoint without printing credentials. `unless-stopped` restarts the container when it exits and when Docker restarts; Windows/WSL/Docker startup and sleep settings still determine host availability.
 
+The API has a 3 GiB container ceiling and an explicit 2 GiB Node heap limit. Historical outlines are archived in PostGIS; normal snapshots retain only currently valid outlines. GPS uploads fetch the exact historical intervals they need. Archive writes are batched, catch-up checkpoints every simulated hour, and unchanged shapes are not repeatedly serialized. This avoids loading duplicate, ever-growing geometry snapshots during restart. Scores, activity records and archived geometry are preserved.
+
+After a verified one-time legacy import, set `IMPORT_LEGACY_WORLD=0` in the private deployment environment. Leaving it enabled unnecessarily reloads the legacy file at every boot. For a 502, inspect container health and logs for heap errors before changing Windows nginx. A database backup should precede recovery changes.
+
 To stop this API without affecting other containers:
 
 ```sh
@@ -41,3 +45,7 @@ On 12 October 2026, `http://sporeward.redlan.co/health` redirected to HTTPS (301
 Activity batches, manifests, and receipts live in the named `activity-data` Docker volume under `/data/activities`. Owner/activity paths are hashed, files are private, and atomic immutable writes prevent retries from overwriting different content. Plain GPS data is readable to administrators with access to the volume; HTTPS protects transfer, not disk storage. Back up this volume if retaining field-test diagnostics matters. `docker compose down` preserves the volume; do not use `down -v` unless deliberately deleting recordings.
 
 Upload endpoints validate batches, then completion verifies all batches and produces a persistent receipt. Receipts record basic distance/time eligibility and a server-confirmed encounter recap. World snapshots under `/data/world` share the persistent volume. The limit is 100,000 fixes/256 recording sections per activity. Invalid or duplicate timestamps, out-of-section fixes, missing batches, and changed immutable payloads are rejected. Changing the Basic Auth username changes the test-data owner namespace; password rotation with the same username does not. This single-tester namespace is not the future account system.
+
+## Private wake settings
+
+Optional `WOL_HOST`, `WOL_PORT` and `WOL_MAC` values belong only in the ignored local `.env`. Run `npm run test-server:wake` to send a standard UDP magic packet without printing the target settings. Packet transmission does not prove the host has finished waking; verify SSH and Docker separately. Do not commit the configured values.

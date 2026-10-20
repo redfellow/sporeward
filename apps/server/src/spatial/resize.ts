@@ -1,13 +1,17 @@
+import {NoLandContour} from './water.ts';
 import {contour,type PartialCell} from './contour.ts';
+import {canonicalContour} from './continuous.ts';
 import {cellKey,cellRing,neighbours,type AccessibleCell,type Cell} from './access.ts';
 import type {SpatialOutbreak} from './generate.ts';
+const accessIndexes=new WeakMap<AccessibleCell[],Set<string>>();
 /** Geographic size follows authoritative effort; shrink one branch at a time.
  * Removing a cell must leave one connected, hole-free region. Growth never
  * claims another outbreak's cells and searches around occupied neighbours.
  */
-export function resizeOutbreak(outbreak:SpatialOutbreak,size:number,access:AccessibleCell[],occupied:ReadonlySet<string>,heat:ReadonlyMap<string,number>=new Map()):SpatialOutbreak{
+export function resizeOutbreak(outbreak:SpatialOutbreak,size:number,access:AccessibleCell[],occupied:ReadonlySet<string>,heat:ReadonlyMap<string,number>=new Map(),version:3|4|5=4):SpatialOutbreak{
  if(!Number.isFinite(size)||size<=0)throw new Error('Positive geographic size required.');
- const wanted=Math.max(1,Math.ceil(size-1e-8)),available=new Set(access.map(cellKey));
+ const wanted=Math.max(1,Math.ceil(size-1e-8));
+ let available=accessIndexes.get(access);if(!available){available=new Set(access.map(cellKey));accessIndexes.set(access,available);}
  let cells=outbreak.cells.map(c=>({...c}));
  const connected=(remaining:Cell[])=>{
   if(!remaining.length)return false;const keys=new Set(remaining.map(cellKey)),seen=new Set<string>(),queue=[remaining[0]];
@@ -39,5 +43,6 @@ export function resizeOutbreak(outbreak:SpatialOutbreak,size:number,access:Acces
    partial={key:cellKey(c),side,fraction};
   }
  }
- return {...outbreak,cells,partial,ring:contour(cells,partial,outbreak.id)};
+ const surface=version>=4?outbreak.surface??canonicalContour(outbreak.id):undefined;
+ try{return {...outbreak,cells,partial,...(surface?{surface}:{}),ring:contour(cells,partial,outbreak.id,version,surface)};}catch(e){if(e instanceof NoLandContour)return outbreak;throw e;}
 }

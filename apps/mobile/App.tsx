@@ -1,3 +1,4 @@
+import {MapAttribution} from './src/components/MapAttribution';
 import {syncPendingActivities} from './src/server/sync';
 import {TesterScores} from './src/components/TesterScores';
 import {savedSession} from './src/server/session';
@@ -5,22 +6,26 @@ import {TesterAccount} from './src/components/TesterAccount';
 import {OutingRecap} from './src/components/OutingRecap';
 import {replayCommand,applyReplayCommand,publishReplayStatus,restoreReplayControl} from './src/replay/bridge';
 import {useWorld} from './src/server/use-world';
-import {previewEncounters} from './src/recording/encounters';
+import {useEncounters} from './src/recording/use-encounters';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, Linking, Alert, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { AppState, Linking, Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View, useWindowDimensions } from 'react-native';
+import { SafeAreaProvider, SafeAreaView, initialWindowMetrics } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { notificationAction } from './src/recording/notification-action';
+import {confirmFinish} from './src/recording/confirm-finish';
+import { notificationRevision, type NotificationAction, notificationAction } from './src/recording/notification-action';
 import * as recorder from './src/recording/recorder';
 import * as store from './src/recording/store';
 import { type Fix, type Segment, recordingDuration, summarize } from './src/recording/model';
 import { ActivityUpload } from './src/components/ActivityUpload';
 import { ServerConnection } from './src/components/ServerConnection';
+import {useMapPreference} from './src/components/use-map-preference';
 import { RouteMap } from './src/components/RouteMap';
 const duration = (ms:number) => {const seconds=Math.floor(ms/1000);return `${Math.floor(seconds/3600)}h ${Math.floor(seconds/60)%60}m ${seconds%60}s`;};
-export default function App() {
+export default function App(){return <SafeAreaProvider initialMetrics={initialWindowMetrics}><Game/></SafeAreaProvider>;}
+function Game() {
+ const [brightMap,setBrightMap]=useMapPreference();
  const [activity,setActivity] = useState<store.Activity | null>(null);
  const [displayed,setDisplayed] = useState<store.Activity | null>(null);
  const [history,setHistory] = useState<store.Activity[]>([]);
@@ -28,8 +33,9 @@ export default function App() {
  const [segments,setSegments] = useState<Segment[]>([]);
  const [identityGeneration,setIdentityGeneration]=useState(0);
  const [hudHeight,setHudHeight]=useState(260);
+ const [topHudHeight,setTopHudHeight]=useState(76);
  const compact=useWindowDimensions().width<380;
- const [screen,setScreen]=useState<'map'|'details'|'recap'>('map');
+ const [screen,setScreen]=useState<'map'|'details'|'recap'|'outings'|'review'>('map');
  const [message,setMessage] = useState('Ready for a recording test.');
  const [busy,setBusy] = useState(false);
  const [details,setDetails]=useState(false);
@@ -37,12 +43,12 @@ export default function App() {
  const operation = useRef(false), selectedId=useRef<string|null>(null);
  const handledNotificationActions=useRef(new Set<string>());
  const encounterWorld=useWorld(displayed?.id??null);
- const encounterPreview=useMemo(()=>previewEncounters(fixes,encounterWorld.world,encounterWorld.recap,Date.now()),[fixes,encounterWorld.world,encounterWorld.recap]);
+ const encounterPreview=useEncounters(displayed?.id??null,fixes,encounterWorld.world,encounterWorld.recap);
  const stats=useMemo(()=>summarize(fixes),[fixes]);
  async function refresh() {
   const owner=(await savedSession(true))?.tester.id??'legacy-local';
   const a = await store.current(), list = await store.recent(owner);
-  const shown = a ?? list.find(item=>item.id===selectedId.current) ?? list[0] ?? null;
+  const shown = a ?? list.find(item=>item.id===selectedId.current) ?? null;
   const [p,s]=shown ? await Promise.all([store.points(shown.id),store.segments(shown.id)]) : [[],[]];
   recordingActive.current=a?.status==='recording';
   setActivity(a);setHistory(list);setDisplayed(shown);setFixes(p);setSegments(s);
@@ -53,6 +59,23 @@ export default function App() {
   if(operation.current) return false;
   operation.current = true; setBusy(true);
   try { await action(); await refresh(); return true; } catch(e) { setMessage(String(e)); Alert.alert('Recorder',String(e)); return false; } finally { operation.current = false; setBusy(false); }
+ }
+ async function finishOuting() {
+  if(!await confirmFinish())return;
+  selectedId.current=(await store.current())?.id??null;await recorder.pause(true);setScreen('recap');
+ }
+ async function userNotificationAction(action:NotificationAction) {
+  if(action.action==='finish') {
+   const current=await store.current();
+   if(!current||current.id!==action.activity||notificationRevision(await store.segments(current.id))!==action.nonce)return;
+   if(!await confirmFinish()) {
+    handledNotificationActions.current.delete(`${action.activity}:${action.action}:${action.nonce}`);
+    return;
+   }
+  }
+  if(action.action==='finish')selectedId.current=action.activity;
+  await recorder.applyNotificationAction(action);
+  if(action.action==='finish')setScreen('recap');
  }
  useEffect(() => {
   const synchronize=()=>{if(AppState.currentState==='active')void syncPendingActivities().then(()=>encounterWorld.refresh()).catch(()=>{});};
@@ -72,7 +95,7 @@ export default function App() {
    if(action) {
     const key=`${action.activity}:${action.action}:${action.nonce}`;
     if(!handledNotificationActions.current.has(key)) {
-     handledNotificationActions.current.add(key);if(!await run(()=>recorder.applyNotificationAction(action))) handledNotificationActions.current.delete(key);
+     handledNotificationActions.current.add(key);if(!await run(()=>userNotificationAction(action))) handledNotificationActions.current.delete(key);
     }
    }
    if(alive) await update();
@@ -94,7 +117,7 @@ export default function App() {
    // A cold launch may still be recovering SQLite/service state. Serialize the action after it.
    queue=queue.then(async()=> {
     while(operation.current) await new Promise(resolve=>setTimeout(resolve,50));
-    if(!await run(()=>recorder.applyNotificationAction(action))) handled.delete(key);
+    if(!await run(()=>userNotificationAction(action))) handled.delete(key);
    });
   };
   const sub=Linking.addEventListener('url',e=>receive(e.url));
@@ -110,32 +133,44 @@ export default function App() {
  }
  function exportPrompt(a:store.Activity) { Alert.alert('Export GPS route?', 'This file contains precise locations and timestamps. Choose where to save or share it.',[{text:'Cancel'},{text:'Export',onPress:()=>void run(()=>exportActivity(a))}]); }
  const button = (label:string, action:()=>Promise<unknown>) => <Pressable accessibilityRole="button" disabled={busy} style={[styles.button,busy && {opacity:0.5}]} onPress={()=>void run(action)}><Text style={styles.buttonText}>{label}</Text></Pressable>;
- if(screen==='recap'&&displayed?.status==='finished')return <SafeAreaProvider><SafeAreaView style={styles.screen}><StatusBar style="light"/><OutingRecap activity={displayed} distance={stats.meters} elapsed={duration(recordingDuration(segments,Date.now()))} recap={encounterWorld.recap} provisional={encounterPreview.provisionalPoints} touched={encounterPreview.visited.size} onMap={()=>setScreen('map')} onUploaded={receipt=>{if(receipt.encounters)encounterWorld.acceptRecap(receipt.encounters);void encounterWorld.refresh();}}/></SafeAreaView></SafeAreaProvider>;
- if(screen==='map')return <SafeAreaProvider><SafeAreaView style={styles.screen}><StatusBar style="light"/><View style={{flex:1}}>
-  <RouteMap fixes={fixes} activityId={displayed?.id??null} world={encounterWorld.world} visited={encounterPreview.visited} recording={activity?.status==='recording'} fullscreen bottomInset={hudHeight}/>
-  <View style={styles.gameTop} pointerEvents="box-none"><View style={styles.gamePanel}>
-   <View style={styles.gameRow}><Text style={[styles.gameTitle,compact&&{fontSize:22}]}>Sporeward</Text><Pressable accessibilityRole="button" onPress={()=>setScreen('details')} style={styles.gameMenu}><Text style={styles.secondaryText}>{compact?'Menu':'Outings & setup'}</Text></Pressable></View>
-   <Text style={styles.state}>{activity?.status.toUpperCase()??'EXPLORE · PLAN · CLEAN'}</Text>
-   <Text style={styles.body}>{encounterWorld.world?.outbreaks.filter(o=>o.status!=='cleared').length??'—'} outbreaks nearby · choose your detour</Text>
+ async function returnToWorld() {
+  selectedId.current=null;setDisplayed(null);setFixes([]);setSegments([]);setScreen('map');await refresh();
+ }
+ if(screen==='outings')return <SafeAreaView style={styles.screen}><StatusBar style="light"/><ScrollView contentContainerStyle={styles.content}>
+  <Pressable accessibilityRole="button" style={styles.secondary} onPress={()=>void run(returnToWorld)}><Text style={styles.secondaryText}>Back to the world</Text></Pressable>
+  <Text style={styles.title}>Past outings</Text>
+  {history.filter(a=>a.status==='finished').map(a=><Pressable key={a.id} disabled={busy||!!activity} style={styles.card} onPress={()=>void run(async()=>{selectedId.current=a.id;await refresh();setScreen('recap');})} accessibilityRole="button"><Text style={styles.metric}>{new Date(a.started).toLocaleString()}</Text><Text style={styles.body}>View outing recap and route</Text></Pressable>)}
+  {!history.some(a=>a.status==='finished')&&<Text style={styles.body}>Your saved outings will appear here.</Text>}
+  {!!activity&&<Text style={styles.body}>Finish your current outing to review past outings.</Text>}
+ </ScrollView></SafeAreaView>;
+ if(screen==='review')return <SafeAreaView style={styles.screen}><StatusBar style="light"/><View style={{flex:1}}><RouteMap brightMap={brightMap} fixes={fixes} activityId={displayed?.id??null} world={encounterWorld.world} visited={encounterPreview.visited} recording={false} fullscreen topInset={70} bottomInset={20}/><Pressable accessibilityRole="button" style={[styles.gameMenu,{position:'absolute',top:12,left:12}]} onPress={()=>setScreen('recap')}><Text style={styles.secondaryText}>Back to recap</Text></Pressable></View><MapAttribution/></SafeAreaView>;
+ if(screen==='recap'&&displayed?.status==='finished')return <SafeAreaView style={styles.screen}><StatusBar style="light"/><OutingRecap activity={displayed} distance={stats.meters} elapsed={duration(recordingDuration(segments,Date.now()))} recap={encounterWorld.recap} provisional={encounterPreview.provisionalPoints} touched={encounterPreview.visited.size} coverage={encounterPreview.distanceMetres} onMap={()=>void run(returnToWorld)} onRoute={()=>setScreen('review')} onUploaded={receipt=>{if(receipt.encounters)encounterWorld.acceptRecap(receipt.encounters);void encounterWorld.refresh();}}/></SafeAreaView>;
+ if(screen==='map')return <SafeAreaView style={styles.screen}><StatusBar style="light"/><View style={{flex:1}}>
+  <RouteMap brightMap={brightMap} fixes={fixes} activityId={displayed?.id??null} world={encounterWorld.world} visited={encounterPreview.visited} recording={activity?.status==='recording'} fullscreen bottomInset={hudHeight} topInset={topHudHeight}/>
+  <View style={styles.gameTop} pointerEvents="box-none" onLayout={event=>setTopHudHeight(Math.ceil(event.nativeEvent.layout.height)+24)}><View style={styles.gamePanel}>
+   <View style={styles.gameRow}><Text style={styles.gameTitle}>Sporeward</Text><View style={{flexDirection:'row',gap:8}}><Pressable accessibilityRole="button" accessibilityLabel="Past outings" onPress={()=>setScreen('outings')} style={styles.gameMenu}><Text style={styles.smallLabel}>Outings</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Open setup" onPress={()=>setScreen('details')} style={styles.gameMenu}><Text style={styles.smallLabel}>☰</Text></Pressable></View></View>
    {!encounterWorld.status.startsWith('Map updated')&&<Text style={styles.body} accessibilityLiveRegion="polite">{encounterWorld.status}</Text>}
   </View></View>
-  <View style={styles.gameBottom} onLayout={event=>setHudHeight(Math.ceil(event.nativeEvent.layout.height)+24)}><View style={styles.gameRow}>
+  <View style={[styles.gameBottom,!activity&&styles.idleBottom]} onLayout={event=>setHudHeight(Math.ceil(event.nativeEvent.layout.height)+24)}>{activity&&<><View style={styles.gameRow}>
    <Text style={[styles.distance,compact&&{fontSize:32}]}>{(stats.meters/1000).toFixed(2)} <Text style={styles.metric}>km</Text></Text>
    <View style={{flexShrink:1}}><Text style={styles.gameScore}>{encounterWorld.recap?encounterWorld.recap.confirmedVisitPoints+encounterWorld.recap.confirmedCleanupPoints:encounterPreview.provisionalPoints} pts</Text><Text style={styles.body}>{encounterWorld.recap?'Confirmed':'Provisional'} · {encounterPreview.visited.size} touched</Text></View>
   </View><Text style={styles.metric}>{duration(recordingDuration(segments,Date.now()))}{activity?.status==='paused'?' · Paused':''}</Text>
+   {!encounterWorld.recap&&encounterPreview.heldPoints>0&&<Text style={styles.body}>{encounterPreview.heldPoints} potential visit points · reach 500 m of GPS coverage to qualify</Text>}
    {encounterWorld.recap?.pendingCleanupPoints? <Text style={styles.body}>+{encounterWorld.recap.pendingCleanupPoints} possible cleanup points pending</Text>:null}
-   <View style={styles.actions}>{!activity?button('Start outing',()=>recorder.start()):<>{activity.status==='recording'?button('Pause',()=>recorder.pause()):button('Resume',()=>recorder.start(true))}{button('Finish',async()=>{await recorder.pause(true);setScreen('recap');})}</>}</View>
-   {!activity&&displayed?.status==='finished'&&<Pressable accessibilityRole="button" onPress={()=>setScreen('recap')} style={styles.gameMenu}><Text style={styles.secondaryText}>View outing recap</Text></Pressable>}
+   </>}
+   <View style={styles.actions}>{!activity?button('Start outing',()=>recorder.start()):<>{activity.status==='recording'?button('Pause',()=>recorder.pause()):button('Resume',()=>recorder.start(true))}{button('Finish',finishOuting)}</>}</View>
+
   </View>
- </View></SafeAreaView></SafeAreaProvider>;
- return <SafeAreaProvider><SafeAreaView style={styles.screen}><StatusBar style="light"/><ScrollView contentContainerStyle={styles.content}>
-  <Pressable accessibilityRole="button" onPress={()=>setScreen('map')} style={styles.secondary}><Text style={styles.secondaryText}>Back to map</Text></Pressable><Text style={styles.title}>Sporeward</Text><Text style={styles.subtitle}>Outbreak field test</Text>
+ </View><MapAttribution/></SafeAreaView>;
+ return <SafeAreaView style={styles.screen}><StatusBar style="light"/><ScrollView contentContainerStyle={styles.content}>
+  <Pressable accessibilityRole="button" onPress={()=>void run(returnToWorld)} style={styles.secondary}><Text style={styles.secondaryText}>Back to map</Text></Pressable><Text style={styles.title}>Sporeward</Text><Text style={styles.subtitle}>Outbreak field test</Text>
   <Text style={styles.body}>Choose a detour, push back the spores, and finish your outing to confirm your score.</Text>
   <TesterAccount disabled={!!activity} onChanged={()=>{setIdentityGeneration(n=>n+1);selectedId.current=null;setDisplayed(null);setHistory([]);setFixes([]);setSegments([]);void refresh();void encounterWorld.resetIdentity();}}/>
   <ServerConnection locked={!!activity} onChanged={()=>void encounterWorld.refresh()}/>
+  <View style={[styles.card,{flexDirection:'row',alignItems:'center',justifyContent:'space-between'}]}><View><Text style={styles.state}>Bright map</Text><Text style={styles.body}>Use a lighter map background</Text></View><Switch accessibilityLabel="Bright map" value={brightMap} onValueChange={setBrightMap}/></View>
   <TesterScores key={identityGeneration}/>
 
-  <View style={styles.actions}>{!activity ? button('Start recording',()=>recorder.start()) : <>{activity.status==='recording' ? button('Pause',()=>recorder.pause()) : button('Resume',()=>recorder.start(true))}{button('Finish & save',()=>recorder.pause(true))}</>}</View>
+  <View style={styles.actions}>{!activity ? button('Start recording',()=>recorder.start()) : <>{activity.status==='recording' ? button('Pause',()=>recorder.pause()) : button('Resume',()=>recorder.start(true))}{button('Finish & save',finishOuting)}</>}</View>
   <View style={styles.card}><Text style={styles.state}>{activity?.status.toUpperCase() ?? (displayed ? 'ACTIVITY RECAP' : 'READY')}</Text>
    {displayed && !activity && <Text style={styles.body}>{new Date(displayed.started).toLocaleString()}</Text>}
    {encounterWorld.recap ? <><Text style={styles.metric}>{encounterWorld.recap.confirmedVisitPoints+encounterWorld.recap.confirmedCleanupPoints} confirmed points</Text><Text style={styles.body}>{encounterWorld.recap.confirmedVisitPoints} visit · {encounterWorld.recap.confirmedCleanupPoints} cleanup · {encounterWorld.recap.pendingCleanupPoints} possible cleanup points pending</Text></> : <><Text style={styles.metric}>{encounterPreview.provisionalPoints} provisional points · {encounterPreview.visited.size} outbreaks touched</Text><Text style={styles.body}>{encounterPreview.heldPoints>0?`${encounterPreview.heldPoints} potential visit points unlock after 500 m of continuous GPS coverage.`:'Provisional until upload and server validation.'}</Text></>}
@@ -151,7 +186,7 @@ export default function App() {
    </>}
 
   </View>
-  {details&&<RouteMap fixes={fixes} activityId={displayed?.id ?? null} world={encounterWorld.world} visited={encounterPreview.visited} recording={activity?.status==='recording'}/>}
+  {details&&<RouteMap brightMap={brightMap} fixes={fixes} activityId={displayed?.id ?? null} world={encounterWorld.world} visited={encounterPreview.visited} recording={activity?.status==='recording'}/>}
   <Text style={styles.body}>{encounterWorld.status}</Text>
   <Pressable accessibilityRole="button" style={styles.secondary} onPress={()=>void encounterWorld.refresh()}><Text style={styles.secondaryText}>Refresh outbreaks & recap</Text></Pressable>
   {details&&encounterWorld.world && <View style={styles.card}><Text style={styles.metric}>Test outbreaks</Text>{encounterWorld.world.outbreaks.map(o=><Text key={o.id} style={styles.body}>{o.name}{encounterPreview.visited.has(o.id)?' · touched':''}: {o.status==='cleared'?`cleared${o.clearedAt!==null&&Date.now()<=o.clearedAt+600000?' · 10-minute protection window':''}`:`${o.visitPoints} + ${o.cleanupBonus} bonus · ~${o.visitsRemaining} visits · ${o.status}`}{o.eligibleAt>Date.now()?` · revisit ${new Date(o.eligibleAt).toLocaleTimeString()}`:''}</Text>)}</View>}
@@ -162,10 +197,11 @@ export default function App() {
   <Text style={styles.heading}>Recent saved activities</Text>
   {history.filter(a=>a.status==='finished').map(a=><Pressable key={a.id} disabled={busy || !!activity} style={styles.card} onPress={()=>void run(async()=>{selectedId.current=a.id;})} accessibilityRole="button"><Text style={styles.metric}>{new Date(a.started).toLocaleString()}</Text><Text style={styles.body}>{activity ? 'Finish recording to review this activity' : 'View route and recap'}</Text></Pressable>)}
   {!history.some(a=>a.status==='finished') && <Text style={styles.body}>Finish your first test to keep its recording here.</Text>}
- </ScrollView></SafeAreaView></SafeAreaProvider>;
+ </ScrollView></SafeAreaView>;
 }
 const styles = StyleSheet.create({
- gameTop:{position:'absolute',top:12,left:12,right:12},gamePanel:{backgroundColor:'#10271fee',borderRadius:20,padding:16,gap:6},gameRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:12},gameTitle:{color:'#eef8ef',fontSize:26,fontWeight:'800'},gameMenu:{padding:10,backgroundColor:'#284c3a',borderRadius:12},gameBottom:{position:'absolute',bottom:12,left:12,right:12,backgroundColor:'#10271ff2',padding:16,borderRadius:20,gap:8},gameScore:{color:'#bca0ff',fontSize:28,fontWeight:'800'},
+ idleBottom:{backgroundColor:'transparent',padding:0,alignItems:'center'},
+ smallLabel:{color:'#eef8ef',fontSize:14,fontWeight:'600'},gameTop:{position:'absolute',top:8,left:12,right:12},gamePanel:{backgroundColor:'#10271fee',borderRadius:16,paddingHorizontal:12,paddingVertical:6,gap:4},gameRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:12},gameTitle:{color:'#eef8ef',fontSize:21,fontWeight:'800'},gameMenu:{padding:10,backgroundColor:'#284c3a',borderRadius:12},gameBottom:{position:'absolute',bottom:12,left:12,right:12,backgroundColor:'#10271ff2',padding:16,borderRadius:20,gap:8},gameScore:{color:'#bca0ff',fontSize:28,fontWeight:'800'},
 
  screen:{flex:1,backgroundColor:'#10271f'},content:{padding:24,gap:18,width:'100%',maxWidth:700,alignSelf:'center'},title:{color:'#eef8ef',fontSize:34,fontWeight:'700'},subtitle:{color:'#b5e1c4',fontSize:20},heading:{color:'#eef8ef',fontSize:21,fontWeight:'600'},body:{color:'#a8c6b5',fontSize:15,lineHeight:22},card:{backgroundColor:'#1c3a2e',padding:20,borderRadius:18,gap:12},state:{color:'#8ce8ac',fontWeight:'700',letterSpacing:2},distance:{color:'#eef8ef',fontSize:42,fontWeight:'600'},metric:{color:'#e6f2ea',fontSize:16},actions:{flexDirection:'row',flexWrap:'wrap',gap:12},button:{backgroundColor:'#9be9b4',paddingHorizontal:22,paddingVertical:16,borderRadius:12},buttonText:{color:'#10271f',fontSize:17,fontWeight:'700'},secondary:{padding:16,borderRadius:12,backgroundColor:'#284c3a'},secondaryText:{color:'#e6f2ea',fontSize:16,fontWeight:'600'}
 });

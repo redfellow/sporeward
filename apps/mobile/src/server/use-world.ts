@@ -3,6 +3,7 @@ import {AppState} from 'react-native';
 import {parseWorldView,parseEncounterRecap,type WorldView,type EncounterRecap} from '@sporeward/protocol';
 import {loadCredentials} from './credentials';
 import {fetchWorld,fetchRecap} from './world';
+import {SERVER_URL} from './client';
 import * as store from '../recording/store';
 export function useWorld(activityId:string|null) {
  const [world,setWorld]=useState<WorldView|null>(null),[recap,setRecap]=useState<EncounterRecap|null>(null),[status,setStatus]=useState('Open Menu to connect and sign in.');
@@ -15,7 +16,7 @@ export function useWorld(activityId:string|null) {
    if(!credentials){owner.current=null;setWorld(null);setStatus('Open Menu to connect and sign in.');return;}
    const player=credentials.playerId??credentials.username;
    if(owner.current!==player){owner.current=player;setRecap(null);const cached=await store.cachedWorld(player);if(valid())setWorld(cached?parseWorldView(cached):null);}
-   const snapshot=await fetchWorld(credentials);if(!valid())return;await store.cacheWorld(player,snapshot);if(!valid())return;setWorld(snapshot);setStatus(`Map updated ${new Date(snapshot.serverTime).toLocaleTimeString()}.`);
+   const snapshot=await fetchWorld(credentials);if(!valid())return;await store.cacheWorld(player,snapshot);if(!valid())return;setWorld(snapshot);setStatus(typeof __DEV__!=='undefined'&&__DEV__&&SERVER_URL.startsWith('http://127.0.0.1:')&&snapshot.serverTime>Date.now()+60000?'Accelerated test world · reset before GPS replay.':`Map updated ${new Date(snapshot.serverTime).toLocaleTimeString()}.`);
    if(activityId){const uploaded=await store.uploadState(activityId);if(uploaded?.state==='uploaded') {const confirmed=await fetchRecap(activityId,credentials);if(valid()){setRecap(confirmed);const old=uploaded.receipt?JSON.parse(uploaded.receipt):{};await store.markUpload(activityId,'uploaded',{...old,encounters:confirmed});}}}
   }catch(e){if(valid())setStatus(e instanceof Error?e.message:'Could not update outbreaks.');}finally{busy.current=false;}
  },[activityId]);

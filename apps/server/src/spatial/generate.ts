@@ -1,8 +1,11 @@
+import {NoLandContour} from './water.ts';
 import {contour,type PartialCell} from './contour.ts';
+import {canonicalContour} from './continuous.ts';
+import {separatedContour} from './separation.ts';
 import type {Coordinate} from '@sporeward/protocol';
 import {cellKey,neighbours,type AccessibleCell,type Cell} from './access.ts';
-export type SpatialOutbreak={id:string;name:string;cells:Cell[];ring:Coordinate[];accessWay:number;partial?:PartialCell};
-export function generateOutbreaks(access:AccessibleCell[],seed=73,count=20,blocked:ReadonlySet<string>=new Set()):SpatialOutbreak[]{
+export type SpatialOutbreak={id:string;name:string;cells:Cell[];ring:Coordinate[];surface?:Coordinate[];accessWay:number;partial?:PartialCell};
+export function generateOutbreaks(access:AccessibleCell[],seed=73,count=20,blocked:ReadonlySet<string>=new Set(),version:3|4|5=4,blockedRings:Coordinate[][]=[]):SpatialOutbreak[]{
  if(!Number.isSafeInteger(count)||count<1||count>1000||!Number.isInteger(seed))throw new Error('Invalid spawn settings.');
  let rng=seed>>>0;const random=()=>{rng=(Math.imul(rng,1664525)+1013904223)>>>0;return rng/4294967296;};
  const available=new Map(access.map(c=>[cellKey(c),c])),occupied=new Set<string>(blocked),result:SpatialOutbreak[]=[];
@@ -19,7 +22,11 @@ export function generateOutbreaks(access:AccessibleCell[],seed=73,count=20,block
    const next=options[Math.floor(random()*options.length)];cells.push(next);chosen.add(cellKey(next));
   }
   if(cells.length!==5)continue;
-  result.push({id:`tampere-${seed}-${result.length+1}`,name:`Tampere ${String(result.length+1).padStart(2,'0')}`,cells,ring:contour(cells,undefined,`tampere-${seed}-${result.length+1}`),accessWay:anchor.ways[0]});
+  const id=`tampere-${seed}-${result.length+1}`,surface=version>=4?canonicalContour(id):undefined;
+  let proposed:Coordinate[];try{proposed=contour(cells,undefined,id,version,surface);}catch(e){if(e instanceof NoLandContour)continue;throw e;}
+  const ring=version>=4?separatedContour(proposed,[...blockedRings,...result.map(f=>f.ring)]):proposed;
+  if(!ring)continue;
+  result.push({id,name:`Tampere ${String(result.length+1).padStart(2,'0')}`,cells,ring,...(surface?{surface}:{}),accessWay:anchor.ways[0]});
   for(const c of cells)occupied.add(cellKey(c));if(result.length===count)break;
  }
  if(result.length!==count)throw new Error(`Accessible map supports only ${result.length} separated five-cell outbreaks; requested ${count}.`);

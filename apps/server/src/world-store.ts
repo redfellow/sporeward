@@ -1,3 +1,8 @@
+import {landContour,type WaterPolygon} from './spatial/water.ts';
+import {resizeOutbreak} from './spatial/resize.ts';
+import {contour} from './spatial/contour.ts';
+import {canonicalContour} from './spatial/continuous.ts';
+import {separatedContour} from './spatial/separation.ts';
 import {outbreakView} from './outbreak-view.ts';
 import {generateOutbreaks} from './spatial/generate.ts';
 import {cellKey as spatialCellKey} from './spatial/access.ts';
@@ -17,22 +22,32 @@ import type {ActivityChunk,ActivityReceipt,EncounterRecap,EncounterResult,WorldV
 import {tampereTestOutbreaks,type TestOutbreak} from './test-outbreaks.ts';
 type Contribution={id:string;player:string;activityId:string;outbreakId:string;contactAt:number;visitPoints:number};
 type SavedActivity={player:string;started:number;ended:number;results:EncounterResult[]};
-export type Persisted={version:1;resetGeneration?:number;spatialUpgrade?:{version:1;at:number};footprints?:Footprint[];spatialBalance?:SpatialBalance;spatialRuntime?:{density:number;sequence:number;nextSpawn:number};startedAt:number;fixtures:TestOutbreak[];engine:WorldState;contributions:Contribution[];bonuses:Record<string,string>;activities:Record<string,SavedActivity>};
+export type Persisted={version:1;contourVersion?:3|4|5;coverageExpansions?:string[];resetGeneration?:number;spatialUpgrade?:{version:1;at:number};footprints?:Footprint[];spatialBalance?:SpatialBalance;spatialRuntime?:{density:number;sequence:number;nextSpawn:number};startedAt:number;fixtures:TestOutbreak[];engine:WorldState;contributions:Contribution[];bonuses:Record<string,string>;activities:Record<string,SavedActivity>};
 /** Single-process test-world store. One atomic snapshot includes world effects,
  * source observations and rewards. A failed write leaves the previous state intact.
  * PostgreSQL transactions will replace this adapter for multiple server instances.
  */
 export class WorldStore {
  private queue=Promise.resolve();
- constructor(private root:string,private now:()=>number=Date.now,private fixtures:()=>TestOutbreak[]=tampereTestOutbreaks,private options:{spatial?:AccessibleCell[];spatialBalance?:Partial<SpatialBalance>;persistence?:WorldPersistence;seed?:number;allowSimulationReset?:boolean;contributionId?:(contact:{player:string;activityId:string;outbreakId:string;contactAt:number})=>string}={}) {}
+ constructor(private root:string,private now:()=>number=Date.now,private fixtures:()=>TestOutbreak[]=tampereTestOutbreaks,private options:{spatial?:AccessibleCell[];spatialBalance?:Partial<SpatialBalance>;persistence?:WorldPersistence;seed?:number;density?:number;allowSimulationReset?:boolean;contributionId?:(contact:{player:string;activityId:string;outbreakId:string;contactAt:number})=>string}={}) {}
  private async locked<T>(operation:(state:Persisted)=>Promise<T>):Promise<T> {
   const result=this.queue.then(async()=>{
-   if(this.options.persistence)return this.options.persistence.transaction(()=>{
-    const fixtures=this.fixtures();return {version:1,startedAt:Math.floor(this.now()/60000)*60000,fixtures,engine:createWorld({ids:fixtures.map(o=>o.id),seed:this.options.seed,effort:4,balance:this.options.spatial?{splitProbability:0}:{maximumCells:5,growthDurationMs:100*365*86400000,splitProbability:0}}),contributions:[],bonuses:{},activities:{}};
-   },async state=>{
-    this.capture(state);this.advance(state,Math.max(0,Math.floor((this.now()-state.startedAt)/60000)-state.engine.time));
-    this.capture(state);this.settleBonuses(state);const value=await operation(state);this.settleBonuses(state);return value;
-   });
+   if(this.options.persistence){
+    // Checkpoint offline catch-up in bounded simulated-hour transactions. Each
+    // commit archives transitions and drops expired rings from the next snapshot.
+    for(;;){
+     const outcome=await this.options.persistence.transaction(()=>{
+      const fixtures=this.fixtures();return {version:1,startedAt:Math.floor(this.now()/60000)*60000,fixtures,engine:createWorld({ids:fixtures.map(o=>o.id),seed:this.options.seed,effort:4,balance:this.options.spatial?{splitProbability:0}:{maximumCells:5,growthDurationMs:100*365*86400000,splitProbability:0}}),contributions:[],bonuses:{},activities:{}};
+     },async state=>{
+      this.capture(state);
+      const remaining=Math.max(0,Math.floor((this.now()-state.startedAt)/60000)-state.engine.time),step=Math.min(60,remaining);
+      this.advance(state,step);this.capture(state);this.settleBonuses(state);
+      if(remaining>step)return {complete:false as const};
+      const value=await operation(state);this.settleBonuses(state);return {complete:true as const,value};
+     });
+     if(outcome.complete)return outcome.value;
+    }
+   }
    await mkdir(this.root,{recursive:true,mode:0o700});
    let state:Persisted;
    try{state=JSON.parse(await readFile(join(this.root,'world.json'),'utf8'));if(state.version!==1)throw new Error('Unsupported world snapshot.');}
@@ -63,6 +78,49 @@ export class WorldStore {
    s.contributions=[];s.bonuses={};s.activities={};s.footprints=[];s.spatialRuntime=undefined;s.spatialBalance=undefined;s.spatialUpgrade=undefined;this.capture(s);return {startedAt:s.startedAt,outbreaks:s.fixtures.length};
   });
  }
+ /** Upgrade current silhouettes once; old footprint intervals remain matchable. */
+ async prepareOrganicContours(){
+  if(!this.options.spatial)return;
+  return this.locked(async s=>{
+   if((s.contourVersion??3)>=4)return {alreadyPrepared:true};
+   const now=this.now();let changed=0;
+   const targets=new Map(s.engine.targets.map(o=>[o.id,o]));
+   const occupied=s.fixtures.filter(f=>{const o=targets.get(f.id);return f.retiredAt===undefined&&o&&(o.cleared===null||now<=s.startedAt+o.cleared*60000+s.engine.balance.cleanupProtectionMs);});
+   for(const f of s.fixtures){
+    const target=targets.get(f.id);
+    if(!f.cells||f.retiredAt!==undefined||!target||target.cleared!==null)continue;
+    f.surface??=canonicalContour(f.id);
+    const ring=separatedContour(contour(f.cells,f.partial,f.id,4,f.surface),occupied.filter(other=>other!==f).map(other=>other.ring));
+    if(!ring)continue;
+    if(JSON.stringify(ring)===JSON.stringify(f.ring))continue;
+    f.ring=ring;captureFootprint(s.footprints!,{id:f.id,ring,validFrom:now,validUntil:null});changed++;
+   }
+   s.contourVersion=4;return {alreadyPrepared:false,changed};
+  });
+ }
+ /** Advance under the old profile first; shoreline changes begin at this instant only. */
+ async prepareShorelines(water?:WaterPolygon[]){
+  if(!this.options.spatial)return;
+  return this.locked(async s=>{
+   if(s.contourVersion===5)return {alreadyPrepared:true};
+   const now=this.now(),access=this.options.spatial!,targets=new Map(s.engine.targets.map(t=>[t.id,t]));let changed=0,relocated=0;
+   for(const f of s.fixtures){
+    const target=targets.get(f.id);if(!f.cells||f.retiredAt!==undefined||!target||target.cleared!==null&&now>s.startedAt+target.cleared*60000+s.engine.balance.cleanupProtectionMs)continue;
+    let ring=landContour(f.ring,water);
+    if(!ring){
+     const origin=f.cells[0],others=s.fixtures.filter(o=>o!==f&&o.retiredAt===undefined&&targets.get(o.id)?.cleared===null),blocked=new Set(others.flatMap(o=>(o.cells??[]).map(spatialCellKey)));
+     const nearby=[...access].sort((a,b)=>Math.hypot(a.x-origin.x,a.y-origin.y)-Math.hypot(b.x-origin.x,b.y-origin.y)).slice(0,600);
+     let seed=2166136261;for(const c of f.id)seed=Math.imul(seed^c.charCodeAt(0),16777619);
+     const replacement=generateOutbreaks(nearby,seed>>>0,1,blocked,5,others.map(o=>o.ring))[0];
+     const resized=resizeOutbreak({...replacement,id:f.id},Math.max(1/32,target.cells),access,blocked,new Map(),5);
+     ring=separatedContour(resized.ring,others.map(o=>o.ring));if(!ring)throw new Error('Cannot relocate a water-bound outbreak to separate accessible land.');
+     f.cells=resized.cells;f.partial=resized.partial;f.surface=resized.surface;relocated++;
+    }
+    if(JSON.stringify(ring)!==JSON.stringify(f.ring)){f.ring=ring;captureFootprint(s.footprints!,{id:f.id,ring,validFrom:now,validUntil:target.cleared===null?null:s.startedAt+target.cleared*60000+s.engine.balance.cleanupProtectionMs});changed++;}
+   }
+   s.contourVersion=5;return {alreadyPrepared:false,changed,relocated};
+  });
+ }
  async prepareSpatialWorld(){
   if(!this.options.spatial)throw new Error('Spatial access data is required.');
   return this.locked(async s=>{
@@ -70,22 +128,23 @@ export class WorldStore {
    const prototypes=tampereTestOutbreaks(),now=s.startedAt+s.engine.time*60000;
    for(const f of s.fixtures){if(!f.cells){const prototype=prototypes.find(p=>p.id===f.id);if(!prototype?.cells)throw new Error('Unknown legacy outbreak geometry; migration stopped.');f.cells=prototype.cells.map(c=>({...c}));}}
    s.engine.balance={...s.engine.balance,maximumCells:BALANCE.maximumCells,growthDurationMs:BALANCE.growthDurationMs,splitProbability:0};
-   for(const o of s.engine.targets)if(!o.remnant&&o.cleared===null){o.cap=BALANCE.maximumCells;o.deadline=Math.max(s.engine.time+s.engine.balance.disintegrationDurationMs/60000,(s.engine.balance.growthDurationMs+s.engine.balance.disintegrationDurationMs)/60000+o.extension);}
-   const live=s.engine.targets.filter(o=>!o.remnant&&o.cleared===null),needed=Math.max(0,20-live.length);
+   for(const o of s.engine.targets)if(!o.remnant&&o.cleared===null){o.cap=BALANCE.maximumCells;const spawned=s.fixtures.find(f=>f.id===o.id)?.spawnedAt??s.startedAt;o.deadline=Math.max(s.engine.time+s.engine.balance.disintegrationDurationMs/60000,(spawned-s.startedAt+s.engine.balance.growthDurationMs+s.engine.balance.disintegrationDurationMs)/60000+o.extension);}
+   const density=this.options.density??20;if(!Number.isInteger(density)||density<1||density>1000)throw new Error('Invalid spatial density.');
+   const live=s.engine.targets.filter(o=>!o.remnant&&o.cleared===null),needed=Math.max(0,density-live.length);
    const occupied=new Set(s.fixtures.filter(f=>{const o=s.engine.targets.find(o=>o.id===f.id);return f.retiredAt===undefined&&o&&(o.cleared===null||s.engine.time<=o.cleared+s.engine.balance.cleanupProtectionMs/60000);}).flatMap(f=>(f.cells??[]).map(spatialCellKey)));
-   if(needed){for(const f of generateOutbreaks(this.options.spatial!,this.options.seed??73,needed,occupied)){
+   if(needed){for(const f of generateOutbreaks(this.options.spatial!,this.options.seed??73,needed,occupied,s.contourVersion??3,s.fixtures.filter(f=>f.retiredAt===undefined).map(f=>f.ring))){
     if(s.engine.targets.some(o=>o.id===f.id))throw new Error('Spatial migration outbreak identity collision.');
     const o=createOutbreak(f.id,s.engine.effort,s.engine.balance);o.deadline+=s.engine.time;s.engine.targets.push(o);s.fixtures.push({...f,spawnedAt:now});
     s.footprints??=[];captureFootprint(s.footprints,{id:f.id,ring:f.ring,validFrom:now,validUntil:null});
    }}
-   s.spatialBalance??={...SPATIAL_BALANCE,...this.options.spatialBalance};s.spatialRuntime={density:20,sequence:0,nextSpawn:s.engine.time+s.spatialBalance.replacementInitialDelayMs/60000};s.spatialUpgrade={version:1,at:now};
+   s.spatialBalance??={...SPATIAL_BALANCE,...this.options.spatialBalance};s.spatialRuntime={density,sequence:0,nextSpawn:s.engine.time+s.spatialBalance.replacementInitialDelayMs/60000};s.spatialUpgrade={version:1,at:now};
    return {alreadyPrepared:false,outbreaks:live.length+needed};
   });
  }
  private advance(s:Persisted,minutes:number){if(this.options.spatial){s.spatialBalance??={...SPATIAL_BALANCE,...this.options.spatialBalance};advanceSpatial(s,minutes,this.options.spatial);}else advanceWorld(s.engine,minutes);}
  private capture(s:Persisted){
   const existing=s.footprints!==undefined;s.footprints??=[];
-  for(const f of s.fixtures){const target=s.engine.targets.find(o=>o.id===f.id);if(!target||f.retiredAt!==undefined)continue;
+  for(const f of s.fixtures){const target=s.engine.targets.find(o=>o.id===f.id);if(!target||f.retiredAt!==undefined||target.cleared!==null&&s.engine.time>target.cleared+s.engine.balance.cleanupProtectionMs/60000)continue;
    const known=s.footprints.some(v=>v.id===f.id);
    captureFootprint(s.footprints,{id:f.id,ring:f.ring,validFrom:existing&&known?s.startedAt+s.engine.time*60000:s.startedAt,validUntil:target.cleared===null?null:s.startedAt+target.cleared*60000+s.engine.balance.cleanupProtectionMs});
   }
@@ -100,7 +159,15 @@ export class WorldStore {
   return this.locked(async s=>{
    const key=this.key(player,activity.id);
    if(!Object.hasOwn(s.activities,key)) {
-    const footprints=s.footprints!;
+    let footprints=s.footprints!;
+    if(receipt.eligibleForGame&&fixes.length&&this.options.persistence?.historicalFootprints){
+     const archived=await this.options.persistence.historicalFootprints(fixes[0].timestamp,fixes.at(-1)!.timestamp);
+     // Catch-up may have just closed/replaced an interval that is still open
+     // in the committed archive. The transaction's current intervals win.
+     const merged=new Map(footprints.map(f=>[f.id+':'+f.validFrom,f]));
+     for(const f of archived)if(!merged.has(f.id+':'+f.validFrom))merged.set(f.id+':'+f.validFrom,f);
+     footprints=[...merged.values()];
+    }
     const contacts=matchContacts(fixes,footprints),results:EncounterResult[]=[];
     for(const contact of contacts) {
      const f=s.fixtures.find(o=>o.id===contact.outbreakId)!,o=s.engine.targets.find(o=>o.id===f.id)!;

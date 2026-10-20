@@ -1,4 +1,5 @@
-import {it,expect} from 'vitest';
+import {it,expect,vi} from 'vitest';
+vi.mock('../apps/mobile/src/server/session',()=>({rememberAccountMode:vi.fn()}));
 import {previewEncounters} from '../apps/mobile/src/recording/encounters';
 import {fetchWorld} from '../apps/mobile/src/server/world';
 import {parseWorldView,type WorldView} from '@sporeward/protocol';
@@ -22,4 +23,13 @@ it('fetches the world over authenticated HTTPS and preserves an offline error',a
  const credentials={username:'tester',password:'test-only'};
  expect(await fetchWorld(credentials,async(url,options)=>{expect(url).toBe('https://sporeward.redlan.co/world');expect(options.headers).toHaveProperty('Authorization');return new Response(JSON.stringify(world));})).toEqual(world);
  await expect(fetchWorld(credentials,async()=>{throw new Error('offline');})).rejects.toThrow('saved map');
+});
+
+it('retains the observed first contact and estimate when a contour moves, while new outings start empty',()=>{
+ const first=previewEncounters(fixes,world,null,202000);
+ const moved={...world,outbreaks:world.outbreaks.map(o=>({...o,ring:o.ring.map(([x,y])=>[x+.1,y] as [number,number]),visitPoints:50,eligibleAt:300000}))};
+ const later=previewEncounters(fixes,moved,null,202000,first.observations);
+ expect(later.visited.has('west')).toBe(true);expect(later.provisionalPoints).toBe(100);
+ expect(previewEncounters(fixes,null,null,202000,first.observations).provisionalPoints).toBe(100);
+ expect(previewEncounters(fixes,moved,null,202000).visited.size).toBe(0);
 });
