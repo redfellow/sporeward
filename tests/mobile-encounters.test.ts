@@ -33,3 +33,16 @@ it('retains the observed first contact and estimate when a contour moves, while 
  expect(previewEncounters(fixes,null,null,202000,first.observations).provisionalPoints).toBe(100);
  expect(previewEncounters(fixes,moved,null,202000).visited.size).toBe(0);
 });
+
+// Regression: the field world had 2,108 live outbreaks after disintegration.
+// The old 1,000-outbreak parser kept the pre-shoreline cached map forever.
+it('accepts the latest shoreline world with ordinary outbreaks and more than a thousand remnants',async()=>{
+ const latest={...world,serverTime:300000,outbreaks:Array.from({length:2108},(_,i)=>({...world.outbreaks[0],id:'field-'+i,lifecycle:i<600?'ordinary':'remnant',ring:[[23.75,61.5],[23.7505,61.5],[23.7505,61.501],[23.75,61.501]]}))};
+ const result=await fetchWorld({username:'tester',password:'test-only'},async()=>new Response(JSON.stringify(latest)));
+ expect(result.outbreaks).toHaveLength(2108);expect(result.serverTime).toBe(300000);expect(result.outbreaks[0].ring).toEqual(latest.outbreaks[0].ring);
+});
+it('still bounds oversized world counts and aggregate geometry',()=>{
+ expect(()=>parseWorldView({...world,outbreaks:Array(10001).fill(world.outbreaks[0])})).toThrow('Invalid world response');
+ const complex={...world.outbreaks[0],ring:Array(500).fill([23.75,61.5])};
+ expect(()=>parseWorldView({...world,outbreaks:Array(2001).fill(complex)})).toThrow('geometry exceeds');
+});
