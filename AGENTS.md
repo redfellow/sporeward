@@ -28,3 +28,9 @@ Outbreak artwork illustrates the visual direction, not a fixed set of shape temp
 Keep changes focused on the requested scope. Review staged, unstaged, and untracked files when suggesting commits. Keep editor history and temporary exploration files out of version control. Never commit credentials or local environment files.
 
 For documentation changes, check consistency and links. Once implementation exists, use checks appropriate to the changed behaviour and document how to run them. Do not assume a framework, branching strategy, or release process before one is chosen.
+
+## Version control Guidelines
+
+- Commits: Use ´[$TERM] ´ prefix for commits. For the $TERM, use "Conventional Commits" specification, in uppercase.
+- Commit messages: Be concise.
+- No co-author attribution

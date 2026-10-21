@@ -1,5 +1,19 @@
 # Finished goals and implementation evidence
 
+## Visual guide, map alignment and shoreline delivery — completed steps, 21 October 2026
+
+The owner accepted the visual guide at `/rendering/palettes`, including the latest narrow crack gap and jagged zipper split. Ember & violet is locked: warm effort colours, violet remnants and pale clearing. The guide has centered state badges, concise per-card explanations, growth transitions and separate personal map markers. Cooldown uses a muted appearance; contact this outing adds a green border/check. It omits development-only area multipliers and split-category calculations.
+
+Accepted rendering includes layered translucent membranes, refined inner rims, slow withering tremble, slower irregular disintegration membranes over fine tapered branching lightning, and two complementary irregular splitting halves. Detailed size/effort and split-category decisions remain in [Game concept](game-concept.md); the concise rules remain in [Player rules](player-rules.md).
+
+The accepted visual guide is saved in commit `754a5c1`, superseding the earlier rollback checkpoint `ce34675`. Restore this newer reference when the owner asks to go back.
+
+Map-native MapLibre ImageSources and body/rim/state layers fixed camera alignment; the owner explicitly accepted Fold5 panning. Cached poses crossfade through an eight-second loop, with persistent Night/Bright preferences. The corrected emulator shoreline containment at Hatanpää/Viinikanlahti was explicitly accepted. The parser fix for the 2,108-outbreak response (previous cap 1,000; now 10,000 with a 1,000,000-vertex budget) passed eight focused encounter/parser checks and mobile/server types.
+
+The private field backup is in ignored `work/field-backups/2026-10-21-shoreline/`. Shoreline preparation took 2.26 seconds (391 boundaries changed, 10 relocated). Contour version 5 was deployed; container health, authenticated HTTPS health and preserved score/contribution/bonus/activity fingerprints were verified. Historical contact boundaries remain versioned. The corrected ARM64 release was installed on Fold5 after confirming no active recording; SHA-256 `6f6e48bd7b70fbf97f42d44e1d657707cde9f50e3119a7520c0046ab572e5264`. Final phone visual acceptance remains open, as recorded in the current goal.
+
+The emulator's read-only anonymized field-geometry viewer runs on host port 3112, with device port 3102 reversed to it. Its full-world response took 485 ms, avoiding a remote replay-database round trip of 10.5 seconds. Native geometry is bounded to a padded viewport; gameplay retains the full world. Restore device port 3102 to the normal replay API before recording scenarios. See [Rendering evidence](native-richer-rendering.md), [Field migration](field-migration.md) and [Replay tool](replay-tool.md).
+
 ## Native outbreak visuals and map polish — completed 20 October 2026
 
 The accepted wet material and continuous splash generator are shared across browser, native map and authoritative server outlines. The app caches geographic Skia rasters, pauses generation in the background, preserves polygon hit targets, and shows aligned compass/centering controls with a compact idle start button. Emulator inspection covered multiple zooms, lifecycle colours, polygon selection and map controls.
