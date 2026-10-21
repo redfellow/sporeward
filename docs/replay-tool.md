@@ -138,3 +138,17 @@ npm run replay:clock -- --reset --account=work/replay/emulator-account.json
 ```
 
 Reset is destructive only to the explicitly isolated replay world; finish native recording before using clock controls. Field data is not a target of these commands.
+
+## Field shoreline visual reproduction
+
+Export geometry-only examples from a private field backup without transferring player histories or rewards:
+
+```sh
+node --import tsx scripts/replay/prepare-map.mts --output=work/replay/shoreline-review-world.json --field-shorelines=PRIVATE_WORLD_SNAPSHOT.json
+node --import tsx scripts/replay/serve-map-preview.mts work/replay/shoreline-review-world.json
+adb -s emulator-5554 reverse tcp:3102 tcp:3112
+```
+
+The output file must be new. This viewer binds only to localhost, uses disposable emulator gateway credentials, and accepts only world/health reads. It does not process activities or change field data. The geometry matches the source snapshot after shoreline preparation; game state is newly constructed without player records. Do not record/upload against it. Restore normal replay with `adb -s emulator-5554 reverse tcp:3102 tcp:3102` before GPS tests.
+
+The field map exceeded the former 1,000-outbreak client limit because remnants do not count toward ordinary spawn density. A rejected response left old pre-shoreline geometry cached. The parser now independently bounds total outbreak count and aggregate vertices. For the 2,108-outbreak reproduction, a remote-database replay fetch took 10.5 seconds, while the read-only local response took 485 ms.

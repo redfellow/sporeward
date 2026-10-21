@@ -37,3 +37,9 @@ node --import tsx scripts/migration/preview-shorelines.mts PRIVATE_SNAPSHOT.json
 ```
 
 This command freezes the snapshot clock and runs continuous-surface and shoreline preparation on an in-memory copy. It does not connect to a database or write migrated world state. Keep source snapshots under ignored private storage. It checks that scores, contributions, bonuses and activities are unchanged and reports elapsed time and peak memory. A 500-fixture regional preview took 46.6 seconds for continuous surfaces and 1.53 seconds for shorelines locally; the current public field world has not yet been preflighted or migrated.
+
+## Shoreline rollout — 2026-10-21
+
+With explicit owner approval, a full private PostgreSQL custom-format dump and field snapshot were saved under ignored `work/field-backups/2026-10-21-shoreline/`, with private permissions and SHA-256 manifest. The 2,608-fixture snapshot preflight took 2.26 seconds for shorelines: 391 changed boundaries, 10 relocated outbreaks, and unchanged protected gameplay data.
+
+The shoreline-enabled API is deployed and its stored contour version is 5. Post-deployment fingerprints for scores, contributions, bonuses and activity records matched the backup. The API container reported healthy and authenticated public HTTPS health returned 200. Existing historical boundaries remain available for delayed activity matching; the migration creates new intervals from migration time. Windows nginx was untouched.
