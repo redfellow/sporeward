@@ -85,6 +85,15 @@ Splitting has a provisional 30-minute stabilization period. During it, the parts
 
 Pending cleaning pauses during stabilization and resumes afterwards, preserving its remaining effect rather than consuming it during the lock.
 
+
+### Effort, size and visual state
+
+Ember & violet is the selected palette. Typical Light, Medium and Heavy footprint areas follow a 1:2:4 ratio: Light is half Medium’s area, and Medium half Heavy’s area, rather than half its width. Footprint size follows actual growth and gradual cleaning; effort colour and remaining-visit estimates subtract already committed treatment immediately. Thus a still-large footprint may already show Light effort, or the distinct Clearing state when pending treatment is sufficient to finish it. Exact category thresholds remain balancing parameters.
+
+Cleaning → withering → smaller footprint → cleared. Without active treatment, growth can increase size until the disintegration phase; unresolved disintegration → remnants. Splitting is a separate, player-driven event.
+
+Child categories follow their shares of remaining cleaning work, with each child below the parent’s category. Example outcomes: Heavy → Medium + Medium or Medium + Light; Medium → Light + Light. Apply this constraint alongside the existing split work reduction and conservation rules. Category 1 (Light) outbreaks cannot split, even if cracks appear. Player-driven splitting does not create remnants; remnants remain an end-of-life disintegration result.
+
 ## Points and incentives
 
 Use X for the player's currently available visit points and Y for the cleanup bonus. Y is locked when an outbreak is created: later growth never increases it. Ordinary outbreaks start with a uniform 100-point cleanup bonus.
@@ -103,7 +112,7 @@ Repeat visit points diminish per player, provisionally by 50% each time. The sug
 
 Use uniform initial scoring for ordinary outbreaks rather than difficulty-scaled bonuses: first visit X is provisionally 100 points and cleanup bonus Y is 100 points, locked at spawning. Four equal disintegration remnants therefore award 25 points each. All ordinary outbreaks initially spawn at five connected cells, with a ten-cell growth cap. Varied spawn sizes are reserved for later. Accessibility-based cleaning requirements still vary independently of footprint within the initial 3–6-visit range.
 
-Outbreak colour communicates remaining cleaning difficulty after subtracting all committed, not-yet-delivered cleaning effects, allowing equal-sized outbreaks to require different numbers of visits. The explicit remaining-visit estimate uses the same accounting. Colour can change as new treatment is committed or growth increases the remaining requirement. When committed effects suffice to destroy the outbreak without further visits, use a distinct "clearing" appearance rather than an ordinary difficulty colour. This does not reserve the finishing bonus; accepted visits can still change the finishing position. The exact palette and thresholds remain open. Preserve distinct eligibility and current-activity contact indicators so difficulty colour does not obscure those states.
+Outbreak colour communicates remaining cleaning difficulty after subtracting all committed, not-yet-delivered cleaning effects, allowing equal-sized outbreaks to require different numbers of visits. The explicit remaining-visit estimate uses the same accounting. Colour can change as new treatment is committed or growth increases the remaining requirement. When committed effects suffice to destroy the outbreak without further visits, use a distinct "clearing" appearance rather than an ordinary difficulty colour. This does not reserve the finishing bonus; accepted visits can still change the finishing position. Ember & violet is selected; exact category thresholds remain open for balancing. Preserve distinct eligibility and current-activity contact indicators so difficulty colour does not obscure those states.
 
 Visit points slowly recover after a long absence. The starting proposal is recovery beginning after 72 hours without a visit and reaching full value over roughly two weeks. The recovery curve and timing require balancing to avoid rewarding deliberate preservation of outbreaks.
 

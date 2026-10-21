@@ -34,6 +34,13 @@ Read on for exact scoring, timing, recording, and privacy rules. These describe 
 
 The map shows outbreaks as organic regions. Their colour and remaining-visit estimate indicate how much more cleaning they need, after accounting for treatment already underway. A distinct **clearing** appearance means existing treatment is expected to finish the job.
 
+
+Typical Light → Medium → Heavy footprint areas follow **1 → 2 → 4**. Colour shows the cleaning still needed after committed treatment; physical shrinking happens gradually, so a large footprint can already have a light-effort colour.
+
+**Cleaning → withering → smaller → cleared**
+
+**No active cleaning → growth → disintegrating → remnants**
+
 Check your available visit points, the cleanup bonus, and your eligibility before choosing a route. Outbreaks are reachable from public routes. You can visit as many different eligible outbreaks as you like during one activity.
 
 ### Record an activity
@@ -84,6 +91,9 @@ A clearing outbreak is still a finishing opportunity: another visitor can take t
 ### Cracks and splitting
 
 Repeated accepted crossings along a similar corridor can develop a visible crack. Following that crack is a tactic for splitting an outbreak into two easier targets. Edge touches help clean but do not build a crossing corridor. Splitting is uncertain; a visible crack does not guarantee a split on your next visit.
+
+
+Light outbreaks do not split. Remnants come from end-of-life disintegration.
 
 Split targets stabilize for **30 minutes**, accepting no visits during that time. They inherit your previous visit-point history and the original five-hour cooldown expiry. Splitting does not restart or clear that cooldown.
 
