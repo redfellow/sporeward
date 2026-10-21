@@ -12,7 +12,7 @@ const R=6378137,C=Math.cos(61.495*Math.PI/180),ORIGIN:Point=[23.795,61.495],Y0=M
 export function growthPoint([lon,lat]:Point):Point{
  'worklet';return [(lon-ORIGIN[0])*Math.PI/180*R*C,(Y0-Math.log(Math.tan(Math.PI/4+Math.max(-85,Math.min(85,lat))*Math.PI/360)))*R*C];
 }
-function pathFor(points:Point[],smooth=false){
+export function pathFor(points:Point[],smooth=false){
  const b=Skia.PathBuilder.Make();
  if(smooth){const last=points.at(-1)!,first=points[0];b.moveTo((last[0]+first[0])/2,(last[1]+first[1])/2);points.forEach((p,i)=>{const n=points[(i+1)%points.length];b.quadTo(p[0],p[1],(p[0]+n[0])/2,(p[1]+n[1])/2);});}
  else points.forEach((p,i)=>i?b.lineTo(...p):b.moveTo(...p));
@@ -20,7 +20,7 @@ function pathFor(points:Point[],smooth=false){
 }
 function picture(draw:(canvas:SkCanvas)=>void,bounds:SkRect){const recorder=Skia.PictureRecorder(),canvas=recorder.beginRecording(bounds);draw(canvas);const result=recorder.finishRecordingAsPicture();recorder.dispose();return result;}
 type Palette=ReturnType<typeof outbreakPalette>;
-function membranePicture(m:Membrane,p:Palette):SkPicture{
+export function membranePicture(m:Membrane,p:Palette):SkPicture{
  return picture(canvas=>{
   const path=pathFor(membranePoints(m.radius,m.seed),true),paint=Skia.Paint();paint.setAntiAlias(true);
   const a=vec(-m.radius,-m.radius),b=vec(m.radius,m.radius);

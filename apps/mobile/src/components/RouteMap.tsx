@@ -1,3 +1,4 @@
+import {RicherMapImages} from './RicherMapImages';
 import * as Location from 'expo-location';
 import {outbreakAppearance} from './outbreak-appearance';
 import {RicherOverlay,growthPoint,type MapViewport,type GrowthCamera} from './RicherOverlay';
@@ -55,23 +56,33 @@ export function RouteMap({brightMap=false,fixes, activityId,world,visited,record
  useEffect(()=>{setFollow(recording);followedActivity.current=null;},[activityId]);
  useEffect(()=>{if(ready&&!activityId&&idlePosition&&!idleCentered.current&&!panned){idleCentered.current=true;camera.current?.easeTo({center:idlePosition,zoom:14,duration:300});}},[ready,activityId,idlePosition,panned]);
  const route=useMemo(()=>routeGeometry(fixes),[fixes]);
- const outbreaks=useMemo(()=>({type:'FeatureCollection' as const,features:world?.outbreaks.map(o=>({type:'Feature' as const,properties:{...outbreakAppearance(o),id:o.id,difficultyColor:o.visitsRemaining<=1?'#f5c65c':o.visitsRemaining<=3?'#f49b35':o.visitsRemaining<=5?'#e76728':'#bd3829',visited:visited.has(o.id),unavailable:o.status==='cleared'&&o.clearedAt!==null&&Date.now()>o.clearedAt+600000||o.eligibleAt>Date.now(),withering:o.status==='withering',clearing:o.status==='clearing',disintegrating:o.lifecycle==='disintegrating',remnant:o.lifecycle==='remnant',intensity:o.status==='cleared'?.12:o.lifecycle==='remnant'?.03+.25*Math.min(1,o.strength/.25):.28},geometry:{type:'Polygon' as const,coordinates:[[...o.ring,o.ring[0]]]}}))??[]}),[world,visited]);
+ // Bound native tessellation to nearby geometry; retain the complete world for gameplay.
+ const visibleOutbreaks=useMemo(()=>{
+  const [west,south,east,north]=viewport.bounds,dx=east-west,dy=north-south;
+  return (world?.outbreaks??[]).filter(o=>{const xs=o.ring.map(p=>p[0]),ys=o.ring.map(p=>p[1]);return Math.max(...xs)>=west-dx&&Math.min(...xs)<=east+dx&&Math.max(...ys)>=south-dy&&Math.min(...ys)<=north+dy;});
+ },[world,viewport]);
+ const outbreaks=useMemo(()=>({type:'FeatureCollection' as const,features:visibleOutbreaks.map(o=>({type:'Feature' as const,properties:{...outbreakAppearance(o),id:o.id,difficultyColor:o.visitsRemaining<=1?'#f5c65c':o.visitsRemaining<=3?'#f49b35':o.visitsRemaining<=5?'#e76728':'#bd3829',visited:visited.has(o.id),unavailable:o.status==='cleared'&&o.clearedAt!==null&&Date.now()>o.clearedAt+600000||o.eligibleAt>Date.now(),withering:o.status==='withering',clearing:o.status==='clearing',disintegrating:o.lifecycle==='disintegrating',remnant:o.lifecycle==='remnant',intensity:o.status==='cleared'?.12:o.lifecycle==='remnant'?.03+.25*Math.min(1,o.strength/.25):.28},geometry:{type:'Polygon' as const,coordinates:[[...o.ring,o.ring[0]]]}}))}),[visibleOutbreaks,visited]);
 
  const labelFor=(o:WorldView['outbreaks'][number])=>o.status==='cleared'||o.status==='clearing'||o.lifecycle==='stabilizing'?'':o.lifecycle==='remnant'?`+${o.cleanupBonus}`:`${o.visitsRemaining}`;
- const labels=useMemo(()=>({type:'FeatureCollection' as const,features:world?.outbreaks.map(o=>({type:'Feature' as const,properties:{label:labelFor(o)},geometry:{type:'Point' as const,coordinates:[o.ring.reduce((n,p)=>n+p[0],0)/o.ring.length,o.ring.reduce((n,p)=>n+p[1],0)/o.ring.length]}}))??[]}),[world,visited]);
+ const labels=useMemo(()=>({type:'FeatureCollection' as const,features:visibleOutbreaks.map(o=>({type:'Feature' as const,properties:{label:labelFor(o)},geometry:{type:'Point' as const,coordinates:[o.ring.reduce((n,p)=>n+p[0],0)/o.ring.length,o.ring.reduce((n,p)=>n+p[1],0)/o.ring.length]}}))}),[visibleOutbreaks,visited]);
  const fit = () => {setFollow(false);if(route.bounds) camera.current?.fitBounds(route.bounds,{padding:fullscreen?{top:topInset+20,right:32,bottom:bottomInset+controlsHeight+50,left:32}:{top:32,right:32,bottom:32,left:32},duration:300});};
  useEffect(()=> {if(ready && activityId && route.bounds && fitted.current!==activityId && !recording) {fit();fitted.current=activityId;}},[ready,activityId,route.bounds,recording]);
  useEffect(()=>{if(ready&&recording&&follow&&latest){const first=followedActivity.current!==activityId;const direction=travelHeading(fixes);if(direction!==null)heading.current=direction;camera.current?.easeTo({bearing:orientation==='north'?0:heading.current,padding:fullscreen?{top:topInset,bottom:bottomInset+controlsHeight+40,left:24,right:24}:undefined,center:[latest.longitude,latest.latitude],duration:300,...(first?{zoom:15}:{})});followedActivity.current=activityId;}},[ready,recording,follow,orientation,latest?.timestamp,activityId,fullscreen,bottomInset,topInset,controlsHeight]);
  return <View style={[styles.section,fullscreen&&{flex:1}]}>
   <View style={[styles.map,fullscreen&&{flex:1,height:undefined,borderRadius:0}]}><NativeMap ref={nativeMap} touchPitch={false} onLayout={e=>{dimensions.current=e.nativeEvent.layout;anchor.current=[dimensions.current.width/2,dimensions.current.height/2];visualCamera.value={...visualCamera.value,...dimensions.current,anchor:anchor.current};}} style={StyleSheet.absoluteFill} mapStyle={offline ? OFFLINE_STYLE : mapStyle}
-   onDidFinishLoadingStyle={()=>{setReady(true);calibrateProjection();}} onDidFailLoadingMap={()=> {setOffline(true);setReady(false);}}
-   onRegionIsChanging={event=>syncCamera(event.nativeEvent)}
-   onRegionDidChange={event=>{const v=event.nativeEvent;viewCenter.current=v.center;setViewport({center:v.center,bounds:v.bounds,zoom:v.zoom});syncCamera(v);calibrateProjection();}}
+   onDidFinishLoadingStyle={()=>{setReady(true);}} onDidFailLoadingMap={()=> {setOffline(true);setReady(false);}}
+   onRegionDidChange={event=>{const v=event.nativeEvent;viewCenter.current=v.center;setViewport({center:v.center,bounds:v.bounds,zoom:v.zoom});}}
    onRegionWillChange={event=>{if(event.nativeEvent.userInteraction){setFollow(false);setPanned(true);}}} attribution={false} logo={false}>
    <Camera ref={camera} initialViewState={{center:[23.761,61.498],zoom:12}} maxZoom={19}/>
    <GeoJSONSource key="outbreaks" id="outbreaks" data={outbreaks} onPress={event=>{const id=event.nativeEvent.features[0]?.properties?.id;if(typeof id==='string')setSelected(id);event.stopPropagation();}}>
-    <Layer key="outbreak-fill" id="outbreak-fill" type="fill" paint={{'fill-color':['get','bodyColor'],'fill-opacity':.001}}/>
+    <Layer key="outbreak-fill" id="outbreak-fill" type="fill" paint={{'fill-color':['get','bodyColor'],'fill-opacity':['get','intensity']}}/>
+    {<Layer key="native-richer-halo" id="native-richer-halo" type="line" paint={{'line-color':['get','bodyColor'],'line-opacity':.09,'line-width':['interpolate',['exponential',2],['zoom'],10,.33,14,5.26,18,84.16]}}/>}
+    {<Layer key="native-richer-glow" id="native-richer-glow" type="line" paint={{'line-color':['get','bodyColor'],'line-opacity':.18,'line-width':['interpolate',['exponential',2],['zoom'],10,.14,14,2.2,18,35.2]}}/>}
+    {<Layer key="native-richer-rim" id="native-richer-rim" type="line" paint={{'line-color':['get','rimColor'],'line-opacity':.8,'line-width':['interpolate',['exponential',2],['zoom'],10,.05,14,.8,18,12.8]}}/>}
+    {<Layer key="native-richer-withering" id="native-richer-withering" type="line" filter={['==',['get','withering'],true]} paint={{'line-color':'#fff2cf','line-opacity':.8,'line-dasharray':[1,5],'line-width':['interpolate',['exponential',2],['zoom'],10,.08,14,1.3,18,20.8]}}/>}
+    {<Layer key="native-richer-visited" id="native-richer-visited" type="line" filter={['==',['get','visited'],true]} paint={{'line-color':'#30ddc7','line-opacity':.8,'line-dasharray':[5,2],'line-width':['interpolate',['exponential',2],['zoom'],10,.08,14,1.3,18,20.8]}}/>}
    </GeoJSONSource>
+   {<RicherMapImages world={world} viewport={viewport}/>}
    <GeoJSONSource key="outbreak-labels" id="outbreak-labels" data={labels}>
     <Layer key="outbreak-label" id="outbreak-label" type="symbol" minzoom={17} layout={{'text-field':['get','label'],'text-font':['Noto Sans Regular'],'text-size':11}} paint={{'text-color':'#231333','text-halo-color':'#ffffff','text-halo-width':1}}/>
    </GeoJSONSource>
@@ -83,7 +94,7 @@ export function RouteMap({brightMap=false,fixes, activityId,world,visited,record
    <GeoJSONSource key="route-markers" id="route-markers" data={route.markers}>
     <Layer key="route-points" id="route-points" type="circle" paint={{'circle-radius':6,'circle-color':['match',['get','role'],'start','#ffffff','#e42fa5'],'circle-stroke-color':'#10271f','circle-stroke-width':2}}/>
    </GeoJSONSource>
-  </NativeMap><RicherOverlay visited={visited} world={world} viewport={viewport} camera={visualCamera}/></View>
+  </NativeMap></View>
   {fullscreen&&<CleanupFeedback world={world} top={topInset+8} hidden={!!selectedOutbreak}/>}
   {selectedOutbreak && <View style={[styles.detail,fullscreen&&{position:'absolute',top:topInset+8,left:12,right:12}]}>
    <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}><Text style={styles.detailTitle}>{selectedOutbreak.name}</Text><Pressable accessibilityRole="button" accessibilityLabel="Close outbreak details" onPress={()=>setSelected(null)} style={styles.button}><Text style={styles.label}>Close</Text></Pressable></View>
