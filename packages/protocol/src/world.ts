@@ -1,7 +1,7 @@
 import {parseFieldLabView,parseLabCollection,type FieldLabView,type LabCollectionResult} from './field-labs';
 export type Coordinate=[number,number];
 export type OutbreakView={crossings?:number;scoringVersion?:2;lifecycle?:'ordinary'|'disintegrating'|'remnant'|'stabilizing';phaseEndsAt?:number|null;id:string;name:string;ring:Coordinate[];spawnedAt:number;clearedAt:number|null;status:'active'|'withering'|'clearing'|'cleared';strength:number;committedCleaning:number;visitsRemaining:number;visitPoints:number;cleanupBonus:number;eligibleAt:number};
-export type RenderTest={examples:{name:string;ids:string[];visited?:boolean}[]};
+export type RenderTest={examples:{name:string;ids:string[];visited?:boolean}[];clock?:{paused:boolean;elapsedMinutes:number;limitMinutes:number}};
 export type WorldView={renderTest?:RenderTest;version:1;serverTime:number;worldStartedAt:number;outbreaks:OutbreakView[];resistance?:ResistanceView;fieldLabs?:FieldLabView[]};
 export type EncounterResult={scoringVersion?:2;outbreakId:string;name:string;contactAt:number;visitPoints:number;cleanupPoints:number;accepted:boolean;reason:'accepted'|'cooldown'|'duplicate'|'expired'|'ineligible';contributionId:string|null};
 export type EncounterRecap={activityId:string;confirmedVisitPoints:number;confirmedCleanupPoints:number;pendingCleanupPoints:number;encounters:EncounterResult[];updatedAt:number;labCollections?:LabCollectionResult[]};
@@ -15,6 +15,7 @@ export function parseWorldView(value:unknown):WorldView {
  if(value.renderTest!==undefined){
   const test=value.renderTest,outbreaks=value.outbreaks;
   if(!record(test)||!Array.isArray(test.examples)||test.examples.length>32||!test.examples.every(e=>record(e)&&typeof e.name==='string'&&e.name.length<=80&&Array.isArray(e.ids)&&e.ids.length>0&&e.ids.length<=8&&e.ids.every(id=>typeof id==='string'&&outbreaks.some((o:unknown)=>record(o)&&o.id===id))&&(e.visited===undefined||typeof e.visited==='boolean')))throw new Error('Invalid render test.');
+  if(test.clock!==undefined&&(!record(test.clock)||typeof test.clock.paused!=='boolean'||!Number.isSafeInteger(test.clock.elapsedMinutes)||Number(test.clock.elapsedMinutes)<0||Number(test.clock.elapsedMinutes)>720||test.clock.limitMinutes!==720))throw new Error('Invalid render test clock.');
  }
  if(value.resistance!==undefined)parseResistanceView(value.resistance);
  if(value.fieldLabs!==undefined){if(!Array.isArray(value.fieldLabs)||value.fieldLabs.length>1000)throw new Error('Invalid Field Labs');value.fieldLabs.forEach(parseFieldLabView);}

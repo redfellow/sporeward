@@ -13,11 +13,11 @@ OpenSpec is initialized at the Sporeward monorepo root for Codex. CLI version at
 
 In Codex desktop, select the corresponding skill from Skills in the sidebar. Restart/reopen the Codex session if the newly generated skills do not appear. Codex uses skills, so initialization correctly generated no command files.
 
-For example: `$openspec-propose Add a tester leaderboard` or ask to apply `replicate-approved-visuals-and-showcase` with `$openspec-apply-change`.
+For example: `$openspec-propose Add a tester leaderboard` or ask to apply `implement-outbreak-resistance-and-field-labs` with `$openspec-apply-change`.
 
 ```sh
 openspec list
-openspec status --change replicate-approved-visuals-and-showcase
+openspec status --change implement-outbreak-resistance-and-field-labs
 openspec validate --all --strict
 ```
 

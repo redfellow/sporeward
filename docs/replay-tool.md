@@ -1,6 +1,6 @@
 # Recorded activity replay tool
 
-The replay tool provides private source selection/normalization, repeatable virtual scenarios and normal-speed native emulator replay. Living-world and account integration use a separate replay database. Remaining milestone work is tracked in [Current goal](current-goal.md).
+The replay tool provides private source selection/normalization, repeatable virtual scenarios and normal-speed native emulator replay. Living-world and account integration use a separate replay database. The remaining owner acceptance is tracked in [Current goal](current-goal.md).
 
 ## Prepare private sources
 
@@ -57,7 +57,7 @@ Definitions declare a timezone-qualified baseline, random seed, named simulated 
 
 All scenario effects use the real validation, immutable upload storage and world contribution pipeline in a marked directory under ignored `work/replay/runs/sim-SCENARIO`. Reset removes only that scenario's marked world/activity storage. There is no public API target or shared-field-server reset operation. Contribution identities are deterministic for a given seed and contact, so reset can reproduce complete result objects as well as score totals.
 
-These initial runs still use the five fixed Tampere fixtures. Living geographic lifecycle/PostGIS integration and actual tester authentication are subsequent parts of the active goal; simulated player labels here are not production accounts.
+These initial runs use the five fixed Tampere fixtures. Simulated player labels here are not production accounts; the living-world scenarios below use the separate geographic replay path.
 
 Observed examples with the private 14 October phone outing: the solo/revisit schedule earns 150 visit points for the first and six-hour visits; the intervening visit is on cooldown. Four group riders each earn 100 visit points and a shared 100-point cleanup bonus after phased decay, clearing Hatanpää. The reset test verifies byte-equivalent result data for identical inputs, including contribution identities.
 
@@ -111,11 +111,13 @@ Positions arrive at normal speed using today's recorder clock; source dates do n
 
 The app only accepts replay controls in development builds pointed at the loopback API. The reset endpoint exists exclusively in this isolated marked replay environment; the field API has no corresponding reset route.
 
-A normal-speed 140-second window from the private paused walk completed on the emulator: 29 fixes in two recording sections, preserving the pause/resume boundary, with maximum scheduler lateness of 57 ms. This short recorder check was not uploaded and does not establish minimum-distance eligibility or outdoor GPS reliability. The focused replay timing/reset/gap checks pass; the living-world stage remains unfinished.
+A normal-speed 140-second window from the private paused walk completed on the emulator: 29 fixes in two recording sections, preserving the pause/resume boundary, with maximum scheduler lateness of 57 ms. This short recorder check was not uploaded and does not establish minimum-distance eligibility or outdoor GPS reliability. The focused replay timing/reset/gap checks pass.
 
-The isolated native replay API now starts with the generated 20-outbreak Tampere layout. For the public access snapshot and optional PostgreSQL/PostGIS setup, see [Spatial test world](spatial-test-world.md). Accelerated scenario fixtures and living geographic lifecycle are still being integrated.
+The isolated native replay API now starts with the generated 20-outbreak Tampere layout. For the public access snapshot and optional PostgreSQL/PostGIS setup, see [Spatial test world](spatial-test-world.md). Accelerated scenario fixtures and living geographic lifecycle are implemented and covered by the commands below.
 
-Run `npm run replay -- scripts/replay/scenarios/living-tampere.json` for the generated geographic world with group cleanup and replenishment. The other definitions retain fixed fixtures for focused scoring comparisons.
+Run `npm run replay -- scripts/replay/scenarios/living-tampere.json --verify-repeat` for the generated geographic world with group cleanup and replenishment. `npm run replay -- scripts/replay/scenarios/living-solo-repeat.json --verify-repeat` replays the private recorded route in that world, showing a cooldown rejection between accepted contacts. Both runs use disposable marked storage under `work/replay/runs/`. The other definitions retain fixed fixtures for focused scoring comparisons.
+
+During the accepted-visuals integration review, the living-world views before settling showed both Withering and Clearing states in the native MapLibre renderer. The group scenario then settled through replenishment; the solo-repeat view retained the cooldown marker until its eligible time. These are isolated replay checks, not field-server or outdoor reliability claims.
 
 For an account-enabled emulator API, add `--account=work/replay/emulator-account.json` to native replay. The private file supplies a disposable username/password through ADB stdin directly into the app sandbox; a development-only loopback command invokes the real account client and deletes the temporary app file. Credentials are not placed in the intent URL. This bootstraps automation and does not establish that the interactive sign-in form has been verified.
 
@@ -186,7 +188,7 @@ The output file must be new. This viewer binds only to localhost, uses disposabl
 
 The field map exceeded the former 1,000-outbreak client limit because remnants do not count toward ordinary spawn density. A rejected response left old pre-shoreline geometry cached. The parser now independently bounds total outbreak count and aggregate vertices. For the 2,108-outbreak reproduction, a remote-database replay fetch took 10.5 seconds, while the read-only local response took 485 ms.
 
-### Complete read-only Android render test
+### Isolated Android render showcase
 
 Export every guide example without touching a replay world or recordings:
 
@@ -201,7 +203,9 @@ Use a new output path on repeat exports. With Metro configured for the feature b
 adb -s emulator-5554 reverse tcp:3103 tcp:3115
 ```
 
-Reopen the development client or wait for its next map refresh. **Next / Previous** fit each named example: Light, Medium, Heavy, Disintegrating, Remnants, Withering, Clearing, Cracks forming, paired Splitting, cooldown, current-outing contact, and cleared protection. Lifecycle data is frozen; bounded membrane motion continues. The fixture uses public-access generation in the compact Hatanpää–Viinikka–Nekala region, synthetic personal states, two labs and a synthetic resistance zone. It is a read-only visual fixture, not a recorded contact, earned reward, or lifecycle-transition test. Starting an outing is unavailable while this fixture is displayed. All ordinary field/replay contact boundaries remain unchanged.
+Reopen the development client or wait for its next map refresh. **Next / Previous** fit each named example: Light, Medium, Heavy, Disintegrating, Remnants, Withering, Clearing, Cracks forming, paired Splitting, cooldown, current-outing contact, and cleared protection. The fixture starts with lifecycle time paused; bounded membrane motion continues. Its tester panel can pause/resume the lifecycle clock, advance five minutes, or reset to the deterministic baseline. The in-memory clock is capped at 720 minutes and does not write replay or field-world storage. These controls are available only from this standalone preview server; the field API has no render-test clock route.
+
+The fixture uses public-access generation in the compact Hatanpää–Viinikka–Nekala region, synthetic personal states, two labs and a synthetic resistance zone. It is a visual fixture, not a recorded contact or earned reward. Starting an outing is unavailable while this fixture is displayed. All ordinary field/replay contact boundaries remain unchanged.
 
 Return to the live feature replay before recording, then refresh/reopen:
 
@@ -209,4 +213,4 @@ Return to the live feature replay before recording, then refresh/reopen:
 adb -s emulator-5554 reverse tcp:3103 tcp:3103
 ```
 
-The full showcase's advancing/resettable lifecycle controls and final Android visual acceptance remain tracked in OpenSpec. Presence of every example does not establish guide parity or owner approval.
+The Android visual baseline is accepted and archived; future visual iteration is separate work. Presence of every example does not establish guide parity or owner approval.

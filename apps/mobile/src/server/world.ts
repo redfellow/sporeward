@@ -27,3 +27,12 @@ export async function fetchLabOffer(id:string,credentials:Credentials,request:He
   const offer=parseFieldLabOffer(await response.json());if(offer.outingId!==id)throw new Error('Mismatched outing');return offer;
  }finally{clearTimeout(timer);}
 }
+export type ShowcaseClockAction='pause'|'resume'|'advance'|'reset';
+export async function controlShowcaseClock(action:ShowcaseClockAction,credentials:Credentials,minutes?:number,request:HealthRequest=fetch){
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
+ try{
+  const response=await request(`${SERVER_URL}/render-test/clock`,{method:'POST',headers:{...requestHeaders(credentials),'Content-Type':'application/json'},body:JSON.stringify({action,...(minutes===undefined?{}:{minutes})}),signal:controller.signal,redirect:'error'});
+  if(!response.ok)throw new ConnectionError('Showcase clock control unavailable. Reopen the isolated render fixture.');
+  const world=parseWorldView(await response.json());if(!world.renderTest?.clock)throw new ConnectionError('The server did not return an isolated showcase clock.');return world;
+ }catch(e){if(e instanceof ConnectionError)throw e;throw new ConnectionError(controller.signal.aborted?'Showcase clock request timed out.':'Cannot reach the isolated showcase clock.');}finally{clearTimeout(timer);}
+}

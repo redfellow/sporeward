@@ -1,11 +1,15 @@
-# Current goal — Accepted visuals in Android and a repeatable showcase
+# Current work and handoff
 
-The agreed goal now lives in OpenSpec: [replicate-approved-visuals-and-showcase](../openspec/changes/replicate-approved-visuals-and-showcase/proposal.md).
+## Ongoing — Field Labs and Outbreak Resistance
 
-- [Requirements](../openspec/changes/replicate-approved-visuals-and-showcase/specs/outbreak-visuals/spec.md) and [showcase behavior](../openspec/changes/replicate-approved-visuals-and-showcase/specs/visual-showcase/spec.md)
-- [Design and environment constraints](../openspec/changes/replicate-approved-visuals-and-showcase/design.md)
-- [Task checklist and acceptance](../openspec/changes/replicate-approved-visuals-and-showcase/tasks.md)
+The active implementation is [implement-outbreak-resistance-and-field-labs](../openspec/changes/implement-outbreak-resistance-and-field-labs/proposal.md). Thirteen of fourteen tasks are complete; [task 4.4](../openspec/changes/implement-outbreak-resistance-and-field-labs/tasks.md) awaits owner acceptance of the gameplay and integrated emulator presentation.
 
-Status: implementation is underway. Shared rendering, Android outbreak and lab presentation, progressive overview, and the deterministic Hatanpää–Viinikanlahti–Viinikka–Nekala fixture are present and have focused checks. The showcase remains read-only apart from example selection and map fitting; its paused lifecycle clock, advance and reset controls are not implemented. Emulator review is still in progress, and explicit emulator and phone acceptance remain open. See the task checklists for verified slices and remaining work. Accepted visual rollback point: `754a5c1`.
+The phone visuals accepted on 2026-10-22 close the separate [visual showcase change](../openspec/changes/archive/2026-10-22-replicate-approved-visuals-and-showcase/proposal.md). They do not by themselves accept the Friday reward state or the Field Lab collection/restoration gameplay. No field deployment or outdoor reliability is claimed. A later rendering pass is separate future work.
 
-Detailed rules stay in [Game concept](game-concept.md); completed work stays in [Finished goals](finished-goals.md). Use [OpenSpec workflow](openspec-workflow.md) for the new process.
+**Resume with:** repair the emulator review session, launch the isolated Field Labs bench, inspect the Friday reward state plus available/collected lab and confirmed restoration recap, then ask the owner for explicit acceptance. Do not mark task 4.4 complete before that review. The emulator currently displays a blank screen after the latest Metro reload. Temporary feature API port 3113 and Metro port 8082 were stopped; the original port reverses remain (`8081 → 8081`, `3103 → 3120`). Metro is running on 8081 with `EXPO_PUBLIC_TEST_SERVER_URL=http://127.0.0.1:3103`; the isolated API on 3120 is the showcase preview, not the Field Labs bench. No recording was active when checked.
+
+## Pending — Project direction and status documentation
+
+The documentation-only change [align-product-direction-and-project-status](../openspec/changes/align-product-direction-and-project-status/proposal.md) is planned but not implemented (0/7 tasks). Resume from its task checklist; reconcile confirmed product direction, stale project status, open questions and the resumption map without copying the other changes' checklists. Its capability specs are intentionally skipped because it makes no product-behavior change.
+
+Completed evidence stays in [Finished goals](finished-goals.md). Use [OpenSpec workflow](openspec-workflow.md) when selecting or archiving work.

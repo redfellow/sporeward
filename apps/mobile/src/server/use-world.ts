@@ -2,7 +2,7 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 import {AppState} from 'react-native';
 import {parseWorldView,parseEncounterRecap,parseFieldLabOffer,type FieldLabOffer,type WorldView,type EncounterRecap} from '@sporeward/protocol';
 import {loadCredentials} from './credentials';
-import {fetchWorld,fetchRecap,fetchLabOffer} from './world';
+import {fetchWorld,fetchRecap,fetchLabOffer,controlShowcaseClock,type ShowcaseClockAction} from './world';
 import {SERVER_URL} from './client';
 import * as store from '../recording/store';
 export function useWorld(activityId:string|null) {
@@ -38,5 +38,12 @@ export function useWorld(activityId:string|null) {
   while(busy.current&&mounted.current)await new Promise(resolve=>setTimeout(resolve,25));
   if(mounted.current)await latestRefresh.current();
  },[]);
- return {world,recap,labOffer,status,refresh,resetIdentity,acceptRecap:setRecap};
+ const controlRenderTestClock=useCallback(async(action:ShowcaseClockAction,minutes?:number)=>{
+  try{
+   const credentials=await loadCredentials();if(!credentials)throw new Error('Connect to the isolated render showcase first.');
+   const snapshot=await controlShowcaseClock(action,credentials,minutes),player=credentials.playerId??credentials.username;
+   await store.cacheWorld(player,snapshot);owner.current=player;if(mounted.current){setWorld(snapshot);setStatus('Showcase clock '+(snapshot.renderTest!.clock!.paused?'paused.':'running.'));}
+  }catch(e){if(mounted.current)setStatus(e instanceof Error?e.message:'Showcase clock control failed.');throw e;}
+ },[]);
+ return {world,recap,labOffer,status,refresh,resetIdentity,acceptRecap:setRecap,controlRenderTestClock};
 }

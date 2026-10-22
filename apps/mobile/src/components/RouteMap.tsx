@@ -19,10 +19,11 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Map as NativeMap, Camera, type CameraRef, GeoJSONSource, Layer, type StyleSpecification } from '@maplibre/maplibre-react-native';
 import { type Fix, routeGeometry } from '../recording/model';
 const OFFLINE_STYLE: StyleSpecification = {version:8,sources:{},layers:[{id:'background',type:'background',paint:{'background-color':'#152e26'}}]};
-export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes, activityId,world,visited:recordedVisited,recording,fullscreen=false,bottomInset=280,topInset=160}:{brightMap?:boolean;labOffer?:FieldLabOffer|null;labRecap?:EncounterRecap|null;fixes:Fix[];activityId:string | null;world:WorldView|null;visited:Set<string>;recording:boolean;fullscreen?:boolean;bottomInset?:number;topInset?:number}) {
+export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes, activityId,world,visited:recordedVisited,recording,fullscreen=false,bottomInset=280,topInset=160,onRenderTestClock}:{brightMap?:boolean;labOffer?:FieldLabOffer|null;labRecap?:EncounterRecap|null;fixes:Fix[];activityId:string | null;world:WorldView|null;visited:Set<string>;recording:boolean;fullscreen?:boolean;bottomInset?:number;topInset?:number;onRenderTestClock?:(action:'pause'|'resume'|'advance'|'reset',minutes?:number)=>Promise<void>}) {
  const renderTest=typeof __DEV__!=='undefined'&&__DEV__&&SERVER_URL.startsWith('http://127.0.0.1:')?world?.renderTest:undefined;
  const visited=useMemo(()=>new Set([...recordedVisited,...(renderTest?.examples.filter(e=>e.visited).flatMap(e=>e.ids)??[])]),[recordedVisited,renderTest]);
  const [exampleIndex,setExampleIndex]=useState(0);
+ const [clockBusy,setClockBusy]=useState(false);
  const [controlsHeight,setControlsHeight]=useState(80);
  const [overviewZoom,setOverviewZoom]=useState(11.5);
  const awaitingOverview=useRef(false);
@@ -65,6 +66,10 @@ export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes, act
   return points.length?[Math.min(...points.map(p=>p[0])),Math.min(...points.map(p=>p[1])),Math.max(...points.map(p=>p[0])),Math.max(...points.map(p=>p[1]))] as [number,number,number,number]:route.bounds;
  },[world,route.bounds]);
  const explore=()=>{setFollow(false);setPanned(true);idleCentered.current=true;};
+ const controlClock=async(action:'pause'|'resume'|'advance'|'reset',minutes?:number)=>{
+  if(!onRenderTestClock||clockBusy)return;setClockBusy(true);
+  try{await onRenderTestClock(action,minutes);}catch{}finally{setClockBusy(false);}
+ };
  const changeZoom=(step:number)=>{
   explore();cameraZoom.current=Math.max(3,Math.min(19,cameraZoom.current+step));
   camera.current?.easeTo({center:viewCenter.current,zoom:cameraZoom.current,duration:200});
@@ -136,8 +141,16 @@ export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes, act
   {!fixes.length && <Text style={styles.legend}>Tampere shown until your first GPS fix arrives.</Text>}
   </>}
   {renderTest&&!selectedLab&&!selectedOutbreak&&<View style={[styles.detail,fullscreen&&{position:'absolute',left:12,top:topInset+8}, {maxWidth:250}]}>
-   <Text style={styles.label}>Render test · frozen lifecycle</Text>
+   <Text style={styles.label}>Render test · lifecycle {renderTest.clock?.paused===false?'running':'paused'}</Text>
    <Text style={styles.legend}>{exampleIndex+1}/{renderTest.examples.length} · {renderTest.examples[exampleIndex]?.name}</Text>
+   {renderTest.clock&&onRenderTestClock&&<>
+    <Text style={styles.legend}>{renderTest.clock.elapsedMinutes}/{renderTest.clock.limitMinutes} min · membrane motion continues while paused</Text>
+    <View style={styles.actions}>
+     <Pressable disabled={clockBusy} accessibilityRole="button" accessibilityLabel={renderTest.clock.paused?'Resume lifecycle clock':'Pause lifecycle clock'} style={[styles.button,clockBusy&&{opacity:.5}]} onPress={()=>void controlClock(renderTest.clock!.paused?'resume':'pause')}><Text style={styles.label}>{renderTest.clock.paused?'Resume':'Pause'}</Text></Pressable>
+     <Pressable disabled={clockBusy||renderTest.clock.elapsedMinutes>=renderTest.clock.limitMinutes} accessibilityRole="button" accessibilityLabel="Advance lifecycle clock five minutes" style={[styles.button,(clockBusy||renderTest.clock.elapsedMinutes>=renderTest.clock.limitMinutes)&&{opacity:.5}]} onPress={()=>void controlClock('advance',5)}><Text style={styles.label}>+5 min</Text></Pressable>
+     <Pressable disabled={clockBusy} accessibilityRole="button" accessibilityLabel="Reset render test lifecycle" style={[styles.button,clockBusy&&{opacity:.5}]} onPress={()=>void controlClock('reset')}><Text style={styles.label}>Reset</Text></Pressable>
+    </View>
+   </>}
    <View style={styles.actions}>{[-1,1].map(step=><Pressable key={step} accessibilityRole="button" accessibilityLabel={step===1?'Next render example':'Previous render example'} style={styles.button} onPress={()=>{
     const index=(exampleIndex+step+renderTest.examples.length)%renderTest.examples.length;setExampleIndex(index);setSelected(null);setSelectedLabId(null);explore();
     const ids=renderTest.examples[index].ids,points=(world?.outbreaks??[]).filter(o=>ids.includes(o.id)).flatMap(o=>o.ring);

@@ -1,5 +1,5 @@
 /** Frozen UI review data. No GPS history, account state or earned rewards. */
-import {createWorld,applyVisit} from '@sporeward/game';
+import {advanceWorld,createWorld,applyVisit} from '@sporeward/game';
 import {parseWorldView,type WorldView} from '@sporeward/protocol';
 import {loadTampereAccess} from '../spatial/tampere.ts';
 import {generateOutbreaks} from '../spatial/generate.ts';
@@ -8,9 +8,11 @@ import {outbreakView} from '../outbreak-view.ts';
 import {spawnFieldLabs} from '../field-labs.ts';
 import {remnantCollectionContour} from '../spatial/remnant-contour.ts';
 
-export async function renderShowcase(at:number):Promise<WorldView>{
+let cellsPromise:ReturnType<typeof loadTampereAccess>|null=null;
+export async function renderShowcase(at:number,elapsedMinutes=0,paused=true):Promise<WorldView>{
  if(!Number.isSafeInteger(at)||at<=0)throw new Error('Invalid showcase timestamp');
- const now=Math.floor(at/60000)*60000,{cells}=await loadTampereAccess();
+ if(!Number.isSafeInteger(elapsedMinutes)||elapsedMinutes<0||elapsedMinutes>720)throw new Error('Invalid showcase elapsed time');
+ const startedAt=Math.floor(at/60000)*60000,{cells}=await(cellsPromise??=loadTampereAccess());
  const compact=cells.filter(c=>{const [x,y]=tileCoordinate([c.x+.5,c.y+.5]);return x>=23.75&&x<=23.807&&y>=61.477&&y<=61.495;});
  const fixtures=generateOutbreaks(compact,73,13,new Set(),5);
  const engine=createWorld({ids:fixtures.map(f=>f.id),seed:73,effort:4,balance:{splitProbability:0}}),t=engine.targets;
@@ -24,6 +26,8 @@ export async function renderShowcase(at:number):Promise<WorldView>{
  for(const child of [t[8],t[9]]){child.strength=1.8;child.bonus=50;child.stabilize=30;}
  for(const target of [t[10],t[11]])target.history.emulator={count:1,last:0};
  t[12].strength=0;t[12].cleared=0;
+ if(elapsedMinutes)advanceWorld(engine,elapsedMinutes);
+ const now=startedAt+elapsedMinutes*60000;
  const names=['Light effort','Medium effort','Heavy effort','Disintegrating','Remnants','Withering','Clearing','Cracks forming','Splitting · left','Splitting · right','On cooldown','Visited this outing','Cleared · protection'];
  fixtures.forEach((f,i)=>{f.name=names[i];});
  // The paired split examples occupy opposite halves of one parent footprint,
@@ -44,9 +48,9 @@ export async function renderShowcase(at:number):Promise<WorldView>{
  }
  fixtures[4].ring=remnantCollectionContour(fixtures[4].ring,5,fixtures.filter((_,i)=>i!==4).map(f=>f.ring))??fixtures[4].ring;
  const examples=names.flatMap((name,i)=>i===9?[]:[{name:i===8?'Splitting':name,ids:i===8?[t[8].id,t[9].id]:[t[i].id],...(i===11?{visited:true}:{})}]);
- const labs=spawnFieldLabs(cells,73,0,now).map((lab,i)=>({...lab,name:'Field Lab' as const,collected:i===0}));
- return parseWorldView({version:1,serverTime:now,worldStartedAt:now,renderTest:{examples},
-  outbreaks:fixtures.map((f,i)=>outbreakView(engine,t[i],f,'emulator',now,now)),fieldLabs:labs,
+ const labs=spawnFieldLabs(cells,73,0,startedAt).filter(lab=>lab.expiresAt>now).map((lab,i)=>({...lab,name:'Field Lab' as const,collected:i===0}));
+ return parseWorldView({version:1,serverTime:now,worldStartedAt:startedAt,renderTest:{examples,clock:{paused,elapsedMinutes,limitMinutes:720}},
+  outbreaks:fixtures.map((f,i)=>outbreakView(engine,t[i],f,'emulator',startedAt,now)),fieldLabs:labs,
   resistance:{rulesVersion:1,scoringVersion:2,activatedAt:now,centre:[23.777,61.486],radiusMetres:3000,centreResistance:.7},
  });
 }

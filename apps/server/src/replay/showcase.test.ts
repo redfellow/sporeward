@@ -18,6 +18,11 @@ it('covers every guide state and both personal overlays with deterministic valid
  expect(a.outbreaks.filter(o=>o.lifecycle==='stabilizing')).toHaveLength(2);
  expect(named('On cooldown').eligibleAt).toBeGreaterThan(a.serverTime);
  expect(a.renderTest!.examples.find(e=>e.visited)?.ids).toEqual([named('Visited this outing').id]);
+ expect(a.renderTest!.clock).toEqual({paused:true,elapsedMinutes:0,limitMinutes:720});
+ const advanced=await renderShowcase(1800000000000,720);
+ expect(advanced.renderTest!.clock).toEqual({paused:true,elapsedMinutes:720,limitMinutes:720});
+ expect(advanced.serverTime-a.serverTime).toBe(720*60000);
+ expect(advanced.outbreaks.find(o=>o.name==='Withering')!.status).not.toBe('withering');
  const {map}=await loadTampereAccess();let timestamp=1;
  const fixes=map.ways.filter(publicAccess).flatMap((way,segment)=>way.geometry.map(p=>({longitude:p.lon,latitude:p.lat,timestamp:timestamp++*1000,segment})));
  const contacts=matchContacts(fixes,a.outbreaks.map(o=>({id:o.id,ring:o.ring,validFrom:0,validUntil:null})),0);

@@ -200,3 +200,9 @@ The objective and completion evidence:
 Final checks: web typecheck and production build pass; five focused geometry/replay tests pass. The build reports a large bundle because the lab includes a local map fixture and textures; production packaging/performance is separate.
 
 This completes the rendering prototype, not native integration or production boundary migration. The field server and Android app were not changed by this prototype. Remaining production considerations—global projection, historical footprint migration, lifecycle animation, detached shoreline components and native rendering—are documented in the lab notes.
+
+## Android outbreak visuals and deterministic showcase — completed 22 October 2026
+
+The owner accepted the Android phone visuals as the baseline. Shared outbreak rendering, progressive overview and field-lab presentation, deterministic showcase fixtures and lifecycle controls, and recorded-outing integration are complete. The Fold5 release update was installed after confirming no active recording; the owner then reviewed and accepted the phone visuals, including map containment. Another rendering pass is deferred to separate future work.
+
+Validation included focused rendering, geometry, fixture and showcase-clock tests; workspace typechecks; strict OpenSpec validation; deterministic recorded replay; an Android release build and packaged-permission check; emulator review; and Fold5 installation/owner review. The standalone showcase clock and fixture mutations remain isolated from field accounts and storage. Implementation details and evidence are in the [archived OpenSpec change](../openspec/changes/archive/2026-10-22-replicate-approved-visuals-and-showcase/proposal.md).
