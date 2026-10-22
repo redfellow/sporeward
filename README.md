@@ -79,4 +79,4 @@ Server tests cover upload persistence, timestamped contacts, duplicate contribut
 
 ## Planning changes
 
-Sporeward uses [OpenSpec](docs/openspec-workflow.md) for substantive development. Start with the [current goal](docs/current-goal.md), then read its linked OpenSpec proposal, requirements, design and task checklist.
+Sporeward uses [OpenSpec](docs/openspec-workflow.md) for substantive development. Read the owning change before resuming work: [Field Labs and Outbreak Resistance](openspec/changes/implement-outbreak-resistance-and-field-labs/proposal.md) or [product direction and project status](openspec/changes/align-product-direction-and-project-status/proposal.md). Completed work and evidence are recorded in [Finished goals](docs/finished-goals.md).

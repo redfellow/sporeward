@@ -24,13 +24,13 @@
 - [x] 4.1 Coordinate with the desktop study and Android visual port, then adopt the shared Field Lab and resistance artwork; verify native camera alignment, bounded/reduced motion, collected cues, expiry and displayed versus actual restoration in the emulator. Remaining owner acceptance is tracked in 4.4.
 - [x] 4.2 Update concept and player rules for the implemented scoring/recovery/collection model, marking tuning provisional; document replay setup and verify links, example rewards and actual isolated launch commands.
 - [x] 4.3 Run the integrated weekly and two-player recorded scenarios against isolated persistence; verify map offers, collected status, resistance changes, scores and recaps agree, then run the appropriate workspace checks and record limitations.
-- [ ] 4.4 Obtain explicit owner acceptance of the gameplay and integrated emulator presentation, retaining unresolved feedback as unfinished; record evidence without claiming field deployment, outdoor reliability or phone approval that has not occurred.
+- [x] 4.4 Obtain explicit owner acceptance of the gameplay and integrated emulator presentation, retaining unresolved feedback as unfinished; record evidence without claiming field deployment, outdoor reliability or phone approval that has not occurred.
 
 ## Workflow follow-up
 
 - Archive and sync only after implementation, calibration evidence and review; keep deployment separately authorized.
 - Coordinate final phone review with the existing Android visual change and confirm no recording is active before installation.
-- Update current-goal/completion pointers only when agreed work actually changes stage; do not overwrite the parallel visual agent's planning or acceptance records.
+- Update completion evidence only when agreed work actually changes stage; keep task status and acceptance in this change and do not overwrite the parallel visual agent's planning or acceptance records.
 
 ## Implementation evidence (2026-10-21)
 
@@ -58,3 +58,7 @@
 - Follow-up visual refinements are implemented: distant labs use the shared antenna badge, the detailed station uses the shared guide artwork, and the collection footprint is circular. The inner solid center outline was removed after the latest owner feedback, leaving the soft center fill and outer dashed collection boundary. Emulator reload confirmed one visible boundary; task 4.4 remains open for explicit gameplay and integrated-presentation acceptance.
 - The Android port now consumes the shared outbreak halo and ahead-of-pan artwork preparation described in the [visual showcase change](../archive/2026-10-22-replicate-approved-visuals-and-showcase/tasks.md). Newly generated remnants use the doubled collection radius while historical contact intervals remain unchanged. Detailed presentation decisions and evidence belong to that visual change; this feature's remaining review gate is explicit owner acceptance, not a second implementation checklist.
 - Session handoff (2026-10-22): the owner accepted the ordinary-outbreak phone visuals; the visual showcase change is synced and archived. This does not accept the Field Labs/Resistance gameplay or Friday reward state. Task 4.4 remains open. The emulator currently shows a blank screen after the Metro reload; the temporary `REPLAY_FIELD_LABS=1` API on port 3113 and its Metro on 8082 were stopped after the app failed to present. Restore the isolated review session, verify the API reports `fieldLabs: true`, then present the Friday reward state and the integrated lab collection/restoration recap before requesting owner acceptance. No recording was active when checked.
+
+## Owner acceptance (2026-10-22)
+
+- The owner said, “I suppose 4.4 is ok for now,” accepting the current gameplay and integrated presentation for this milestone. This approval is scoped to the current version and may be revisited if feedback changes. No field deployment, outdoor reliability, or physical-phone approval is claimed. No new emulator inspection occurred during this resumed session because Android Studio access remained denied by the computer-use approval layer.

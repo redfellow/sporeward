@@ -28,7 +28,7 @@ The field API was backed up and migrated to contour version 4 with 620 offline-p
 
 The standalone Android release build and packaged-permission check pass. Installed in place on the connected Fold5 after verifying no app service was active; app data was retained. The owner can review the updated live map. Back navigation and exit confirmation are recorded separately as later UI work.
 
-Completed scope and supporting evidence moved from [Current goal](current-goal.md). The overall living Tampere goal remains active; historical notes below include limitations as recorded at the time. The current goal file defines the remaining work.
+Completed scope and supporting evidence are recorded here; these historical notes retain limitations as recorded at the time. Remaining work is tracked by its owning changes: [Field Labs and Outbreak Resistance](../openspec/changes/implement-outbreak-resistance-and-field-labs/proposal.md) is 14/14 tasks complete, with owner acceptance of the current gameplay and integrated presentation for this milestone; [product direction and project status](../openspec/changes/align-product-direction-and-project-status/proposal.md) is 0/7 tasks complete. The Field Labs acceptance does not claim field deployment, outdoor reliability or physical-phone approval. These changes retain their own scope and completion evidence.
 
 ## Living Tampere simulation and tester experience — completed items
 

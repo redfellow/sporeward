@@ -14,7 +14,7 @@
 ## 3. Product evaluation and resumption
 
 - [ ] 3.1 Document a small representative A-to-B detour evaluation and an outing-return evaluation, checking reward comprehension as well as appearance; verify proposed observations are concrete and explicitly distinct from automated, emulator, phone and field acceptance. Leave unagreed thresholds open.
-- [ ] 3.2 Verify documentation links, consistency of confirmed/proposed/implemented status, and the full resumption map; record remaining deferred questions and next steps so reopening a chat is unnecessary. Keep current-goal.md an index and avoid modifying other agents' live checklists without coordination.
+- [ ] 3.2 Verify documentation links, consistency of confirmed/proposed/implemented status, and the full resumption map; record remaining deferred questions and next steps so reopening a chat is unnecessary. Keep active scope in its owning changes and avoid modifying their live checklists without coordination.
 
 ## Workflow follow-up
 

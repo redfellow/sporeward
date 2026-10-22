@@ -1,6 +1,6 @@
 # Recorded activity replay tool
 
-The replay tool provides private source selection/normalization, repeatable virtual scenarios and normal-speed native emulator replay. Living-world and account integration use a separate replay database. The remaining owner acceptance is tracked in [Current goal](current-goal.md).
+The replay tool provides private source selection/normalization, repeatable virtual scenarios and normal-speed native emulator replay. Living-world and account integration use a separate replay database. Field Labs and Outbreak Resistance owner acceptance is tracked in the [active implementation change](../openspec/changes/implement-outbreak-resistance-and-field-labs/proposal.md).
 
 ## Prepare private sources
 

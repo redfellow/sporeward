@@ -34,7 +34,7 @@ See [proposal.md](proposal.md). This document preserves the project-wide explora
 |---|---|
 | Field Lab and resistance desktop preview | [Visual study tasks](../archive/2026-10-21-explore-field-labs-and-outbreak-resistance/tasks.md); independently progressing elsewhere |
 | Resistance, combined rewards and authoritative labs | [Gameplay tasks](../implement-outbreak-resistance-and-field-labs/tasks.md), [design](../implement-outbreak-resistance-and-field-labs/design.md) and capability specs; independently progressing elsewhere |
-| Shared outbreak rendering, Android port and isolated showcase | [Visual-port tasks](../replicate-approved-visuals-and-showcase/tasks.md); preserve emulator/phone approval gates |
+| Shared outbreak rendering, Android port and isolated showcase | [Visual-port tasks](../archive/2026-10-22-replicate-approved-visuals-and-showcase/tasks.md); preserve emulator/phone approval gates |
 | Size/category and strategic splitting mechanics | [Game concept](../../../docs/game-concept.md), especially effort/size and cleaning/splitting; needs its own scoped proposal before implementation |
 | Project direction, stale status and remaining-question handoff | This change's [tasks](tasks.md) |
 | Other prior unresolved product topics | [Game concept](../../../docs/game-concept.md), [roadmap](../../../docs/development-roadmap.md) and linked evidence; not newly approved by this conversation |
@@ -64,7 +64,7 @@ Longer hard cooldowns, permanent exploration-credit incentives, ordinary distant
 
 ## Documentation approach
 
-Create a concise `docs/product-direction.md` for priorities, evaluation and a question index. Link it from the concept and roadmap; keep detailed rules and implementation tasks in their existing owners. Update stale overview paragraphs individually with evidence. Keep `docs/current-goal.md` an index and preserve edits from parallel work. Questions can remain explicitly deferred; closing a chat does not require resolving every product decision.
+Create a concise `docs/product-direction.md` for priorities, evaluation and a question index. Link it from the concept and roadmap; keep detailed rules and implementation tasks in their existing owners. Update stale overview paragraphs individually with evidence. Keep active scope and status in their owning OpenSpec changes, and preserve edits from parallel work. Questions can remain explicitly deferred; closing a chat does not require resolving every product decision.
 
 ## Risks / Trade-offs
 
