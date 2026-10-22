@@ -61,6 +61,10 @@ export async function createApp(options: AppOptions = {}): Promise<FastifyInstan
  if(options.worldStore) {
   const world=options.worldStore;
   app.get('/world',async req=>world.view(player(req)));
+  app.post<{Params:{id:string}}>('/outings/:id/lab-offer',async(req,reply)=>{
+   if(req.body!==undefined&&req.body!==null&&(typeof req.body!=='object'||Array.isArray(req.body)||Object.keys(req.body).length))return reply.code(400).send({error:'Lab offers use server-owned references; no request fields are accepted.'});
+   return world.labOffer(player(req),req.params.id);
+  });
   if(options.accounts?.profiles){const accounts=options.accounts;
    app.get('/scores',async()=>{
     const standings=await world.standings(),profiles=await accounts.profiles!(standings.map(s=>s.playerId));

@@ -98,10 +98,11 @@ function disintegrate(s:WorldState,o:Outbreak) {
 /** Caller supplies a validated concentrated edge-to-edge corridor classification.
  * Raw touches are never automatically counted as qualifying crossings here.
  */
-export function applyVisit(s:WorldState,id:string,player:string,options:{corridorCrossing?:boolean;contactTime?:number;historicalOnly?:boolean} = {}):VisitResult {
+export function applyVisit(s:WorldState,id:string,player:string,options:{corridorCrossing?:boolean;contactTime?:number;historicalOnly?:boolean;ordinaryVisitPoints?:number} = {}):VisitResult {
  if(!player) throw new Error('Player ID is required.');
  const contactTime=options.contactTime??s.time;
  if(!Number.isFinite(contactTime)||contactTime<0)throw new Error('Invalid contact time.');
+ if(options.ordinaryVisitPoints!==undefined&&(!Number.isSafeInteger(options.ordinaryVisitPoints)||options.ordinaryVisitPoints<0||options.ordinaryVisitPoints>s.balance.firstVisitPoints))throw new Error('Invalid ordinary visit points.');
  const o=s.targets.find(target=>target.id===id);
  const reject=(reason:VisitResult['reason']):VisitResult=>({accepted:false,reason,points:0,power:0});
  if(!o) return reject('missing');
@@ -111,7 +112,7 @@ export function applyVisit(s:WorldState,id:string,player:string,options:{corrido
  if(o.cleared!==null && contactTime>o.cleared+minutes(s.balance.cleanupProtectionMs) || o.remnant && o.expires!==null && s.time>=o.expires) return reject('expired');
  const settled=o.cleared!==null&&!options.historicalOnly,protection=settled&&contactTime>=o.cleared!,old=Object.hasOwn(o.history,player)?o.history[player]:undefined;
  Object.defineProperty(o.history,player,{value:{count:old?old.count+1:1,last:Math.max(old?.last??contactTime,contactTime)},writable:true,enumerable:true,configurable:true});o.visits.push({player,time:contactTime});
- const points=o.remnant?0:protection?s.balance.firstVisitPoints:v.points;
+ const points=o.remnant?0:protection?s.balance.firstVisitPoints:options.ordinaryVisitPoints??v.points;
  addPoints(s,player,points);
  if(options.historicalOnly) {
   log(s,`${player}: +${points} points for a historical visit to retired ${o.id}.`);

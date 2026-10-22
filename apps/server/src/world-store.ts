@@ -4,6 +4,9 @@ import {contour} from './spatial/contour.ts';
 import {canonicalContour} from './spatial/continuous.ts';
 import {separatedContour} from './spatial/separation.ts';
 import {outbreakView} from './outbreak-view.ts';
+import {personalVisitPoints,personalResistanceView,recordPersonalContribution,representativePoint,type PersonalResistance} from './resistance-state.ts';
+import {advanceFieldLabs,type LabLifecycle} from './field-labs.ts';
+import {issueLabOffer,settleLabContact,labViews} from './lab-settlement.ts';
 import {generateOutbreaks} from './spatial/generate.ts';
 import {cellKey as spatialCellKey} from './spatial/access.ts';
 import {createOutbreak} from '@sporeward/game';
@@ -18,18 +21,18 @@ import {mkdir,readFile,writeFile,rename,open} from 'node:fs/promises';
 import {join} from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
 import {BALANCE,reconcileCleanupBonuses,createWorld,advanceWorld,applyVisit,matchContacts,pendingCleaning,type WorldState} from '@sporeward/game';
-import type {ActivityChunk,ActivityReceipt,EncounterRecap,EncounterResult,WorldView} from '@sporeward/protocol';
+import type {ActivityChunk,ActivityReceipt,EncounterRecap,EncounterResult,WorldView,FieldLabOffer,LabCollectionResult} from '@sporeward/protocol';
 import {tampereTestOutbreaks,type TestOutbreak} from './test-outbreaks.ts';
-type Contribution={id:string;player:string;activityId:string;outbreakId:string;contactAt:number;visitPoints:number};
-type SavedActivity={player:string;started:number;ended:number;results:EncounterResult[]};
-export type Persisted={version:1;contourVersion?:3|4|5;coverageExpansions?:string[];resetGeneration?:number;spatialUpgrade?:{version:1;at:number};footprints?:Footprint[];spatialBalance?:SpatialBalance;spatialRuntime?:{density:number;sequence:number;nextSpawn:number};startedAt:number;fixtures:TestOutbreak[];engine:WorldState;contributions:Contribution[];bonuses:Record<string,string>;activities:Record<string,SavedActivity>};
+type Contribution={id:string;player:string;activityId:string;outbreakId:string;contactAt:number;visitPoints:number;scoringVersion?:2};
+type SavedActivity={player:string;started:number;ended:number;results:EncounterResult[];labCollections?:LabCollectionResult[]};
+export type Persisted={version:1;resistance?:PersonalResistance;fieldLabs?:LabLifecycle;labOffers?:Record<string,FieldLabOffer>;labCollections?:Record<string,LabCollectionResult>;contourVersion?:3|4|5;coverageExpansions?:string[];resetGeneration?:number;spatialUpgrade?:{version:1;at:number};footprints?:Footprint[];spatialBalance?:SpatialBalance;spatialRuntime?:{density:number;sequence:number;nextSpawn:number};startedAt:number;fixtures:TestOutbreak[];engine:WorldState;contributions:Contribution[];bonuses:Record<string,string>;activities:Record<string,SavedActivity>};
 /** Single-process test-world store. One atomic snapshot includes world effects,
  * source observations and rewards. A failed write leaves the previous state intact.
  * PostgreSQL transactions will replace this adapter for multiple server instances.
  */
 export class WorldStore {
  private queue=Promise.resolve();
- constructor(private root:string,private now:()=>number=Date.now,private fixtures:()=>TestOutbreak[]=tampereTestOutbreaks,private options:{spatial?:AccessibleCell[];spatialBalance?:Partial<SpatialBalance>;persistence?:WorldPersistence;seed?:number;density?:number;allowSimulationReset?:boolean;contributionId?:(contact:{player:string;activityId:string;outbreakId:string;contactAt:number})=>string}={}) {}
+ constructor(private root:string,private now:()=>number=Date.now,private fixtures:()=>TestOutbreak[]=tampereTestOutbreaks,private options:{spatial?:AccessibleCell[];labAccess?:AccessibleCell[];spatialBalance?:Partial<SpatialBalance>;persistence?:WorldPersistence;seed?:number;density?:number;allowSimulationReset?:boolean;contributionId?:(contact:{player:string;activityId:string;outbreakId:string;contactAt:number})=>string}={}) {}
  private async locked<T>(operation:(state:Persisted)=>Promise<T>):Promise<T> {
   const result=this.queue.then(async()=>{
    if(this.options.persistence){
@@ -75,8 +78,28 @@ export class WorldStore {
   return this.locked(async s=>{
    s.resetGeneration=(s.resetGeneration??0)+1;s.startedAt=Math.floor(this.now()/60000)*60000;s.fixtures=this.fixtures();
    s.engine=createWorld({ids:s.fixtures.map(f=>f.id),seed:this.options.seed,effort:4,balance:this.options.spatial?{splitProbability:0}:{maximumCells:5,growthDurationMs:100*365*86400000,splitProbability:0}});
-   s.contributions=[];s.bonuses={};s.activities={};s.footprints=[];s.spatialRuntime=undefined;s.spatialBalance=undefined;s.spatialUpgrade=undefined;this.capture(s);return {startedAt:s.startedAt,outbreaks:s.fixtures.length};
+   s.resistance=undefined;s.fieldLabs=undefined;s.labOffers=undefined;s.labCollections=undefined;s.contributions=[];s.bonuses={};s.activities={};s.footprints=[];s.spatialRuntime=undefined;s.spatialBalance=undefined;s.spatialUpgrade=undefined;this.capture(s);return {startedAt:s.startedAt,outbreaks:s.fixtures.length};
   });
+ }
+ /** Explicit prospective activation; no backfill and no historical score changes. */
+ async configureResistance(enabled:boolean) {
+  return this.locked(async s=>{
+   if(!s.resistance&&enabled)s.resistance={version:1,activatedAt:this.now(),enabled:true,players:{},representatives:{}};
+   if(s.resistance)s.resistance.enabled=enabled;
+   return {enabled:s.resistance?.enabled??false,activatedAt:s.resistance?.activatedAt??null};
+  });
+ }
+ async prepareFieldLabs() {
+  const access=this.options.labAccess??this.options.spatial;
+  if(!access)throw new Error('Field Labs require a public access map.');
+  return this.locked(async s=>{
+   s.fieldLabs=advanceFieldLabs(s.fieldLabs,access,this.options.seed??73,s.startedAt,this.now());
+   return {labs:s.fieldLabs.labs.length};
+  });
+ }
+ async labOffer(player:string,outingId:string) {
+  if(!/^[A-Za-z0-9-]{1,100}$/.test(outingId))throw Object.assign(new Error('Invalid outing ID.'),{statusCode:400});
+  return this.locked(async s=>issueLabOffer(s,player,outingId,this.now()));
  }
  /** Upgrade current silhouettes once; old footprint intervals remain matchable. */
  async prepareOrganicContours(){
@@ -141,7 +164,7 @@ export class WorldStore {
    return {alreadyPrepared:false,outbreaks:live.length+needed};
   });
  }
- private advance(s:Persisted,minutes:number){if(this.options.spatial){s.spatialBalance??={...SPATIAL_BALANCE,...this.options.spatialBalance};advanceSpatial(s,minutes,this.options.spatial);}else advanceWorld(s.engine,minutes);}
+ private advance(s:Persisted,minutes:number){if(s.fieldLabs&&(this.options.labAccess??this.options.spatial))s.fieldLabs=advanceFieldLabs(s.fieldLabs,(this.options.labAccess??this.options.spatial)!,this.options.seed??73,s.startedAt,this.now());if(this.options.spatial){s.spatialBalance??={...SPATIAL_BALANCE,...this.options.spatialBalance};advanceSpatial(s,minutes,this.options.spatial);}else advanceWorld(s.engine,minutes);}
  private capture(s:Persisted){
   const existing=s.footprints!==undefined;s.footprints??=[];
   for(const f of s.fixtures){const target=s.engine.targets.find(o=>o.id===f.id);if(!target||f.retiredAt!==undefined||target.cleared!==null&&s.engine.time>target.cleared+s.engine.balance.cleanupProtectionMs/60000)continue;
@@ -151,8 +174,12 @@ export class WorldStore {
  }
  private key(player:string,id:string){return createHash('sha256').update(player+'\0'+id).digest('hex');}
  async view(player:string):Promise<WorldView> {
-  return this.locked(async s=>({version:1,serverTime:this.now(),worldStartedAt:s.startedAt,outbreaks:s.fixtures.filter(f=>f.retiredAt===undefined&&(s.engine.targets.find(o=>o.id===f.id)?.cleared===null||this.now()<=s.startedAt+(s.engine.targets.find(o=>o.id===f.id)?.cleared??0)*60000+s.engine.balance.cleanupProtectionMs)).map(f=>{
-   return outbreakView(s.engine,s.engine.targets.find(o=>o.id===f.id)!,f,player,s.startedAt,this.now());
+  return this.locked(async s=>({version:1,serverTime:this.now(),worldStartedAt:s.startedAt,...(s.fieldLabs?{fieldLabs:labViews(s,player,this.now())}:{}),...(s.resistance?.enabled?{resistance:personalResistanceView(s.resistance,player,this.now())}:{}),outbreaks:s.fixtures.filter(f=>f.retiredAt===undefined&&(s.engine.targets.find(o=>o.id===f.id)?.cleared===null||this.now()<=s.startedAt+(s.engine.targets.find(o=>o.id===f.id)?.cleared??0)*60000+s.engine.balance.cleanupProtectionMs)).map(f=>{
+   const view=outbreakView(s.engine,s.engine.targets.find(o=>o.id===f.id)!,f,player,s.startedAt,this.now());
+   if(s.resistance?.enabled&&view.clearedAt===null&&view.lifecycle!=='remnant'){
+    view.visitPoints=personalVisitPoints(s.resistance,player,representativePoint(s.resistance,f),this.now(),s.engine.balance.firstVisitPoints);view.scoringVersion=2;
+   }
+   return view;
   })}));
  }
  async process(player:string,activity:ActivityChunk['activity'],fixes:ActivityChunk['fixes'],receipt:ActivityReceipt):Promise<EncounterRecap> {
@@ -168,8 +195,14 @@ export class WorldStore {
      for(const f of archived)if(!merged.has(f.id+':'+f.validFrom))merged.set(f.id+':'+f.validFrom,f);
      footprints=[...merged.values()];
     }
-    const contacts=matchContacts(fixes,footprints),results:EncounterResult[]=[];
+    const ordinary=matchContacts(fixes,footprints).map(contact=>({...contact,kind:'outbreak' as const}));
+    const labContacts=matchContacts(fixes,(s.fieldLabs?.labs??[]).map(lab=>({id:lab.id,ring:lab.ring,validFrom:lab.spawnedAt,validUntil:null}))).map(contact=>({...contact,kind:'lab' as const}));
+    const contacts=[...ordinary,...labContacts].sort((a,b)=>a.timestamp-b.timestamp||a.outbreakId.localeCompare(b.outbreakId)),results:EncounterResult[]=[],labCollections:LabCollectionResult[]=[];
     for(const contact of contacts) {
+     if(contact.kind==='lab'){
+      const lab=s.fieldLabs!.labs.find(lab=>lab.id===contact.outbreakId)!;
+      labCollections.push(settleLabContact(s,player,activity.id,lab,contact.timestamp,receipt.eligibleForGame&&this.now()-activity.ended<=86400000,this.now()));continue;
+     }
      const f=s.fixtures.find(o=>o.id===contact.outbreakId)!,o=s.engine.targets.find(o=>o.id===f.id)!;
      const result:EncounterResult={outbreakId:f.id,name:f.name,contactAt:contact.timestamp,visitPoints:0,cleanupPoints:0,accepted:false,reason:'ineligible',contributionId:null};
      if(receipt.eligibleForGame) {
@@ -187,16 +220,21 @@ export class WorldStore {
         if(f.retiredAt===undefined)reconcileCleanupBonuses(s.engine,o);
        }
       } else {
-       const applied=applyVisit(s.engine,f.id,player,{contactTime:(contact.timestamp-s.startedAt)/60000,historicalOnly:f.retiredAt!==undefined});
-       result.accepted=applied.accepted;result.reason=applied.accepted?'accepted':applied.reason==='expired'?'expired':'cooldown';result.visitPoints=applied.points;
+       const resistance=s.resistance?.enabled&&contact.timestamp>=s.resistance.activatedAt?s.resistance:undefined;
+       const point=resistance?representativePoint(resistance,f):undefined;
+       const ordinaryVisitPoints=resistance&&point?personalVisitPoints(resistance,player,point,contact.timestamp,s.engine.balance.firstVisitPoints):undefined;
+       const applied=applyVisit(s.engine,f.id,player,{contactTime:(contact.timestamp-s.startedAt)/60000,historicalOnly:f.retiredAt!==undefined,ordinaryVisitPoints});
+       result.accepted=applied.accepted;result.reason=applied.accepted?'accepted':applied.reason==='expired'?'expired':'cooldown';result.visitPoints=applied.points;if(applied.accepted&&resistance)result.scoringVersion=2;
        if(applied.accepted){
         if(f.cells){const fix=fixes.find(fix=>fix.timestamp>=contact.timestamp);if(fix){const [x,y]=tilePosition([fix.longitude,fix.latitude]),key=cellKey({x:Math.floor(x),y:Math.floor(y)});f.heat??={};f.heat[key]=(f.heat[key]??0)+applied.power;}}
-        const id=this.options.contributionId?.({player,activityId:activity.id,outbreakId:f.id,contactAt:contact.timestamp})??randomUUID();result.contributionId=id;s.contributions.push({id,player,activityId:activity.id,outbreakId:f.id,contactAt:contact.timestamp,visitPoints:applied.points});}
+        const id=this.options.contributionId?.({player,activityId:activity.id,outbreakId:f.id,contactAt:contact.timestamp})??randomUUID();result.contributionId=id;s.contributions.push({id,player,activityId:activity.id,outbreakId:f.id,contactAt:contact.timestamp,visitPoints:applied.points,...(resistance?{scoringVersion:2 as const}:{})});
+        if(resistance&&point)recordPersonalContribution(resistance,player,id,contact.timestamp,point,applied.power);
+       }
       }
      }
      results.push(result);
     }
-    Object.defineProperty(s.activities,key,{value:{player,started:activity.started,ended:activity.ended,results},enumerable:true,writable:true,configurable:true});
+    Object.defineProperty(s.activities,key,{value:{player,started:activity.started,ended:activity.ended,results,...(s.fieldLabs?{labCollections}:{})},enumerable:true,writable:true,configurable:true});
    }
    return this.recap(s,player,activity.id);
   });
@@ -223,6 +261,6 @@ export class WorldStore {
     if(o.cleared===null&&pendingCleaning(o)>=o.strength&&o.visits.every(v=>v.time<=(last.contactAt-s.startedAt)/60000+BALANCE.cleanupProtectionMs/60000))pending+=o.bonus;
    }
   }
-  return {activityId:id,confirmedVisitPoints:results.reduce((n,e)=>n+e.visitPoints,0),confirmedCleanupPoints:results.reduce((n,e)=>n+e.cleanupPoints,0),pendingCleanupPoints:pending,encounters:results,updatedAt:this.now()};
+  return {activityId:id,confirmedVisitPoints:results.reduce((n,e)=>n+e.visitPoints,0),confirmedCleanupPoints:results.reduce((n,e)=>n+e.cleanupPoints,0),pendingCleanupPoints:pending,encounters:results,updatedAt:this.now(),...(activity.labCollections?{labCollections:activity.labCollections}:{})};
  }
 }
