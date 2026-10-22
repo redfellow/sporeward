@@ -24,6 +24,6 @@ None. Feature requirements remain in their owning changes; no gameplay or runtim
 
 ## Impact
 
-Future implementation updates [README](../../../README.md), [architecture](../../../docs/architecture.md), [roadmap](../../../docs/development-roadmap.md), [concept](../../../docs/game-concept.md) and a concise project-level direction/question index. Active scope and status remain in their owning OpenSpec changes; completed evidence remains in [Finished goals](../../../docs/finished-goals.md). No source-code changes or deployment are included in this capture.
+Future implementation updates [README](../../../../README.md), [architecture](../../../../docs/architecture.md), [roadmap](../../../../docs/development-roadmap.md), [concept](../../../../docs/game-concept.md) and a concise project-level direction/question index. Active scope and status remain in their owning OpenSpec changes; completed evidence remains in [Finished goals](../../../../docs/finished-goals.md). No source-code changes or deployment are included in this capture.
 
 The durable decision inventory and outstanding questions are already captured in [design.md](design.md), so completing this documentation work does not depend on retrieving this chat.

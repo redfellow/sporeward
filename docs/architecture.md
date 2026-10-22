@@ -17,19 +17,19 @@ Android is the first physical-device target. iOS follows after the Android exper
 
 ## Responsibilities
 
-`packages/game` owns pure rules, configurable balance, and deterministic time/event processing. It must not depend on React, GPS services, databases, or the system clock. The shared package exports balance settings and the extracted deterministic cleaning simulation. It accepts explicit minute advancement and seeded randomness, with serializable state, cooldown/repeat scoring, two-phase cleaning, bonuses, growth/disintegration, remnants, and split inheritance. Its tests and the interactive lab exercise the same implementation. This minute-resolution planning model still needs authoritative event processing, spatial rules, late-import reconciliation, and real contact validation.
+`packages/game` owns pure rules, configurable balance, and deterministic time/event processing. It must not depend on React, GPS services, databases, or the system clock. The shared package exports balance settings and the deterministic minute-resolution cleaning simulation. It accepts explicit time advancement and seeded randomness, with serializable state, cooldown/repeat scoring, two-phase cleaning, bonuses, growth/disintegration, remnants, and split inheritance. Its tests and the interactive lab exercise the same implementation. This planning model is separate from the server's geographic test/replay world; late-import and contact rules remain under the active gameplay scope.
 
-`packages/protocol` owns shared data contracts. Add runtime validation when activity and outbreak endpoints are defined; TypeScript alone does not validate incoming requests.
+`packages/protocol` owns shared data contracts and runtime request parsing, including activity chunk validation used by the server. TypeScript types alone do not validate incoming requests; extend runtime parsing with any new endpoint contract.
 
-`apps/server` owns authoritative world state, accepted contributions, rewards, authentication, Strava delivery, and historical matching. PostgreSQL/PostGIS integration and background world processing follow the engine milestone. The test API provides Basic-Auth-protected health, activity upload, world and encounter endpoints with request limits. It runs in Docker inside the Windows host’s WSL2 instance on port 3101; Windows nginx supplies public HTTPS separately. Activity uploads persist in an immutable file store. The [first encounter slice](first-outbreak-encounter.md) adds fixed Tampere footprints, timestamped contact matching, atomic world/contribution snapshots and confirmed recaps. Geographic growth, automatic spawning and the full historical lifecycle remain outstanding.
+`apps/server` owns the isolated test/replay world, accepted contributions, rewards, tester accounts and historical matching. It supports file-backed replay storage and a PostgreSQL/PostGIS adapter for spatial world state, footprint intervals, contributions and bonus ownership; geographic growth, spawning and lifecycle processing are exercised in deterministic replay. Runtime request parsing validates incoming activity data. The first encounter documentation describes the earlier fixed-footprint slice and is historical context, not a complete inventory of the current server. These capabilities do not establish a public production deployment, distributed multi-instance operation or real-world field reliability. Strava delivery/reconciliation, production authentication, migrations, hosting and live-update transport remain open integration/deployment decisions.
 
 `apps/web` owns browser map exploration, planning, rankings, activity review, and foreground-only recording. `apps/mobile` owns native recording, offline storage, and mobile map interaction. Share rules, contracts, validation, and appropriate networking code; keep platform-specific UI and recording adapters separate.
 
 Shared packages currently export TypeScript source directly. Vite, Metro, tsx, and Vitest consume it during development. Choose production server compilation/deployment as a separate step rather than assuming plain Node can execute all package source unchanged.
 
-## Native recording gate
+## Native recording and field gate
 
-Use an Expo development build from the outset. Background location and the selected native map library require it. Start with a minimal Android recorder and validate screen-off operation, task/lifecycle changes, offline persistence, pause/resume, and battery consumption on both test phones.
+The Expo Android field recorder persists GPS fixes and route sections in local SQLite, provides map and recap views, and supports replay/upload through the test service. The development and standalone APK workflows are documented in [Development setup](development-setup.md). Implemented recording code does not establish reliable background location on physical phones. Validate screen-off operation, task/lifecycle changes, offline persistence, pause/resume, interruptions and battery use on the intended devices before claiming field acceptance.
 
 Begin the recording session through a visible user action and configure the appropriate Android location foreground service and permissions. Keep recording data durably on-device before upload. Native tooling does not guarantee survival of force-stop or vendor battery restrictions; interrupted activities must recover without inventing contacts across gaps.
 
@@ -37,7 +37,7 @@ If Expo's location module fails the measured requirements, isolate that issue in
 
 The field recorder uses OpenFreeMap’s public Liberty style for its online route basemap, with visible attribution and a route-only offline fallback. GPS collection comes from the recording adapter; the map does not start another location watcher. Routes and recaps read local SQLite data. Production map hosting and offline basemap downloads remain undecided.
 
-Authentication provider, Strava access, database migrations, hosting, and live-update transport remain to be selected. MapLibre supplies rendering, not a production map-data service.
+Production authentication, Strava access, database migration/deployment strategy, hosting and live-update transport remain to be selected. MapLibre supplies rendering, not a production map-data service. See [Product direction](product-direction.md) for priorities and open product questions, and the [Development roadmap](development-roadmap.md) for current gates.
 
 ## References
 

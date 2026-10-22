@@ -6,7 +6,7 @@ Development stages and MVP acceptance criteria are maintained in the [Developmen
 
 Native development targets Android first, using the project owner's device for initial field testing. iOS follows when the Android experience is sufficiently mature and an external tester is available.
 
-The selected stack and current scaffold are described in [Architecture](architecture.md). Initial browser/server/mobile entry points and shared packages exist; gameplay implementation and native recording are the next milestones.
+The selected stack and current implementation boundaries are described in [Architecture](architecture.md). Confirmed priorities, proposed evaluation and the question index are in [Product direction](product-direction.md); current implementation evidence and acceptance gates are in the [roadmap](development-roadmap.md) and [finished goals](finished-goals.md).
 
 ## TL;DR;
 
@@ -18,7 +18,7 @@ The selected stack and current scaffold are described in [Architecture](architec
 - Unresolved outbreaks visibly approach disintegration, then leave separate, non-growing remnants worth shares of the original bonus.
 - GPS visit times determine scoring and cooldowns. Routes may be uploaded within 24 hours after activity completion; late awards do not revoke points already granted.
 - Start with shared rules for all human-powered modes and publicly reachable targets. Location sharing defaults to everyone nearby, with off/friends options and private protection areas.
-- Use zoom-level-17 map cells as the working simulation grid, with outbreaks spanning one or more cells. Outbreak sizes, balancing values, and several timing details remain provisional. Mobile/browser play and a route-planner overlay are intended; the initial application scaffold is in place.
+- Use zoom-level-17 map cells as the working simulation grid, with outbreaks spanning one or more cells. Outbreak sizes, balancing values, and several timing details remain provisional. Mobile/browser play and a route-planner overlay are intended; implemented mobile, server and simulation scope is summarized in the [roadmap](development-roadmap.md).
 
 This document describes the current Sporeward concept. These are provisional design decisions, not a final specification. Numerical values are configurable balancing parameters.
 
