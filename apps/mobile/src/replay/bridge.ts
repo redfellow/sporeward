@@ -7,7 +7,7 @@ import {loadCredentials} from '../server/credentials';
 import {uploadActivity} from '../server/upload';
 import {summarize} from '../recording/model';
 const enabled=typeof __DEV__!=='undefined'&&__DEV__&&/^http:\/\/127\.0\.0\.1:[0-9]+$/.test(SERVER_URL);
-export type ReplayCommand={action:'prepare'|'start'|'pause'|'resume'|'gps-off'|'gps-on'|'finish'|'upload'|'reset-world'|'sign-in'|'status';session:string;request:string;activity:string|null};
+export type ReplayCommand={action:'prepare'|'start'|'pause'|'resume'|'gps-off'|'gps-on'|'finish'|'upload'|'reset-world'|'sign-in'|'status'|'check-clock';session:string;request:string;activity:string|null};
 type Control={session:string|null;activity:string|null;request:string|null;action:string|null;gpsAvailable:boolean;error:string|null;position?:{longitude:number;latitude:number}};
 let control:Control={session:null,activity:null,request:null,action:null,gpsAvailable:true,error:null};
 let restored=false;
@@ -20,7 +20,7 @@ const statusFile=()=>new File(Paths.document,'sporeward-replay-status.json');
 export function replayCommand(url:string|null):ReplayCommand|null {
  if(!enabled||!url)return null;
  try{const u=new URL(url),action=u.pathname.slice(1),session=u.searchParams.get('session'),request=u.searchParams.get('request'),activity=u.searchParams.get('activity');
-  if(u.protocol!=='sporeward:'||u.hostname!=='replay'||!['prepare','start','pause','resume','gps-off','gps-on','finish','upload','reset-world','sign-in','status'].includes(action)||!session||!/^[a-f0-9]{32}$/.test(session)||!request||!/^[a-f0-9]{32}$/.test(request)||activity!==null&&!/^[A-Za-z0-9-]{1,100}$/.test(activity))return null;
+  if(u.protocol!=='sporeward:'||u.hostname!=='replay'||!['prepare','start','pause','resume','gps-off','gps-on','finish','upload','reset-world','sign-in','status','check-clock'].includes(action)||!session||!/^[a-f0-9]{32}$/.test(session)||!request||!/^[a-f0-9]{32}$/.test(request)||activity!==null&&!/^[A-Za-z0-9-]{1,100}$/.test(activity))return null;
   return {action:action as ReplayCommand['action'],session,request,activity};
  }catch{return null;}
 }
@@ -46,6 +46,12 @@ export async function applyReplayCommand(command:ReplayCommand){
   if(command.action==='prepare'){
    if(a)throw new Error('Finish the emulator recording before preparing its location.');
    control.position=await recorder.prepareReplayPosition();
+  }else if(command.action==='check-clock'){
+   const credentials=await loadCredentials();if(!credentials)throw new Error('Configure the isolated gateway first.');
+   const response=await replayFetch('/replay/environment',{headers:requestHeaders(credentials)});
+   if(!response.ok)throw new Error('Cannot check the isolated replay clock.');
+   const environment=await response.json();
+   if(environment.mode!=='native-replay'||environment.clock!=='wall')throw new Error('Reset the accelerated replay world before recording normal-speed GPS.');
   }else if(command.action==='start'){
    if(a)throw new Error('Finish the existing emulator recording before starting a replay.');
    control={session:command.session,activity:null,request:null,action:null,gpsAvailable:true,error:null};

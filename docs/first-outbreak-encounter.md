@@ -1,69 +1,35 @@
-# First outbreak encounter field test
+# Outbreak recording field check
 
-Record an outing, touch one or more purple test outbreaks, finish, and upload. The activity shows a running **provisional** visit score and turquoise outlines for outbreaks touched during that activity. At least **500 m of continuous GPS coverage** is required for points. Upload completion returns a server-confirmed recap; later refreshes add any earned cleanup bonus. A pending cleanup bonus is a possibility, not an award: another visitor can become the finisher.
+Sign in to your own tester account, record an outing, touch outbreaks and finish. **Finish saves the recording and queues upload automatically**. Failed uploads remain saved with a persistent retry notification. Your running score is provisional until the server validates the recording; later refreshes may confirm a cleanup bonus.
 
-The five fixed locations are Hatanpää, Pyynikki, Tammerkoski, Kauppi and Kaleva. **Fit outbreaks** shows them together; **Fit route** returns to the recording. Purple means eligible, gray means unavailable, turquoise means touched during this activity, and pale purple means enough cleaning is committed to clear it. The compact list shows visit points, the locked cleanup bonus and the estimated visits still required after committed treatment.
+The field server now has 600 ordinary outbreaks across the urban Tampere riding region, extending into eastern Nokia, southern Ylöjärvi, western Kangasala and Lempäälä’s Säijä, Nurmi and Lempoinen areas. The map offers an orientation icon for north-up or track-up, plus a circular CENTER button after panning. Visit counts appear only at close zoom; tap an outbreak for details. Completed recordings are available under **Outings**, with recap and route views. The isolated replay world uses a separate deterministic 20-outbreak central Tampere baseline.
 
-Configure the existing tester credentials to load the world. The app refreshes while visible, approximately every 20 seconds, and caches the last validated map in SQLite for offline use. Recordings remain local until explicit upload. Cached estimates may change when the server checks them.
+## Before heading out
+
+1. Configure the development gateway separately from your personal tester account, then sign in under **Outings & setup → Tester account**. The field endpoint is HTTPS.
+2. Confirm the map updates. The app refreshes approximately every 20 seconds while visible and caches the last validated world for offline recording.
+3. For the original owner, use the explicit **Link earlier outings** confirmation once after signing in. Do not share the owner's account with other testers. See [Tester accounts](tester-accounts.md).
+4. Select a route with an optional outbreak detour. The detail card shows available visit points, the locked cleanup bonus and visits remaining after already committed cleaning.
+
+## During and after the outing
+
+- Start/Pause/Resume/Finish are available on the recording map and persistent recording notification. Paused travel is excluded; resumed GPS starts another section.
+- Use **Explore map** or pan to browse without automatic recentering. **Recenter**, **North up** and **Travel up** restore following. Travel bearing requires useful movement.
+- Purple difficulty shades indicate remaining effort. Labels identify withering, clearing, stabilization and disintegration. Turquoise indicates touched during this outing; gray indicates unavailable. Remnants advertise their cleanup-only reward.
+- At least 500 m of eligible GPS coverage is required for points. The HUD explains potential points held below this threshold. GPS gaps and paused travel do not invent connecting distance or contacts.
+- Finish normally queues upload without a confirmation click. Check the recap's confirmed visit points, cleanup points and possible future cleanup bonus. A possible bonus is not earned yet: another visitor may become the finisher.
+- Reopen the app after an interruption and check recovery, saved data and pending uploads. A session that expires offline retains recording ownership; sign in again to upload.
 
 ## Implemented rules
 
-- GPS contacts use timestamped fixes, 10 m boundary tolerance and interpolation only between fixes in the same recording section at most two seconds apart. Pauses and longer gaps never create contacts along the missing route.
-- The first contact with each outbreak in an activity is considered. Activity validation checks the 500 m distance threshold and the 24-hour upload window. Ineligible diagnostic uploads earn no points and cause no cleaning.
-- A first eligible visit earns 100 points. The six-hour per-player cooldown and gentler repeat-cleaning reductions use the shared balancing engine. Visit times determine eligibility; delayed uploads start their treatment when accepted, rather than erasing outbreaks retroactively.
-- Each accepted visit contributes 25% of its cleaning over five minutes and 75% over twelve hours. The test engine advances in whole-minute ticks. The cleanup bonus is locked at 100 points. Finishing/group/protection awards follow the shared engine.
-- An atomic server snapshot stores the world, contributions and processed activity results together. Concurrent completion requests, interrupted uploads and retries after restart do not add another contribution. Overlapping sources can supply earlier contact times without duplicating cleaning or points; distinct outbreak contacts remain eligible for consideration.
-- The server-confirmed recap distinguishes visit points, cleanup points, rejected contacts and possible future cleanup points. Refreshing an uploaded activity can confirm a bonus after gradual cleaning finishes.
+Contacts use timestamped GPS fixes, a 10 m boundary tolerance and interpolation only within the same recording section between fixes at most two seconds apart. Historical matching uses the outbreak geometry at the crossing time. The first contact per outbreak and activity is considered; overlapping sources may supply an earlier contact without duplicate awards. Activity validation enforces minimum distance and the 24-hour delivery window.
 
-## Deliberate limits of this test slice
+A first eligible ordinary visit earns 100 points. Six-hour per-player cooldowns and repeat-visit score/cleaning reductions use the shared balancing engine. Accepted visits apply 25% of cleaning over five minutes and 75% over twelve hours, on whole-minute server ticks. Delayed uploads start treatment when accepted and preserve the original visit time for eligibility. Cleanup bonuses remain locked; finishing/group/protection rules determine recipients. Remnants give their allocated cleanup bonus and no visit points.
 
-This is a fixed five-outbreak world using the existing single-tester Basic Auth identity, not an account or leaderboard implementation. Shapes are rounded outlines derived from five adjacent level-17 cells. Geographic footprints remain fixed while cleaning reduces strength and visual intensity. Automatic spawning, moving growth boundaries, cracks/splits, support-squad animations and live contributions before activity upload follow later. The fixed fixture geometry and spawn/clear timestamps make historical contact matching reproducible without claiming the full geographic lifecycle engine is complete.
+PostgreSQL/PostGIS stores world state, changing footprint intervals, contributions and reward ownership transactionally. Retries and concurrent completions preserve contribution identity. The original owner's field data was migrated with a final quiesced backup and unchanged scores/contributions; see [Field migration](field-migration.md).
 
-The file adapter runs in one server process and is intended for this test deployment. PostgreSQL/PostGIS and transactional multi-instance operation remain on the architecture roadmap. Do not run two API processes against the same snapshot directory.
+## Limits and next personal/group checks
 
-## Persistence and API
+This is a development world with provisional balance. Mapped access does not prove a route is safe or passable. Shapes grow and wither geographically, but full art/UI design, strategic splitting, live player sharing, support-squad presentation, Strava integration and final ranked leaderboards remain later work. Shared cleaning begins when the finished outing uploads; the current recorder does not stream live contacts to other players.
 
-`GET /world` returns validated map geometry, eligibility and cleaning estimates. `POST /activities/:id/complete` returns the normal upload receipt plus encounter results. `GET /activities/:id/encounters` refreshes the confirmed recap. All deployed endpoints require the existing HTTPS tester authentication.
-
-`WORLD_DATA_DIR` selects the snapshot directory. Docker stores `/data/world/world.json` in the same persistent volume as uploaded activities. Restarting/rebuilding the container retains both. Do not delete the volume to reset a test.
-
-## Repeatable verification
-
-The encounter tests cover contacts, minimum distance, delayed treatment, concurrent/restarted retries, overlapping sources, group bonuses, provisional tally and validated map responses. Run the full workspace check when the assembled feature is ready for verification:
-
-```sh
-npm run build:lab
-npm run check
-```
-
-A private recorder upload payload can be replayed against an isolated copy of the Tampere fixtures without uploading it or adding its coordinates to the repository:
-
-```sh
-npx tsx scripts/replay-field-encounters.mts /absolute/path/to/private-upload-payload.json
-```
-
-The replay prints distance and encounter results, checks an identical completion result after restart, then removes its temporary world. Native field testing still needs an actual outing; synthetic GPS and unit tests cannot prove screen-off reliability.
-
-## Public path references
-
-The central cell of each fixture contains a public OpenStreetMap path point checked on 14 October 2026. Map access tags support route selection but do not override conditions or signage on the ground.
-
-| Fixture | Public access path |
-|---|---|
-| Hatanpää | [OSM cycleway 1395823937](https://www.openstreetmap.org/way/1395823937) |
-| Pyynikki | [OSM cycleway 362855212](https://www.openstreetmap.org/way/362855212) |
-| Tammerkoski | [OSM cycleway 23360065](https://www.openstreetmap.org/way/23360065) |
-| Kauppi | [OSM path 866014201](https://www.openstreetmap.org/way/866014201) |
-| Kaleva | [OSM cycleway 120553071](https://www.openstreetmap.org/way/120553071) |
-
-## Android use
-
-While recording, the map follows the recorder's latest fix without starting a second location watcher. **Explore map** suspends following; **Follow me** restores it. Fitting the route or outbreaks also allows exploration. Recording diagnostics are expandable so the score and map take priority on the main view.
-
-## Verification — 14 October 2026
-
-- The assembled feature passed all 61 workspace tests and all workspace typechecks. A later focused server check also covers keeping an earned bonus attached to its original activity after protection-window revisits.
-- Replaying the private 13 October phone recording yields 1,593 m of continuous GPS coverage, a Hatanpää contact and 100 visit points. Restarting the isolated replay store and completing again returns the same result.
-- A 680 m synthetic Kaleva outing through the native emulator recorder shows a held contact before 500 m, then 100 provisional points, a turquoise visited footprint and a 100-point confirmed upload recap. Re-uploading leaves one contribution, one visit and 100 points. These synthetic visits used an isolated loopback API and did not change the public world.
-- The deployed WSL container retained its five outbreak identities and spawn time through restart. Public HTTPS world and health responses, unauthenticated/invalid-auth rejection and the expected unknown-route response were checked after proxy recovery.
-- The final standalone ARM64 APK, with compact recording details and map-follow controls, was installed on the idle Galaxy Z Fold5 without uninstalling or clearing its recordings. Packaged recording permissions pass. The next real outing remains the field validation of the encounter slice.
+For the next substantial personal test, check screen-off GPS, folded/unfolded readability, notification pause/resume, short indoor GPS loss, automatic upload and preserved history after reopening. Compare with an independent watch recording where available. For a later group test, provision one invite per person, choose a shared outbreak plus separate detours, and compare independent recaps and named scores after all uploads, including one delayed upload and retry. Emulator replay supports routine development and does not establish outdoor GPS or battery reliability.

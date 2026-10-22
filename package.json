@@ -29,7 +29,9 @@
 		"replay:server": "node --import tsx apps/server/src/replay/bench.ts",
 		"world:access": "node --import tsx scripts/world/fetch-access.mts",
 		"check:database": "node --import tsx scripts/world/check-database.mts",
-		"accounts:invite": "node --import tsx scripts/accounts/invite.mts"
+		"accounts:invite": "node --import tsx scripts/accounts/invite.mts",
+		"test-server:wake": "node --env-file=ops/test-server/.env scripts/ops/wake-server.mjs",
+		"replay:clock": "node --import tsx scripts/replay/clock.mts"
 	},
 	"devDependencies": {
 		"@types/node": "^24.0.0",

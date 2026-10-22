@@ -9,6 +9,7 @@ services:
     env_file: .env
     environment:
       NODE_ENV: production
+      NODE_OPTIONS: --max-old-space-size=2048
       HOST: 0.0.0.0
       PORT: "3001"
       ACTIVITY_DATA_DIR: /data/activities
@@ -18,6 +19,8 @@ services:
       DATABASE_NAME: sporeward
       DATABASE_PASSWORD: ${DB_PASSWORD:?Set a separate private DB_PASSWORD}
       WORLD_ID: tampere-field
+      WORLD_ACCESS: urban
+      WORLD_DENSITY: "600"
       ACCOUNT_REALM: field-test
       ACCOUNT_PRIVATE_DIR: /data/private-onboarding
       IMPORT_LEGACY_WORLD: ${IMPORT_LEGACY_WORLD:-0}
@@ -31,7 +34,7 @@ services:
       - /tmp
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
-    mem_limit: 256m
+    mem_limit: 3g
     logging:
       driver: json-file
       options:

@@ -46,6 +46,9 @@ try{
   await command('sign-in');
  }
  if(!process.argv.includes('--keep-world'))await command('reset-world');
+ // Environment is checked through the authenticated app bridge below; normal
+ // recording cannot continue a world whose lifecycle clock was fast-forwarded.
+ await command('check-clock');
  let positioned=false;
  for(let attempt=0;attempt<5;attempt++){
   await fix(plan.first.longitude,plan.first.latitude);

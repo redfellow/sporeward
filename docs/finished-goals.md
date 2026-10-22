@@ -1,6 +1,34 @@
 # Finished goals and implementation evidence
 
-Completed scope and supporting evidence moved from [Current goal](current-goal.md). The overall living Tampere goal remains active; historical notes below include limitations as recorded at the time. The current goal file defines the remaining work.
+## Field Labs and Outbreak Resistance desktop study — completed 21 October 2026
+
+Owner-approved survey stations have luminous available samples and empty, subdued personal collection states. A combined Tampere map uses the accepted Richer outbreaks and a fixed 227° resistance field below roads and outbreaks, with readable extent contours. Two-player collection, resistance/recovery controls, Night/Bright themes and reduced motion were reviewed; web typecheck and strict spec validation passed. All 7 tasks are complete.
+
+[Archived change](../openspec/changes/archive/2026-10-21-explore-field-labs-and-outbreak-resistance/proposal.md) · [Review and validation](../openspec/changes/archive/2026-10-21-explore-field-labs-and-outbreak-resistance/tasks.md). The main specs baseline only the desktop guide; authoritative gameplay, Android adoption and deployment remain separate.
+
+## Visual guide, map alignment and shoreline delivery — completed steps, 21 October 2026
+
+The owner accepted the visual guide at `/rendering/palettes`, including the latest narrow crack gap and jagged zipper split. Ember & violet is locked: warm effort colours, violet remnants and pale clearing. The guide has centered state badges, concise per-card explanations, growth transitions and separate personal map markers. Cooldown uses a muted appearance; contact this outing adds a green border/check. It omits development-only area multipliers and split-category calculations.
+
+Accepted rendering includes layered translucent membranes, refined inner rims, slow withering tremble, slower irregular disintegration membranes over fine tapered branching lightning, and two complementary irregular splitting halves. Detailed size/effort and split-category decisions remain in [Game concept](game-concept.md); the concise rules remain in [Player rules](player-rules.md).
+
+The accepted visual guide is saved in commit `754a5c1`, superseding the earlier rollback checkpoint `ce34675`. Restore this newer reference when the owner asks to go back.
+
+Map-native MapLibre ImageSources and body/rim/state layers fixed camera alignment; the owner explicitly accepted Fold5 panning. Cached poses crossfade through an eight-second loop, with persistent Night/Bright preferences. The corrected emulator shoreline containment at Hatanpää/Viinikanlahti was explicitly accepted. The parser fix for the 2,108-outbreak response (previous cap 1,000; now 10,000 with a 1,000,000-vertex budget) passed eight focused encounter/parser checks and mobile/server types.
+
+The private field backup is in ignored `work/field-backups/2026-10-21-shoreline/`. Shoreline preparation took 2.26 seconds (391 boundaries changed, 10 relocated). Contour version 5 was deployed; container health, authenticated HTTPS health and preserved score/contribution/bonus/activity fingerprints were verified. Historical contact boundaries remain versioned. The corrected ARM64 release was installed on Fold5 after confirming no active recording; SHA-256 `6f6e48bd7b70fbf97f42d44e1d657707cde9f50e3119a7520c0046ab572e5264`. This historical note's phone visual acceptance was subsequently completed in the archived [visual showcase change](../openspec/changes/archive/2026-10-22-replicate-approved-visuals-and-showcase/tasks.md); it does not establish field reliability.
+
+The emulator's read-only anonymized field-geometry viewer runs on host port 3112, with device port 3102 reversed to it. Its full-world response took 485 ms, avoiding a remote replay-database round trip of 10.5 seconds. Native geometry is bounded to a padded viewport; gameplay retains the full world. Restore device port 3102 to the normal replay API before recording scenarios. See [Rendering evidence](native-richer-rendering.md), [Field migration](field-migration.md) and [Replay tool](replay-tool.md).
+
+## Native outbreak visuals and map polish — completed 20 October 2026
+
+The accepted wet material and continuous splash generator are shared across browser, native map and authoritative server outlines. The app caches geographic Skia rasters, pauses generation in the background, preserves polygon hit targets, and shows aligned compass/centering controls with a compact idle start button. Emulator inspection covered multiple zooms, lifecycle colours, polygon selection and map controls.
+
+The field API was backed up and migrated to contour version 4 with 620 offline-precomputed bases. Historical footprint intervals remain archived; authenticated health and account world parsing pass. Persisted bases avoid repeating expensive shape sampling during ordinary resizing or restart. [Implementation, cost measurements and screenshots](native-outbreak-rendering.md).
+
+The standalone Android release build and packaged-permission check pass. Installed in place on the connected Fold5 after verifying no app service was active; app data was retained. The owner can review the updated live map. Back navigation and exit confirmation are recorded separately as later UI work.
+
+Completed scope and supporting evidence are recorded here; these historical notes retain limitations as recorded at the time. Remaining work is tracked by its owning changes: [Field Labs and Outbreak Resistance](../openspec/changes/archive/2026-10-22-implement-outbreak-resistance-and-field-labs/proposal.md) is 14/14 tasks complete, with owner acceptance of the current gameplay and integrated presentation for this milestone; the [product direction and project status reconciliation](../openspec/changes/archive/2026-10-22-align-product-direction-and-project-status/proposal.md) is archived with 7/7 tasks complete. The Field Labs acceptance does not claim field deployment, outdoor reliability or physical-phone approval. These changes retain their own scope and completion evidence.
 
 ## Living Tampere simulation and tester experience — completed items
 
@@ -56,3 +84,125 @@ The actual Android map showed the offline message while retaining 20 cached outb
 Reproduced and fixed two ordering failures: post-cleanup protection arrivals incorrectly displaced the pre-destruction finishing group, and later uploaded visits blocked independent older visits beyond the six-hour cooldown. Historical visits now use preceding known visit history for diminished points/cleaning and preserve the latest cooldown timestamp. Pre-cleanup historical repeats retain their diminished X rather than receiving the later protection-window value; they add no treatment to an already cleared target. Late evidence adds eligible group awards without revoking existing bonuses. Persisted pipeline checks cover late group awards after protection arrivals, retries and restart. An exact six-hour timestamp boundary exposed minute-unit floating-point error; cooldown calculations now resolve at millisecond precision. Twenty-three focused engine/persistent-world checks pass, and the generated planning lab was rebuilt and checked against the updated shared engine.
 
 After these changes, the private recorded `cycling-cooperation` scenario was run, reset and rerun. Complete result objects remained equal: five riders each received 200 points and the world retained 20 outbreaks. Shared-engine and server typechecks pass. These checks do not replace the remaining changing-geometry integration and live field-migration requirements.
+
+## Lifecycle UI presentation — 16 October 2026
+
+The Android map now uses remaining-visit difficulty shades after committed cleaning, with separate clearing/remnant/disintegration/eligibility colours and explicit lifecycle labels. Header and map-control measurements determine detail positioning and camera padding, including wrapped narrow-screen controls. The Android 16 overview and clearing detail card were visually checked against the isolated PostGIS world; the card showed available visit points, locked bonus and sufficient committed cleaning. A source-free fixture supplies ordinary light/heavy effort, protected cleanup, withering, clearing, remnant, disintegration and stabilization examples. It is repeatable, passes protocol validation, can export offline, and can replace only the authenticated disposable native replay world. The focused fixture check and mobile/server typechecks pass. This presentation is not GPS or scoring evidence; continuous cleanup animation and the remaining assembled UI gates still need completion.
+
+## Android safe-area and attribution repair — 16 October 2026
+
+The owner reported top/bottom clipping and attribution floating above the activity panel in the earlier field APK. The app now keeps one safe-area provider with initial window metrics across screens, positions overlays inside the inset map area, and renders linked map credits in a normal-layout footer above the system navigation area. Removed the duplicate floating attribution overlay/native control. Cold-launch narrow and unfolded Android 16 emulator views were visually checked. Mobile typecheck, standalone release build and packaged-permission check pass. The APK was installed in place on the connected Fold5 after confirming no Sporeward app service was running; no app data was cleared. Full UI design remains a later stage.
+
+## Field account and regional cutover — 16 October 2026
+
+- Took a final quiesced private backup containing four uploaded recording receipts and three processed activities, including the latest outing. Preserved the original image, compose configuration and activity volume.
+- Activated the PostgreSQL/PostGIS field world and private owner account, bound to the original canonical player. Compared the live database with the final backup: scores, contributions and processed activity records matched exactly.
+- Verified public HTTPS health, account login/logout and a 500-outbreak urban world response. Expanded road-access coverage is deployed separately from the deterministic simulation baseline.
+- Credentials remain in an ignored mode-600 private file. Explicit phone-local history linking still requires the owner's confirmation in the app.
+
+## Repeat verification command — 16 October 2026
+
+`npm run replay -- scripts/replay/scenarios/cycling-cooperation.json --verify-repeat` passed against the private normalized cycling recording. Complete result objects matched after reset, including world, virtual clock, player scores and contributions. Five riders earned 200 points each and replacement restored 20 outbreaks. Focused scenario, lifecycle-presentation and historical-geometry checks also passed (four tests). These are accelerated server checks, separate from native GPS replay.
+
+## Tester layout and cleanup transition — 16 October 2026
+
+- Refreshed standalone release build passed, with packaged Android permissions validated.
+- Recovered the Android 16 Fold emulator after a System UI cold-start hang. Restored the dropped private PostgreSQL replay tunnel; the local map resumed receiving world updates.
+- Inspected the narrow 884 × 2208 layout with lifecycle labels and the wide 1768 × 2208 layout: header, controls, bottom card and attribution remain within the system bars.
+- Added an isolated near-complete cleaning fixture. The real server tick cleared it and the native cleanup component received the transition and set its notice text. The timed UI-automation observer missed the brief visible notice, so this is integration-state evidence rather than a captured animation. Cleanup notices now remove their content after the animation, including from accessibility traversal.
+
+## Durable activity contact feedback — 16 October 2026
+
+Local observed contacts now persist by outing in SQLite, retaining the first timestamp and provisional visit value when contours move or the world goes offline. They never replace server validation or become submitted rewards. Per-outing storage prevents carrying markers into another outing. The recording HUD explains held potential points before the 500 m coverage threshold.
+
+Focused contact/storage checks passed (16 tests), with mobile typecheck. A synthetic native emulator replay completed with 24 fixes, 29 m covered, one recording section, maximum GPS gap 1.951 s and maximum injection lateness 2 ms. During recording, the actual UI displayed the turquoise touched outbreak and the 100-point eligibility message. It was not uploaded; it is a short HUD check, not evidence of scoring eligibility, battery usage or outdoor reliability.
+
+After force-stopping and reopening the finished emulator outing, native component state restored its one persisted contact. The short-outing recap also explains the 500 m eligible-coverage requirement; mobile typecheck passes.
+
+## Assembled check and owner onboarding — 16 October 2026
+
+- `npm run check` passed all workspace typechecks, 118 tests across 29 files and the shared-engine lab consistency check.
+- Disposable PostGIS checks passed adapter restart/rollback, valid geometry and isolated reset; five-account delayed upload/retry/group bonus checks produced 200 points per account. Owner-link checks preserved readable legacy uploads, contribution and cooldown identity and retry awards, rejecting duplicate/client-chosen owner claims.
+- The owner confirmed signing into `redfella` on the Fold5 and explicitly linking earlier outings. This completes the manual local owner-migration step.
+- Updated the field recording/setup guidance to the deployed account-enabled 500-outbreak region, including automatic upload and the next personal/group field checklist.
+
+## Replay/world and tester-account stage completion — 16 October 2026
+
+The original stage requirements are preserved below as historical scope; current Android integration and acceptance status lives in the owning OpenSpec changes and the [development roadmap](development-roadmap.md).
+
+- [x] Provide reusable scenario controls for load, start, pause, resume, reset and replay. Make reset restore the same world seed, players and clock, with a clear result summary. Provide a convenient scenario runner rather than a collection of one-off temporary commands.
+- [x] Ignore original calendar dates for scenario eligibility: rebase relative recording times onto the selected simulation start. Use a fixed, configurable virtual baseline for repeatable server scenarios, with advance/fast-forward controls. Native recording replay uses today's wall clock. End-of-day/month-boundary scenarios are deliberate cases, not the default for every test. Future virtual events execute only when the test clock reaches them.
+- [x] Support several simulated players and scheduled/delayed uploads. Cover repeat contacts, six-hour cooldowns, phased cleaning, group/finishing bonuses, duplicate retries and overlapping sources. Include good GPS and degraded/paused recordings.
+- [x] Implement actual geographic growth and non-uniform withering, readable difficulty after committed cleaning, cleared states and replacement scheduling. Neighbours remain distinct and non-overlapping, growing around occupied areas. A long-running scenario must remain playable instead of exhausting the initial five fixtures.
+- [x] Use PostgreSQL/PostGIS for persistent world geometry, contributions and enough historical state for the 24-hour matching window. Apply the agreed lifecycle clock and disintegration/remnant rules; preserve contribution and bonus identity across changes and restarts. Existing field recordings must survive migration.
+- [x] Demonstrate repeatable scenarios that change the living world through recorded outings and time advancement. A reset and re-run must reproduce the same outcomes for the same inputs and seed.
+- [x] Replace the shared gameplay identity with individual tester accounts. Provide a simple provisioning/onboarding path, sign-in/sign-out and persistent sessions; an invite/manual provisioning flow is sufficient for this stage.
+- [x] Keep recordings, contributions, cooldowns and scores owned by the authenticated tester. Account switching and replay resets must not merge players or duplicate awards. Preserve the existing owner's data through an explicit migration.
+- [x] Keep the development gateway credentials separate from player identity. Validate server authorization and secure local session storage; do not embed real credentials in the APK or repository.
+- [x] Exercise cooperation and finishing competition using several simulated accounts, including delayed uploads and retries. Provide a repeatable group scenario and practical setup instructions for the later human tester group.
+
+Evidence: the assembled 118-test workspace check covers virtual-clock controls/rebasing, future-event scheduling, six-hour eligibility, phased treatment, overlapping sources, historical changing geometry and finishing-order reconciliation. Recorded cycling replay with `--verify-repeat` reproduces complete result objects. The current 14-day lifecycle check maintained 20–100 visible targets, generated 40 ordinary replacements and 160 remnants, and returned to 20 ordinary outbreaks. The PostGIS contour check validated 1,800 polygons with no overlap above 0.01 m². Adapter restart, rollback and isolated reset checks passed. Real field import preserved scores/contributions and the owner completed explicit local history linking.
+
+The reusable authenticated five-account check now exercises both cooperation and finishing competition in separate disposable worlds: closely spaced visitors each receive the shared cleanup bonus; visitors spaced 30 minutes apart retain their visit points while cleanup bonuses are `[0,0,0,0,100]`. Delayed upload, immutable retries, same-ID ownership isolation, named scores and server-side owner linking also passed. Onboarding instructions cover private field invites, personal sign-in and separate gateway configuration.
+
+## Native recording → shared pending bonus → cleanup recap — 16 October 2026
+
+A three-minute original cycling window was replayed through the actual Android 16 recorder and uploaded through its normal authenticated pipeline. It produced 152 fixes, 854 m, one section, maximum GPS gap 2.494 s and injection lateness 4 ms, earning 100 confirmed visit points. An earlier attempt stopped at the two-second injection-lateness safeguard, preserved its short recording and skipped upload; it was not counted as a faithful run. Temporarily pausing the other idle emulator reduced contention for the successful retry.
+
+Four additional isolated accounts submitted the same native-recorded GPS through ordinary activity upload endpoints. The native outing's actual recap showed 100 confirmed visit points and a separately styled +100 possible cleanup bonus, with the warning that another visitor could take the finish. Wide and narrow recaps were visually inspected. After recording was finished, the explicitly accelerated isolated clock advanced cleaning by 530 minutes. The native recap updated to 200 confirmed points (100 visit + 100 cleanup), removed the pending block and labelled the encounter's cleanup bonus. The map's native fade/slide cleanup notice was captured visibly during this server transition. No synthetic contribution was sent to the public field server.
+
+The isolated clock persists its offset, uses absolute forward offsets for retry safety, rejects backwards/out-of-bounds control requests, and resets to wall mode. The actual native runner refused to begin GPS in accelerated mode. `npm run replay:clock` provides authenticated status, advance and reset controls. These accelerated game-effect checks are separate from normal-speed GPS replay and do not establish battery or outdoor reliability.
+
+## Living Tampere simulation and tester milestone — completed 16 October 2026
+
+The remaining Android requirements and completion gates from the editable goal are preserved here:
+
+- [x] Keep Start/Pause/Resume/Finish readily accessible, preserve the persistent notification controls, and maintain recorded data across interruption/reopening.
+- [x] Provide clear follow/explore controls, including north-up following and direction-of-travel following where meaningful, plus recenter and route/world overview. Browsing the map must not silently leave the tester fighting automatic camera movements.
+- [x] Render varied, organic outbreak shapes and recognizable growing, withering, clearing and cleared feedback. Show difficulty, available visit points, the locked bonus and activity-specific visit markers. Use symbols/labels as well as colour for eligibility and visited state.
+- [x] Give clear contact/score feedback and distinguish provisional, confirmed and possible future bonus points. Provide a concise, game-facing finished-outing recap.
+- [x] Carry a coherent visual identity through the map, overlays and recap: spores/overgrowth, fluid motion and satisfying cleanup feedback, with readable controls outdoors. Artwork remains a direction, not a small fixed set of outbreak silhouettes.
+- [x] Retain cached-world/offline recording and understandable reconnect/upload behavior. Check folded/unfolded layouts in the emulator and build a standalone Android APK for later real testing.
+- [x] The actual Android emulator recorder, fullscreen map and recap work together against the isolated API; accelerated engine scenarios are clearly identified separately.
+- [x] The full assembled checks pass, the standalone Android build is ready, and implemented limitations plus the next personal/group field-test checklist are recorded.
+
+### Final requirement audit
+
+| Requirement | Completion evidence |
+| --- | --- |
+| Recorder controls, notification and durable recovery | Native notification Pause/Resume/Finish checks; interrupted recording recovery with preserved owner and a new section; stopped-app replay; final successful native upload. |
+| Follow/explore and responsive layouts | Native recording checks exercised recenter, north/travel orientation, manual exploration and overview. Wide/narrow map and actual pending/confirmed recaps were visually inspected. Safe-area and attribution repair passed cold launch. |
+| Organic lifecycle and readable eligibility | Procedural fractional contours, explicit lifecycle/visited/wait labels and detail points/locked bonus; native presentation states inspected; actual server-driven cleanup fade/slide notice captured on the narrow map. |
+| Provisional, confirmed and pending/group feedback | Held-point HUD check; 854 m native recording confirmed 100 visit points; four real isolated account uploads produced a separately displayed +100 possible bonus; accelerated cleaning updated the actual native recap to 200 confirmed points. |
+| Offline/reconnect and ownership | Native cached-map timeout/reconnection and forced-stop recovery; endpoint-scoped account sessions; actual sign-in/switching and owner-confirmed local migration; focused store/session/upload checks. |
+| Replay/world/accounts | Completed original stage requirements and their evidence are preserved in the preceding stage-completion section, including 14-day lifecycle, PostGIS restart/geometry, deterministic recorded replay and five-account cooperation/competition. |
+| Assembled checks and deliverables | Final workspace check: 119 tests across 29 files, all workspace typechecks and lab consistency. Four Python import/catalogue checks passed. Standalone release build and packaged Android permissions passed. Setup, private invitation flow, limitations and next personal/group outing checklist are documented. |
+
+Final standalone APK: `apps/mobile/android/app/build/outputs/apk/release/app-release.apk` (122,715,348 bytes). Private screenshots, logs and its SHA-256 manifest are under ignored `work/replay/evidence/2026-10-16`; precise track imagery is not committed. The API restart retained the accelerated clock and the earned native cleanup bonus. The reusable clock status/advance/reset commands were exercised; the bench was then reset to wall-clock mode with zero offset. The Fold emulator returned to normal size and the temporarily paused API 37 emulator was resumed.
+
+This completes the implementation milestone, not outdoor reliability or public-launch readiness. The next personal/group field checklist is in [Outbreak recording field check](first-outbreak-encounter.md). Full art/UI design, continuous contour morphing, extended regional-density performance profiling, strategic splitting, live player sharing, Strava integration, final rankings and iOS remain later work. Source GPS, account secrets and server configuration remain private. Changes produced since the prior approved commit batch remain uncommitted for review.
+
+
+## Continuous outbreak rendering prototype — completed 17 October 2026
+
+Started 16 October 2026. Implemented the [isolated rendering lab](rendering-prototype.md) against the [fluid growth target](images/sporeward-fluid-growth-target.png), then refined pointed tentacles into broader rounded splashes and added original wet folds inspired by the user's slime references.
+
+The objective and completion evidence:
+
+| Requirement | Authoritative implementation and verification |
+| --- | --- |
+| Keep cells for bookkeeping; independent continuous geographic footprint | `growth-field.ts` generates a seeded surface without cell centres; `footprint.ts` contours and clips it, then derives actual level-17 cells through polygon intersection. Seed variation and bookkeeping independence pass focused tests. |
+| Same footprint for rendering and GPS contacts | Canvas paths and the contact query consume the same final rings. The 1 Hz geographic route is projected into the same metre space; tests verify first-contact fixes. Browser replay completed 836 seconds with three contacts on the default seed and two on the second. |
+| Constrain growth with mapped shorelines | Exact polygon subtraction of the full real Iidesjärvi water geometry, including island holes, occurs after surface sampling. Tests prove no water intersection, correct island contact, neighbour separation and empty submerged geometry. The retained shoreline screenshot shows the actual rendered result. |
+| Geographic glow scale without distant inflation | Live rendering and repeatable raster audit share `drawGrowth`. Material coordinates and inward rim widths are metres. Six-render wet-material audit: PASS, 0.31 m zoom-bound variation and 0.36 m outward antialiasing extent. |
+| Capture the art direction well | Runtime inspection of several zooms and two seeds: irregular continuous pooled bodies, rounded edge accumulations, translucent sheets, darker material concentrations, bright rims and wet glossy folds; distinct amber, crimson and mint/lavender clearing treatments. Original material images add detail without fixed silhouette templates. Representative runtime screenshots and exact generation prompts are retained in the prototype documentation. |
+
+Final checks: web typecheck and production build pass; five focused geometry/replay tests pass. The build reports a large bundle because the lab includes a local map fixture and textures; production packaging/performance is separate.
+
+This completes the rendering prototype, not native integration or production boundary migration. The field server and Android app were not changed by this prototype. Remaining production considerations—global projection, historical footprint migration, lifecycle animation, detached shoreline components and native rendering—are documented in the lab notes.
+
+## Android outbreak visuals and deterministic showcase — completed 22 October 2026
+
+The owner accepted the Android phone visuals as the baseline. Shared outbreak rendering, progressive overview and field-lab presentation, deterministic showcase fixtures and lifecycle controls, and recorded-outing integration are complete. The Fold5 release update was installed after confirming no active recording; the owner then reviewed and accepted the phone visuals, including map containment. Another rendering pass is deferred to separate future work.
+
+Validation included focused rendering, geometry, fixture and showcase-clock tests; workspace typechecks; strict OpenSpec validation; deterministic recorded replay; an Android release build and packaged-permission check; emulator review; and Fold5 installation/owner review. The standalone showcase clock and fixture mutations remain isolated from field accounts and storage. Implementation details and evidence are in the [archived OpenSpec change](../openspec/changes/archive/2026-10-22-replicate-approved-visuals-and-showcase/proposal.md).

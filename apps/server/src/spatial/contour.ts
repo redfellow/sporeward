@@ -1,10 +1,13 @@
+import {landContour,NoLandContour} from './water.ts';
+import {splashContour} from './splash.ts';
+import {continuousContour} from './continuous.ts';
 import type {Coordinate} from '@sporeward/protocol';
 import {cellKey,tileCoordinate,type Cell} from './access.ts';
 export type PartialCell={key:string;side:'west'|'east'|'north'|'south';fraction:number};
 type Rectangle={west:number;east:number;north:number;south:number};
-/** Union full cells and one fractional edge cell. Coordinate compression keeps
- * all joins exact, including partial cells touching more than one full cell. */
-export function contour(cells:Cell[],partial?:PartialCell,seed=''):Coordinate[]{
+/** Validate the connected territory, including a fractional edge cell, then
+ * derive its authoritative fluid silhouette from a seeded organic field. */
+export function contour(cells:Cell[],partial?:PartialCell,seed='',version:3|4|5=4,surface?:Coordinate[]):Coordinate[]{
  const rectangles:Rectangle[]=[];
  for(const c of cells){
   const r={west:c.x,east:c.x+1,north:c.y,south:c.y+1};
@@ -30,13 +33,9 @@ export function contour(cells:Cell[],partial?:PartialCell,seed=''):Coordinate[]{
  const chain=new Map([...edges.values()].map(([a,b])=>[key(a),b])),first=[...edges.values()][0][0];let cursor=first,ring:Coordinate[]=[];
  do{ring.push(cursor);const next=chain.get(key(cursor));if(!next||ring.length>edges.size)throw new Error('Invalid contour boundary.');cursor=next;}while(key(cursor)!==key(first));
  if(ring.length!==edges.size)throw new Error('Contour has a hole or disconnected parts.');
- // Remove compression-grid vertices before rounding, so intermediate cell
- // edges cannot introduce seams or shape changes elsewhere on the outbreak.
- ring=ring.filter((p,i)=>{const a=ring[(i+ring.length-1)%ring.length],b=ring[(i+1)%ring.length];return Math.abs((p[0]-a[0])*(b[1]-p[1])-(p[1]-a[1])*(b[0]-p[0]))>1e-10;});
- for(let pass=0;pass<2;pass++)ring=ring.flatMap((a,i)=>{
-  const b=ring[(i+1)%ring.length];let hash=2166136261;for(const ch of seed+':'+pass+':'+Math.sign(b[0]-a[0])+','+Math.sign(b[1]-a[1]))hash=Math.imul(hash^ch.charCodeAt(0),16777619);
-  const q=.18+(hash>>>0)/4294967296*.1;
-  return [[a[0]*(1-q)+b[0]*q,a[1]*(1-q)+b[1]*q],[a[0]*q+b[0]*(1-q),a[1]*q+b[1]*(1-q)]] as Coordinate[];
- });
- return ring.map(tileCoordinate);
+ const splash=version===3?splashContour(rectangles,seed):continuousContour(rectangles,seed,surface);
+ if(!splash)throw new Error('No connected splash contour.');
+ const geographic=splash.map(tileCoordinate);
+ if(version!==5)return geographic;
+ const land=landContour(geographic);if(!land)throw new NoLandContour();return land;
 }

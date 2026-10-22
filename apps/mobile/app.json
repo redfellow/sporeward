@@ -24,12 +24,17 @@
       "permissions": [
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.POST_NOTIFICATIONS"
-      ]
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#102e25"
+      }
     },
     "ios": {
       "bundleIdentifier": "com.sporeward.app",
       "supportsTablet": true
     },
-    "scheme": "sporeward"
+    "scheme": "sporeward",
+    "icon": "./assets/icon.png"
   }
 }

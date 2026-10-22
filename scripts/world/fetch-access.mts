@@ -1,7 +1,7 @@
 import {mkdir,writeFile} from 'node:fs/promises';
 import {gzipSync} from 'node:zlib';
 const region=process.argv.includes('--region');
-const bounds=region?{west:23.38,south:61.38,east:24.20,north:61.62}:{west:23.728,south:61.4745,east:23.822,north:61.5195};
+const bounds=region?{west:23.38,south:61.27,east:24.20,north:61.62}:{west:23.728,south:61.4745,east:23.822,north:61.5195};
 const output=region?'tampere-region-access.json.gz':'tampere-access.json.gz';
 let ways:any[],snapshot:string;
 if(process.argv.includes('--osm-api')){

@@ -11,8 +11,10 @@
 		"@fastify/rate-limit": "^11.2.1",
 		"@sporeward/game": "0.1.0",
 		"@sporeward/protocol": "0.1.0",
+		"@sporeward/rendering": "0.1.0",
 		"fastify": "^5.12.5",
-		"pg": "^8.23.1"
+		"pg": "^8.23.1",
+		"polygon-clipping": "^0.15.7"
 	},
 	"devDependencies": {
 		"@types/pg": "^8.23.1",

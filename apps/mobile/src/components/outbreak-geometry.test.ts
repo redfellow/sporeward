@@ -1,0 +1,20 @@
+import {it,expect} from 'vitest';
+import type {WorldView,OutbreakView} from '@sporeward/protocol';
+import {outbreakMarkers,outbreakGeometry} from './outbreak-geometry';
+import {growthCoordinate} from './map-coordinates';
+it('gives both split halves one centered destination without losing either exposure',()=>{
+ const ids=['parent · Left','parent · Right'];
+ const target=(id:string,x:number,lifecycle:OutbreakView['lifecycle']='stabilizing'):OutbreakView=>({id,name:id,lifecycle,ring:[[x,61.49],[x+.001,61.49],[x+.001,61.491],[x,61.491]],spawnedAt:0,clearedAt:null,status:'active',strength:2,committedCleaning:0,visitsRemaining:2,visitPoints:10,cleanupBonus:50,eligibleAt:0});
+ const world:WorldView={version:1,serverTime:100,worldStartedAt:0,outbreaks:[target(ids[0],23.77),target(ids[1],23.771),target('ordinary',23.78,'ordinary')]};
+ const markers=outbreakMarkers(world),split=markers.filter(m=>ids.includes(m.outbreak.id));
+ expect(split).toHaveLength(1);
+ expect(split[0].members.map(o=>o.id)).toEqual(ids);
+ expect(split[0].anchor).toEqual(growthCoordinate(outbreakGeometry(split[0].outbreak,world).center));
+ expect(markers.flatMap(m=>m.members.map(o=>o.id)).sort()).toEqual(world.outbreaks.map(o=>o.id).sort());
+ const totalEffort=markers.reduce((sum,m)=>sum+m.members.reduce((s,o)=>s+o.visitsRemaining,0),0);
+ expect(totalEffort).toBe(world.outbreaks.reduce((s,o)=>s+o.visitsRemaining,0));
+ const orphan={...world,outbreaks:world.outbreaks.filter(o=>o.id!==ids[0])};
+ expect(outbreakMarkers(orphan).filter(m=>ids.includes(m.outbreak.id))).toHaveLength(1);
+ const fixture={...world,renderTest:{examples:[{name:'Splitting',ids:['fixture-a','fixture-b']}]},outbreaks:[target('fixture-a',23.77),target('fixture-b',23.771)]};
+ expect(outbreakMarkers(fixture)).toHaveLength(1);
+});

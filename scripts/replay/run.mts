@@ -1,10 +1,20 @@
+import {isDeepStrictEqual} from 'node:util';
 import {resolve} from 'node:path';
 import {createInterface} from 'node:readline/promises';
 import {ScenarioRunner} from '../../apps/server/src/replay/scenario.ts';
-const path=process.argv[2];if(!path)throw new Error('Usage: npm run replay -- scenario.json [--interactive]');
+const path=process.argv[2];if(!path)throw new Error('Usage: npm run replay -- scenario.json [--interactive | --verify-repeat]');
+if(process.argv.includes('--interactive')&&process.argv.includes('--verify-repeat'))throw new Error('Choose interactive controls or repeat verification.');
 const runs=new URL('../../work/replay/runs/',import.meta.url).pathname,runner=await ScenarioRunner.load(resolve(path),runs);
 function show(summary:Awaited<ReturnType<typeof runner.summary>>){console.log(JSON.stringify({scenario:summary.scenario,clock:summary.clock,status:summary.status,players:summary.players,outings:summary.outings.map(o=>({player:o.player,id:o.id,visitPoints:o.recap.confirmedVisitPoints,cleanupPoints:o.recap.confirmedCleanupPoints,pending:o.recap.pendingCleanupPoints,contacts:o.recap.encounters.map(e=>({outbreak:e.name,result:e.reason}))})),outbreaks:summary.world.outbreaks.map(o=>({name:o.name,status:o.status,strength:o.strength,committed:o.committedCleaning,visitsRemaining:o.visitsRemaining}))},null,2));}
-if(!process.argv.includes('--interactive'))show(await runner.run());
+if(!process.argv.includes('--interactive')){
+ const first=await runner.run();
+ if(process.argv.includes('--verify-repeat')){
+  await runner.reset();const second=await runner.run();
+  if(!isDeepStrictEqual(first,second))throw new Error('Reset and replay produced different results.');
+  console.log('Repeatability verified: full world, clock, players, contacts and rewards match after reset.');
+ }
+ show(first);
+}
 else {
  const input=createInterface({input:process.stdin,output:process.stdout});
  console.log('Commands: start, pause, resume, next, advance MINUTES, run, reset, status, quit. Accelerated server simulation; no emulator GPS injection.');

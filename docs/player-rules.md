@@ -6,7 +6,7 @@ Sporeward turns outdoor exercise into a shared fight against spreading outbreaks
 
 1. **Choose your route.** The map shows outbreaks, your available points, and how many more visits each target needs. Pick useful detours through reachable targets.
 2. **Record your outing.** Use Start, Pause/Resume, and Stop in Sporeward, or connect Strava. Record at least **500 metres**; Strava activities must arrive within **24 hours** of completion.
-3. **Touch outbreaks to earn points.** Entering an eligible region is enough. Visit as many different targets as you like; loops inside one do not give extra rewards. The same target counts once every **five hours**.
+3. **Touch outbreaks to earn points.** Entering an eligible region is enough. Visit as many different targets as you like; loops inside one do not give extra rewards. The same target counts once every **six hours**.
 4. **Help clear them.** Visits start cleaning that continues after you leave. First visits earn **100 points**, repeat visits earn less, and finishing can give a **100-point bonus** shared with nearby-in-time participants.
 5. **See what you achieved.** Follow earned and potential points during the outing, then review your recap and replay. Compete on monthly, yearly, and all-time leaderboards, globally and by country.
 
@@ -34,6 +34,13 @@ Read on for exact scoring, timing, recording, and privacy rules. These describe 
 
 The map shows outbreaks as organic regions. Their colour and remaining-visit estimate indicate how much more cleaning they need, after accounting for treatment already underway. A distinct **clearing** appearance means existing treatment is expected to finish the job.
 
+
+Typical Light → Medium → Heavy footprint areas follow **1 → 2 → 4**. Colour shows the cleaning still needed after committed treatment; physical shrinking happens gradually, so a large footprint can already have a light-effort colour.
+
+**Cleaning → withering → smaller → cleared**
+
+**No active cleaning → growth → disintegrating → remnants**
+
 Check your available visit points, the cleanup bonus, and your eligibility before choosing a route. Outbreaks are reachable from public routes. You can visit as many different eligible outbreaks as you like during one activity.
 
 ### Record an activity
@@ -54,18 +61,34 @@ Entering or touching an outbreak counts, with a **10-metre boundary tolerance** 
 
 One accepted visit gives a fixed cleaning contribution. Riding loops, spending longer inside, or covering more distance within the outbreak gives no extra visit points or cleaning power.
 
-You can contribute to the same outbreak once every **five hours**. Earlier repeat contacts give neither points nor cleaning. The map distinguishes eligible targets, cooldown-ineligible targets, and outbreaks you touched during the current activity.
+You can contribute to the same outbreak once every **six hours**. Earlier repeat contacts give neither points nor cleaning. The map distinguishes eligible targets, cooldown-ineligible targets, and outbreaks you touched during the current activity.
 
 ### Earn points
 
 | Action | Starting points |
 |---|---:|
-| First accepted visit to an ordinary outbreak | 100 |
-| Repeat accepted visits to the same outbreak | Approximately 50, 25, 12… down to 5 |
+| Eligible ordinary visit | Up to 100; personal resistance applies |
+| Eligible visit under intensive local riding | At least 25 with resistance scoring |
 | Cleanup bonus | 100 |
 | Clear one of four equal remnants | 25 |
 
-Repeat visit points diminish for each player, but the visit's cleaning power stays the same. Visit points begin recovering after a 72-hour absence and return to full value over roughly two weeks.
+**Outbreak Resistance** makes familiar areas worth fewer visit points for you. It is personal: another player's riding does not increase yours. Accepted cleaning builds familiarity around one representative point per outbreak, so a replacement nearby does not reset it. Resistance fades continuously with time. Its blue-violet map field is strongest near your established centre and fades outward.
+
+With resistance scoring enabled, ordinary visit points use one combined reduction, with a provisional floor of **25 points out of 100**. Cooldown-ineligible contacts still earn zero. The reference commute reaches about **62% by the first Friday** and **52% by the fourth Friday** without labs. These are provisional balancing examples, not a fixed weekly reset. Repeat cleaning strength remains **100%, 75%, 60%, then 50%**; resistance changes ordinary visit points, not cleaning or cleanup bonuses.
+
+Resistance scoring activates prospectively and begins neutral. Already confirmed awards stay fixed. Existing worlds where it has not been enabled retain legacy repeat-point scoring: roughly 100, 50, 25, 12… down to 5, with recovery beginning after 72 hours and continuing over two weeks.
+
+### Visit a Field Lab
+
+Field Labs are uncommon shared survey-station destinations with an explicit expiry. Ride through the outlined collection area while recording; new labs have circular areas. An eligible recorded visit collects each lab once **for you**. Friends can collect the same station independently. Your collected station remains visible until expiry with an empty chamber, slumped support and a check.
+
+Collection immediately reduces your accumulated resistance everywhere. It grants no inventory item or future credit when you have no resistance. All ten reward names describe the same restoration mechanic.
+
+Farther labs gradually offer more restoration, up to a provisional **10 km distance cap**. The offer uses your established centre and stays fixed during the outing. Successive collections give less, with gradual recovery over time; alternating destinations does not reset that reduction. The server also caps the result by remaining resistance and other collections already settled. The recap shows the actual result, which may be smaller than the advertised maximum.
+
+Offline contacts remain provisional until upload. A cached server offer preserves its reference; without a valid offer, the amount is determined during authoritative reconciliation. A lab must still have existed and been unexpired at the recorded contact time. It can confirm after expiry if the activity is uploaded within the eligible window.
+
+### Cleanup points
 
 The cleanup bonus is fixed when an outbreak appears. Letting it grow does not increase that bonus. Visits during the **disintegrating** phase still earn visit points and can earn the cleanup bonus.
 
@@ -85,6 +108,9 @@ A clearing outbreak is still a finishing opportunity: another visitor can take t
 
 Repeated accepted crossings along a similar corridor can develop a visible crack. Following that crack is a tactic for splitting an outbreak into two easier targets. Edge touches help clean but do not build a crossing corridor. Splitting is uncertain; a visible crack does not guarantee a split on your next visit.
 
+
+Light outbreaks do not split. Remnants come from end-of-life disintegration.
+
 Split targets stabilize for **30 minutes**, accepting no visits during that time. They inherit your previous visit-point history and the original five-hour cooldown expiry. Splitting does not restart or clear that cooldown.
 
 Existing treatment pauses during stabilization and resumes afterwards. The two targets share the original bonus and remaining treatment; splitting also slightly reduces the total work needed to clear them.
@@ -97,7 +123,7 @@ Near the end of their life, outbreaks show a **24-hour disintegration countdown*
 
 If not cleared, an outbreak leaves up to four separate remnants. They do not grow or split and disappear by themselves within roughly **72 hours**. An accepted touch clears a remnant for its share of the parent's cleanup bonus, with no additional visit points. Natural disappearance gives no points.
 
-Remnants appear on nearby reachable routes, generally 200–800 metres outside the old boundary; one may remain in the old footprint. Clearing ordinary outbreaks makes room for new targets elsewhere after a delay, so future outings offer different route choices.
+Remnants have widened collection footprints to tolerate small map/GPS alignment differences. They appear on nearby reachable routes, generally 200–800 metres outside the old boundary; one may remain in the old footprint. Clearing ordinary outbreaks makes room for new targets elsewhere after a delay, so future outings offer different route choices.
 
 ### Imported activities and support squads
 

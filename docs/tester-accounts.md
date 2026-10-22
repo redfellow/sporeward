@@ -1,6 +1,6 @@
 # Tester accounts — development onboarding
 
-The isolated PostGIS replay API now requires both the development gateway credentials and an individual tester session. Gateway credentials allow access to the test environment; the account session determines ownership of uploads, cooldowns and points. The shared field API has not yet switched to this account mode.
+The isolated PostGIS replay API now requires both the development gateway credentials and an individual tester session. Gateway credentials allow access to the test environment; the account session determines ownership of uploads, cooldowns and points. The shared field API also uses this account mode as of 2026-10-16.
 
 ## Provision an invite
 
@@ -11,6 +11,19 @@ node --env-file=work/replay/database.env --import tsx scripts/accounts/invite.mt
 ```
 
 The command saves a single-use, seven-day invite to a private file under ignored `work/replay/invites`. It prints the file path and expiry, not the code. Share the invite with the intended tester through your chosen private channel. Provisioning requires database access; the public account API cannot create invitations. Do not commit invite files or account credentials.
+
+## Field tester invitations
+
+On the private test host, use the deployed checkout and field account realm:
+
+```sh
+cd /home/red/sporeward-test/ops/test-server
+docker compose -p sporeward-test exec api node --import tsx scripts/accounts/invite.mts --realm=field-test
+```
+
+The generated invite is written inside `/data/private-onboarding`; the command prints its private path, not its code. Read that file privately and give the single-use code to its intended tester. Do not distribute the owner's credentials or use the isolated replay realm for field accounts. Each tester chooses their own username and password in the app. The development gateway is configured separately, using the HTTPS field endpoint.
+
+Before a small-group outing, have each tester sign in, confirm that the map loads, record a short simulated/test outing and verify their own receipt and named board entry. A real outing should finish and upload automatically; leave failed uploads pending for retry. Sign out only after unfinished recordings have been saved. Do not reset the field world to run a replay scenario.
 
 ## Join or sign in on Android
 
@@ -24,9 +37,9 @@ The disposable account used for real API verification is stored privately in `wo
 
 ## Remaining work
 
-The Android account UI has not yet completed its assembled emulator sign-in/record/upload/switch check. Existing unassigned phone recordings remain preserved under the legacy local identity and require an explicit owner migration, alongside the server's historical contributions and upload storage. The shared field server remains unchanged until that migration is ready. Group score comparison and full small-group onboarding verification also remain in the active goal.
+The Android account UI has not yet completed its assembled emulator sign-in/record/upload/switch check. Existing unassigned phone recordings remain preserved under the legacy local identity and require an explicit owner migration, alongside the server's historical contributions and upload storage. The shared field server has been migrated; the owner must explicitly link earlier local phone recordings after signing in. Group score comparison and full small-group onboarding verification also remain in the active goal.
 
-The account-owned native recorder/upload pipeline is verified using private replay bootstrap. Interactive form entry in the emulator still needs resolution. Run the reusable real-account group check with `node --env-file=work/replay/database.env --import tsx scripts/world/check-account-group.mts`: it provisions five disposable accounts in a unique realm, uses the same outing ID across them, retries uploads, delays one delivery by 30 minutes, advances cleaning and checks shared bonuses plus named scores. It cleans up only its own test realm and world.
+The account-owned native recorder/upload pipeline is verified using private replay bootstrap. Interactive form entry in the emulator still needs resolution. Run the reusable real-account group check with `node --env-file=work/replay/database.env --import tsx scripts/world/check-account-group.mts`: it provisions five disposable accounts in a unique realm, uses the same outing ID across them, retries uploads, delays one delivery by 30 minutes, advances cleaning and checks shared bonuses plus named scores. A second disposable world spaces the same five accounts’ visits 30 minutes apart and verifies that only the last visitor earns the cleanup bonus, while earlier visitors keep their visit points. It cleans up only its own test realm and world.
 
 ## Link the existing owner explicitly
 
@@ -40,6 +53,6 @@ Use the correct database/realm and original owner for the intended deployment. T
 
 On a phone signed into that linked account, **Link earlier outings** offers a separate confirmation to transfer unassigned local recordings. The transaction preserves GPS data, section timing, IDs and upload receipts, refuses an unfinished outing and leaves other accounts' recordings alone. It does not automatically claim recordings for the first account that signs in.
 
-`node --env-file=work/replay/database.env --import tsx scripts/world/check-owner-link.mts` verifies the server binding, preserved contributions/cooldowns, readable legacy uploads, retry safety and rejection of client-chosen owner claims using an isolated disposable realm. Local transfer has a corresponding SQLite preservation check. No real field owner has been linked yet; field snapshot migration/deployment remains outstanding.
+`node --env-file=work/replay/database.env --import tsx scripts/world/check-owner-link.mts` verifies the server binding, preserved contributions/cooldowns, readable legacy uploads, retry safety and rejection of client-chosen owner claims using an isolated disposable realm. Local transfer has a corresponding SQLite preservation check. The real field owner is now linked on the server; local phone transfer still requires explicit confirmation.
 
 The Android tester board now displays confirmed scores, recognizable names and the current tester marker. Account switches recreate its view state. It is a simple test-world comparison, not the later monthly/yearly/country rankings.

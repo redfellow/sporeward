@@ -12,7 +12,9 @@ const dbPromise = SQLite.openDatabaseAsync('sporeward-recorder.db').then(async d
  CREATE TABLE IF NOT EXISTS activity_uploads (activity TEXT PRIMARY KEY, state TEXT, receipt TEXT, error TEXT);
  CREATE TABLE IF NOT EXISTS upload_retries (activity TEXT PRIMARY KEY, next_attempt REAL NOT NULL);
  CREATE TABLE IF NOT EXISTS events (time REAL, message TEXT);
+ CREATE TABLE IF NOT EXISTS contact_previews (activity TEXT, outbreak TEXT, touched REAL, points INTEGER, PRIMARY KEY(activity,outbreak));
  CREATE TABLE IF NOT EXISTS world_cache (owner TEXT PRIMARY KEY, snapshot TEXT);
+ CREATE TABLE IF NOT EXISTS lab_offers (owner TEXT, activity TEXT, offer TEXT NOT NULL, PRIMARY KEY(owner,activity));
  CREATE TABLE IF NOT EXISTS recording_diagnostics (time REAL, activity TEXT, kind TEXT, data TEXT);`);
  return db;
 });
@@ -116,3 +118,23 @@ export function claimLegacyActivities(owner:string){
   const result=await tx.runAsync("INSERT INTO activity_owners(activity,owner) SELECT a.id,? FROM activities a LEFT JOIN activity_owners o ON o.activity=a.id WHERE COALESCE(o.owner,'legacy-local')='legacy-local' AND a.status='finished' ON CONFLICT(activity) DO UPDATE SET owner=excluded.owner WHERE activity_owners.owner='legacy-local'",owner);count=result.changes;
  });return count;});
 }
+
+/** Local observations only: never submitted as authoritative contacts or rewards. */
+export async function contactPreviews(id:string){
+ return (await dbPromise).getAllAsync<import('./encounters').ContactPreview>('SELECT outbreak AS outbreakId,touched AS timestamp,points AS visitPoints FROM contact_previews WHERE activity=? ORDER BY touched,outbreak',id);
+}
+export function rememberContacts(id:string,contacts:import('./encounters').ContactPreview[]){
+ return write(async()=>{await transaction(async tx=>{
+  if(!await tx.getFirstAsync('SELECT id FROM activities WHERE id=?',id))throw new Error('Unknown outing.');
+  for(const c of contacts){
+   if(!c.outbreakId||!Number.isFinite(c.timestamp)||!Number.isSafeInteger(c.visitPoints)||c.visitPoints<0)throw new Error('Invalid local contact preview.');
+   await tx.runAsync('INSERT INTO contact_previews VALUES (?,?,?,?) ON CONFLICT(activity,outbreak) DO UPDATE SET touched=excluded.touched,points=excluded.points WHERE excluded.touched<contact_previews.touched',id,c.outbreakId,c.timestamp,c.visitPoints);
+  }
+ });});
+}
+
+export async function cachedLabOffer(owner:string,id:string):Promise<unknown|null> {
+ const row=await (await dbPromise).getFirstAsync<{offer:string}>('SELECT offer FROM lab_offers WHERE owner=? AND activity=?',owner,id);
+ return row?JSON.parse(row.offer):null;
+}
+export async function cacheLabOffer(owner:string,id:string,offer:unknown){return write(async()=>{await (await dbPromise).runAsync('INSERT OR REPLACE INTO lab_offers(owner,activity,offer) VALUES(?,?,?)',owner,id,JSON.stringify(offer));});}

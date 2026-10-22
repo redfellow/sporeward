@@ -6,7 +6,7 @@ A player can complete a real outdoor activity in Tampere, contribute to a persis
 
 The browser supports map exploration, planning, rankings, and activity review. Browser recording is a foreground-only option requiring a visible page and an awake screen. Native mobile recording is the intended path for screen-off and background activity; its reliability must be demonstrated on real devices.
 
-This roadmap defines outcome gates, not dates. The selected stack and code responsibilities are recorded in [Architecture](architecture.md), with local setup in [Development setup](development-setup.md). The interactive cleaning experiment runs the extracted shared TypeScript engine. It remains a minute-resolution balancing prototype, not the completed authoritative world engine or playable MVP.
+This roadmap defines outcome gates, not dates. The selected stack and code responsibilities are recorded in [Architecture](architecture.md), with local setup in [Development setup](development-setup.md). Confirmed product priorities and proposed evaluations are in [Product direction](product-direction.md). The interactive cleaning experiment remains a minute-resolution balancing model; it is distinct from the authoritative geographic test/replay world and does not establish field acceptance.
 
 ## Platform rollout
 
@@ -25,7 +25,7 @@ iOS development and validation follow after Android reaches a suitable level of 
 
 The Android recorder persists fixes and route sections in SQLite, shows a MapLibre route map and recap, and can build an APK with bundled JavaScript for independent field testing. The app includes secure tester credentials, an HTTPS connection check, and explicit uploads of finished recordings to persistent test-server storage. Background GPS reliability remains a real-device acceptance gate.
 
-`packages/game` now contains the deterministic cleaning simulation used by the interactive planning lab. Tests cover cooldowns, repeat scoring/cleaning, two-phase decay, finishing/group/protection awards, growth, disintegration/remnants, and split conservation/stabilization. The [first outbreak encounter](first-outbreak-encounter.md) connects validated GPS contacts to fixed Tampere footprints, persistent cleaning/scoring, activity markers and confirmed recaps. Automatic geographic growth, full historical lifecycle processing, accounts and Strava reconciliation remain outstanding.
+The server and isolated replay environment implement tester accounts, PostGIS-backed geographic world state and lifecycle, validated activity requests, GPS contact matching, scoring and recaps. The [finished-goals record](finished-goals.md) links the recorded replay and persistence evidence. The separate `packages/game` planning lab remains a deterministic minute-resolution simulation with its own balancing scenarios. Implemented isolated infrastructure is not public production deployment, Strava integration, or proof of outdoor GPS reliability. OpenSpec changes own current gameplay and product-status scope.
 
 ## 1. Reliable game engine
 
@@ -108,6 +108,8 @@ Acceptance criteria:
 
 ## Deferred features
 
+- Android Back navigation returns through screens to the start screen. Back there opens an exit confirmation; pressing Back again exits. Cancel or tapping outside the dialog keeps the app open.
+
 - Group multiple source recordings into one outing, with combined and separate track views.
 - Opt-in, link-free Strava activity text showing earned Sporeward points.
 - External route-planner browser extension.
@@ -120,13 +122,13 @@ These remain concept ideas; they are not acceptance requirements for the first M
 
 ## Immediate next work
 
-1. Complete field checks on the standalone Android recorder: screen-off GPS, pause/resume, recovery, fold transitions, battery use, and cellular HTTPS access. Initial recorder/engine extraction and server connectivity are implemented; real-device reliability remains unproven.
-2. Exercise explicit activity uploads, idempotent retries, persistent server receipts, and basic distance/time eligibility with real outings. The fixed encounter slice awards points for eligible contacts; ineligible recordings remain diagnostics.
-3. Extend the fixed encounter slice to automatic accessible spawning, geographic growth and historical boundary changes, with PostgreSQL/PostGIS persistence. Replace remaining minute-resolution prototype assumptions where authoritative processing needs greater precision.
-4. Add account-backed shared play and full out-of-order Strava reconciliation, building on the encounter slice’s persistent contributions and retry safety.
+1. Review the archived [Field Labs and Outbreak Resistance change](../openspec/changes/archive/2026-10-22-implement-outbreak-resistance-and-field-labs/proposal.md) from its tasks and latest evidence. Owner acceptance of task 4.4 applies to the current gameplay and integrated presentation milestone; preserve the remaining reviewable questions and do not infer phone or field approval.
+2. Run the recorded full-week synthetic replay against persisted Friday state, because the available separate-session handoff reports positive restoration but its 61.66% Friday reference was calibration-only and not persisted. This is a synthetic verification step, not outdoor validation.
+3. Complete real-device and field checks for screen-off/background GPS, pause/resume, recovery, fold transitions, battery use and cellular HTTPS. Group/privacy acceptance and later integration remain separate gates.
+4. Scope Strava delivery/reconciliation and production deployment/authentication/migrations/live updates when prioritized. Account-backed shared play, geographic lifecycle, validated requests and retry-safe test/replay storage are already implemented; do not duplicate their tasks here.
 
 
-Rules and balancing references: [Working game concept](game-concept.md) and [Player rules](player-rules.md).
+Rules and balancing references: [Working game concept](game-concept.md) and [Player rules](player-rules.md). Gameplay status and acceptance remain in the [archived Field Labs/resistance tasks](../openspec/changes/archive/2026-10-22-implement-outbreak-resistance-and-field-labs/tasks.md); the completed product-direction handoff is [archived here](../openspec/changes/archive/2026-10-22-align-product-direction-and-project-status/tasks.md). This roadmap is an index, not a copied checklist.
 
 ## Recording constraints: sources
 

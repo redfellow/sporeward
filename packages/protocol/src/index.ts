@@ -11,3 +11,4 @@ export * from "./world";
 
 export * from "./replay";
 export * from './scores';
+export * from './field-labs';

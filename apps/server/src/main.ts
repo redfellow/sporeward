@@ -16,15 +16,20 @@ if((!!username!==!!password)||((process.env.NODE_ENV==='production'||!['127.0.0.
 const databaseUrl=databaseConnection();
 const worldDirectory=process.env.WORLD_DATA_DIR??'./work/server-world',activityDirectory=process.env.ACTIVITY_DATA_DIR??'./work/server-activities';
 const persistence=databaseUrl?new PostgresWorldPersistence(databaseUrl,process.env.WORLD_ID??'tampere-field'):undefined;
-const generated=persistence?await tampereWorldFixtures(Number(process.env.WORLD_SEED??73),20):null;
-const world=new WorldStore(worldDirectory,Date.now,generated?()=>generated.fixtures:undefined,{persistence,spatial:generated?.access.cells,seed:Number(process.env.WORLD_SEED??73)});
+const area=process.env.WORLD_ACCESS??'baseline',density=Number(process.env.WORLD_DENSITY??20);
+if(!['baseline','urban'].includes(area)||!Number.isInteger(density)||density<1||density>1000)throw new Error('Invalid world access area or density.');
+const generated=persistence?await tampereWorldFixtures(Number(process.env.WORLD_SEED??73),density,area as 'baseline'|'urban'):null;
+const world=new WorldStore(worldDirectory,Date.now,generated?()=>generated.fixtures:undefined,{persistence,spatial:generated?.access.cells,seed:Number(process.env.WORLD_SEED??73),density});
+const resistanceMode=process.env.RESISTANCE_SCORING;
+if(resistanceMode!==undefined&&!['enabled','disabled'].includes(resistanceMode))throw new Error('RESISTANCE_SCORING must be enabled or disabled.');
 if(process.env.IMPORT_LEGACY_WORLD==='1'){
  if(!persistence)throw new Error('Legacy import requires PostgreSQL.');
  const raw=await readFile(join(worldDirectory,'world.json'));await persistence.importSnapshot(parseWorldSnapshot(JSON.parse(raw.toString('utf8'))),createHash('sha256').update(raw).digest('hex'));await world.prepareSpatialWorld();
 }
 const accounts=persistence?new AccountStore(persistence.pool,process.env.ACCOUNT_REALM??'field-test'):undefined;
+if(resistanceMode!==undefined)await world.configureResistance(resistanceMode==='enabled');
 const app=await createApp({logger:true,auth:username&&password?{username,password}:undefined,accounts,worldStore:world,...(accounts?{activityStoreFor:(player:string)=>new ActivityStore(activityDirectory,player)}:{activityStore:new ActivityStore(activityDirectory,username??'local')})});
-await world.tick();await app.listen({host,port});
+await world.prepareOrganicContours();await world.prepareShorelines();await world.tick();await app.listen({host,port});
 let pendingTick:Promise<unknown>|null=null;
 const timer=setInterval(()=>{if(!pendingTick)pendingTick=world.tick().catch(()=>app.log.error('World tick failed; retry scheduled.')).finally(()=>{pendingTick=null;});},60000);timer.unref();
 let stopping=false;

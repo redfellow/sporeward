@@ -154,8 +154,19 @@ On account-enabled servers, sign in once before heading out. A saved account kee
 
 ## First outbreak encounter
 
-The app now loads a persistent five-zone Tampere test world, shows activity-specific contacts and a provisional tally, and obtains a confirmed recap through finished-activity uploads. See [First outbreak encounter](first-outbreak-encounter.md) for locations, implemented rules, API persistence and the field checklist. Cached map data works offline; changes to shared world state are applied when the activity is uploaded.
+The app loads the persistent 500-outbreak urban Tampere field world using individual tester accounts, shows activity-specific contacts and a provisional tally, and automatically uploads finished outings for a confirmed recap. See [First outbreak encounter](first-outbreak-encounter.md) for locations, implemented rules, API persistence and the field checklist. Cached map data works offline; changes to shared world state are applied when the activity is uploaded.
 
 For emulator-only encounter development, run a separate local API with disposable data and tester credentials. Set `EXPO_PUBLIC_TEST_SERVER_URL=http://127.0.0.1:3102` when starting Metro, then run `adb -s emulator-5554 reverse tcp:3102 tcp:3102`. This override is accepted only in development builds and only for loopback HTTP; standalone field builds always use `https://sporeward.redlan.co`. Use separate local tester credentials in the emulator. Synthetic visits must not alter the shared field-test world.
 
 Upload notification verification on 15 October 2026: a disposable emulator outing with an unavailable isolated API produced an ongoing pending-upload notification with Android’s native countdown. The deadline triggered another attempt. After restoring isolated database connectivity and tester login, a finished emulator outing uploaded automatically and the pending notification cleared. Focused tests cover saved deadlines, actual timer-triggered retry, completed-upload deduplication, ownership and notification clearing. The standalone native update was installed over the existing Fold5 app; no real recordings were deleted.
+
+### Verify emulator hardware graphics
+
+For the Fold review AVD, use `hw.gpu.enabled=yes` and `hw.gpu.mode=host` in its local `~/.android/avd/Sporeward_Fold_API36.avd/config.ini`. Stop the AVD before changing its configuration. Launch explicitly with host graphics and cold boot rather than restoring a software-rendered snapshot:
+
+```sh
+"$HOME/Library/Android/sdk/emulator/emulator" -avd Sporeward_Fold_API36 -port 5554 -gpu host -no-snapshot-load -no-boot-anim -no-audio
+adb -s emulator-5554 shell dumpsys SurfaceFlinger | rg '^GLES:'
+```
+
+On 22 October 2026 the running emulator initially reported SwiftShader and its AVD had GPU emulation disabled. After enabling host graphics and restarting, SurfaceFlinger reported `Google (Apple)`, `Apple M1`, and `OpenGL ES 3.0 (4.1 Metal - 91.7)`. This verifies the active renderer, not just the configuration file. The emulator warns that host OpenGL on macOS is deprecated; monitor compatibility rather than silently falling back to software. Android's [graphics acceleration documentation](https://developer.android.com/studio/run/emulator-acceleration) describes `-gpu host`.
