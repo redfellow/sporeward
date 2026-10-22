@@ -122,13 +122,13 @@ These remain concept ideas; they are not acceptance requirements for the first M
 
 ## Immediate next work
 
-1. Resume the active [Field Labs and Outbreak Resistance change](../openspec/changes/implement-outbreak-resistance-and-field-labs/proposal.md) from its tasks and latest evidence. Owner acceptance of task 4.4 applies to the current gameplay and integrated presentation milestone; preserve the remaining reviewable questions and do not infer phone or field approval.
+1. Review the archived [Field Labs and Outbreak Resistance change](../openspec/changes/archive/2026-10-22-implement-outbreak-resistance-and-field-labs/proposal.md) from its tasks and latest evidence. Owner acceptance of task 4.4 applies to the current gameplay and integrated presentation milestone; preserve the remaining reviewable questions and do not infer phone or field approval.
 2. Run the recorded full-week synthetic replay against persisted Friday state, because the available separate-session handoff reports positive restoration but its 61.66% Friday reference was calibration-only and not persisted. This is a synthetic verification step, not outdoor validation.
 3. Complete real-device and field checks for screen-off/background GPS, pause/resume, recovery, fold transitions, battery use and cellular HTTPS. Group/privacy acceptance and later integration remain separate gates.
 4. Scope Strava delivery/reconciliation and production deployment/authentication/migrations/live updates when prioritized. Account-backed shared play, geographic lifecycle, validated requests and retry-safe test/replay storage are already implemented; do not duplicate their tasks here.
 
 
-Rules and balancing references: [Working game concept](game-concept.md) and [Player rules](player-rules.md). Active gameplay status and acceptance remain in the [Field Labs/resistance change](../openspec/changes/implement-outbreak-resistance-and-field-labs/tasks.md); the completed product-direction handoff is [archived here](../openspec/changes/archive/2026-10-22-align-product-direction-and-project-status/tasks.md). This roadmap is an index, not a copied checklist.
+Rules and balancing references: [Working game concept](game-concept.md) and [Player rules](player-rules.md). Gameplay status and acceptance remain in the [archived Field Labs/resistance tasks](../openspec/changes/archive/2026-10-22-implement-outbreak-resistance-and-field-labs/tasks.md); the completed product-direction handoff is [archived here](../openspec/changes/archive/2026-10-22-align-product-direction-and-project-status/tasks.md). This roadmap is an index, not a copied checklist.
 
 ## Recording constraints: sources
 
