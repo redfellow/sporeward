@@ -76,3 +76,7 @@ Server tests cover upload persistence, timestamped contacts, duplicate contribut
 - [Architecture](docs/architecture.md)
 - [Game concept](docs/game-concept.md)
 - [Player rules](docs/player-rules.md)
+
+## Planning changes
+
+Sporeward uses [OpenSpec](docs/openspec-workflow.md) for substantive development. Start with the [current goal](docs/current-goal.md), then read its linked OpenSpec proposal, requirements, design and task checklist.

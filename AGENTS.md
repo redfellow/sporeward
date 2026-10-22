@@ -4,7 +4,7 @@
 
 Sporeward has an Android field recorder with a fullscreen game map, automatic uploads and recaps, an account-owned PostgreSQL/PostGIS world with geographic growth/cleaning, and reusable recorded-GPS simulations and emulator replay. The field world covers the urban Tampere riding region; isolated replay uses a deterministic central Tampere baseline. Personal/group field validation and later product stages remain separate from completed implementation milestones. Follow `docs/architecture.md` and `docs/development-roadmap.md` for the selected stack and broader progression.
 
-The active development scope is maintained in `docs/current-goal.md`. Re-read it when continuing goal work and before declaring completion; preserve user changes to that file.
+The active development scope is indexed by `docs/current-goal.md`; detailed requirements, design and tasks live in the linked `openspec/changes/<change>/`. Read that change before continuing implementation and before declaring completion; preserve user edits. Do not maintain duplicate task lists in the goal file.
 
 ## Code and checks
 
@@ -34,3 +34,9 @@ For documentation changes, check consistency and links. Once implementation exis
 - Commits: Use ´[$TERM] ´ prefix for commits. For the $TERM, use "Conventional Commits" specification, in uppercase.
 - Commit messages: Be concise.
 - No co-author attribution
+
+## OpenSpec workflow
+
+Use OpenSpec for substantive features, fixes and architectural changes: explore as needed, propose requirements/design/tasks, apply the agreed change, then archive after completion and review. Small wording or routine maintenance edits can stay direct unless the user requests a proposal. Use the generated Codex skills under `.agents/skills/`; setup and exact invocation names are in `docs/openspec-workflow.md`.
+
+`openspec/specs/` holds the accepted capability baseline after sync/archive; active changes hold proposed deltas. Do not treat pending specs as evidence of implemented behavior. Existing gameplay design remains in `docs/game-concept.md`, concise public guidance in `docs/player-rules.md`, and prior completion evidence in `docs/finished-goals.md`. Baseline existing capabilities incrementally when touched, using implementation and recorded decisions rather than inventing guarantees.

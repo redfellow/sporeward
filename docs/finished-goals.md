@@ -1,5 +1,11 @@
 # Finished goals and implementation evidence
 
+## Field Labs and Outbreak Resistance desktop study — completed 21 October 2026
+
+Owner-approved survey stations have luminous available samples and empty, subdued personal collection states. A combined Tampere map uses the accepted Richer outbreaks and a fixed 227° resistance field below roads and outbreaks, with readable extent contours. Two-player collection, resistance/recovery controls, Night/Bright themes and reduced motion were reviewed; web typecheck and strict spec validation passed. All 7 tasks are complete.
+
+[Archived change](../openspec/changes/archive/2026-10-21-explore-field-labs-and-outbreak-resistance/proposal.md) · [Review and validation](../openspec/changes/archive/2026-10-21-explore-field-labs-and-outbreak-resistance/tasks.md). The main specs baseline only the desktop guide; authoritative gameplay, Android adoption and deployment remain separate.
+
 ## Visual guide, map alignment and shoreline delivery — completed steps, 21 October 2026
 
 The owner accepted the visual guide at `/rendering/palettes`, including the latest narrow crack gap and jagged zipper split. Ember & violet is locked: warm effort colours, violet remnants and pale clearing. The guide has centered state badges, concise per-card explanations, growth transitions and separate personal map markers. Cooldown uses a muted appearance; contact this outing adds a green border/check. It omits development-only area multipliers and split-category calculations.

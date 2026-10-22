@@ -1,0 +1,35 @@
+schema: spec-driven
+
+context: |
+  Sporeward is a human-powered outdoor outbreak-cleaning game.
+  Monorepo: TypeScript; React/Vite web; React Native/Expo Android;
+  Fastify server; PostgreSQL/PostGIS; pure rules in packages/game;
+  transport contracts in packages/protocol; shared artwork in packages/rendering.
+  Android map graphics must remain inside MapLibre's camera pipeline.
+  Read AGENTS.md for repository and version-control conventions.
+  docs/game-concept.md records agreed design and tentative balancing values.
+  docs/player-rules.md is the concise player-facing manual.
+  docs/architecture.md and docs/development-roadmap.md provide technical context.
+  docs/finished-goals.md holds historical completion evidence, not current tasks.
+  Existing implementation is not automatically covered by OpenSpec: distinguish
+  observed behavior, approved design, proposed changes, and remaining acceptance.
+  Accepted visual baseline: commit 754a5c1; Ember & violet and centered badges.
+  Preserve historical contact geometry, accounts, recordings and field-world data.
+  Keep precise GPS data, credentials, backups and generated APKs out of Git.
+  Use isolated replay fixtures; owner manages Windows nginx.
+  Prefer focused validation and emulator development over repeated full suites
+  or requiring real outings. Final visual acceptance needs owner review.
+  Write artifacts in English; keep them concise and actionable.
+
+rules:
+  proposal:
+    - Identify capabilities precisely and reference existing project documents.
+    - Do not imply a documented design is already implemented.
+  specs:
+    - State externally observable behavior with concrete WHEN/THEN scenarios.
+    - Keep adjustable balance values explicitly provisional.
+  design:
+    - Explain preservation of existing field state and Android map performance.
+  tasks:
+    - Group work into reviewable implementation slices with focused validation.
+    - Distinguish implementation checks from explicit owner visual acceptance.
