@@ -2,7 +2,7 @@
 
 An outdoor game where recorded walks, runs, and rides help clear a shared world of spreading outbreaks. Players cooperate on cleaning and compete for points.
 
-The repository contains a native Android field recorder with local route maps and recaps, a deterministic cleaning simulation engine, and minimal web/server scaffolds. The [first encounter slice](docs/first-outbreak-encounter.md) adds persistent Tampere test outbreaks, validated GPS contacts and activity scoring. Accounts, Strava integration and the full geographic lifecycle remain to be implemented. Background recording requires field validation.
+The repository contains a native Android field recorder with local route maps and recaps, a deterministic planning simulation, and an account-backed Tampere test/replay service with PostgreSQL/PostGIS persistence, geographic outbreak lifecycle, validated GPS contacts and activity scoring. These capabilities are documented implementation milestones for isolated/test use; they do not establish public production deployment, outdoor GPS reliability or group/field acceptance. Strava delivery and reconciliation remain future integration work. See the [roadmap](docs/development-roadmap.md) and [finished goals](docs/finished-goals.md) for evidence and remaining gates.
 
 ## Workspace
 
@@ -12,10 +12,10 @@ The repository contains a native Android field recorder with local route maps an
 | `apps/mobile` | React Native + Expo; Android first, iOS later |
 | `apps/server` | Fastify HTTP service |
 | `packages/game` | Shared TypeScript balancing configuration and deterministic cleaning simulation |
-| `packages/protocol` | Shared API types and future runtime validation |
+| `packages/protocol` | Shared API types and runtime request validation |
 | `docs` | Concept, player rules, roadmap, and artwork |
 
-The Android route map uses MapLibre with an OpenFreeMap basemap. PostgreSQL + PostGIS is selected for server persistence but is not connected.
+The Android route map uses MapLibre with an OpenFreeMap basemap. The server includes PostgreSQL + PostGIS persistence for the isolated replay/test world; production hosting, authentication and public data services are not established.
 
 ## Getting started
 
@@ -79,4 +79,4 @@ Server tests cover upload persistence, timestamped contacts, duplicate contribut
 
 ## Planning changes
 
-Sporeward uses [OpenSpec](docs/openspec-workflow.md) for substantive development. Start with the [current goal](docs/current-goal.md), then read its linked OpenSpec proposal, requirements, design and task checklist.
+Sporeward uses [OpenSpec](docs/openspec-workflow.md) for substantive development. Read the owning change before resuming work: [Field Labs and Outbreak Resistance](openspec/changes/archive/2026-10-22-implement-outbreak-resistance-and-field-labs/proposal.md). The completed [product direction and project status reconciliation](openspec/changes/archive/2026-10-22-align-product-direction-and-project-status/proposal.md) records the project priorities and status handoff. Completed work and evidence are recorded in [Finished goals](docs/finished-goals.md).

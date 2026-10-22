@@ -24,13 +24,12 @@ openspec validate --all --strict
 ## Sources of truth
 
 - `openspec/config.yaml`: shared planning context and artifact rules.
-- `openspec/changes/<name>/`: active proposal, specs, design and task checklist.
+- `openspec/changes/<name>/`: source of truth for each active scope, status, requirements, design, tasks and acceptance.
 - `openspec/specs/`: accepted capability baseline populated through sync/archive. It starts empty; existing implementation is not automatically a fully specified system.
-- `docs/current-goal.md`: short pointer to the active change, without a second checklist.
 - `docs/game-concept.md`: agreed game design and explicitly tentative balancing.
 - `docs/player-rules.md`: concise player-facing rules.
 - `docs/finished-goals.md`: historical completion and acceptance evidence.
 
 Use OpenSpec for substantive development. Keep small wording fixes and routine maintenance direct when a proposal would add no useful decision. Preserve explicit owner acceptance requirements; a successful build is not visual approval. Generated skills are tooling instructions; project-specific constraints belong in config and AGENTS.md rather than edits that `openspec update` would overwrite.
 
-The initial showcase change migrates the existing approved goal. Setup does not implement its requirements, change production gameplay, or archive unfinished work. Add baseline specs for other existing capabilities incrementally as those areas are changed.
+The initial showcase change migrated the existing approved goal. Completed scope and historical evidence stay in `docs/finished-goals.md`; do not recreate a separate current-goal checklist. Setup does not implement requirements, change production gameplay, or archive unfinished work. Add baseline specs for other existing capabilities incrementally as those areas are changed.

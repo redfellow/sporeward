@@ -32,12 +32,12 @@ See [proposal.md](proposal.md). This document preserves the project-wide explora
 
 | Topic | Durable owner / next entry point |
 |---|---|
-| Field Lab and resistance desktop preview | [Visual study tasks](../archive/2026-10-21-explore-field-labs-and-outbreak-resistance/tasks.md); independently progressing elsewhere |
-| Resistance, combined rewards and authoritative labs | [Gameplay tasks](../implement-outbreak-resistance-and-field-labs/tasks.md), [design](../implement-outbreak-resistance-and-field-labs/design.md) and capability specs; independently progressing elsewhere |
-| Shared outbreak rendering, Android port and isolated showcase | [Visual-port tasks](../replicate-approved-visuals-and-showcase/tasks.md); preserve emulator/phone approval gates |
-| Size/category and strategic splitting mechanics | [Game concept](../../../docs/game-concept.md), especially effort/size and cleaning/splitting; needs its own scoped proposal before implementation |
+| Field Lab and resistance desktop preview | [Visual study tasks](../2026-10-21-explore-field-labs-and-outbreak-resistance/tasks.md); independently progressing elsewhere |
+| Resistance, combined rewards and authoritative labs | [Gameplay tasks](../2026-10-22-implement-outbreak-resistance-and-field-labs/tasks.md), [design](../2026-10-22-implement-outbreak-resistance-and-field-labs/design.md) and accepted capability specs; implementation and task 4.4 acceptance are complete |
+| Shared outbreak rendering, Android port and isolated showcase | [Visual-port tasks](../2026-10-22-replicate-approved-visuals-and-showcase/tasks.md); preserve emulator/phone approval gates |
+| Size/category and strategic splitting mechanics | [Game concept](../../../../docs/game-concept.md), especially effort/size and cleaning/splitting; needs its own scoped proposal before implementation |
 | Project direction, stale status and remaining-question handoff | This change's [tasks](tasks.md) |
-| Other prior unresolved product topics | [Game concept](../../../docs/game-concept.md), [roadmap](../../../docs/development-roadmap.md) and linked evidence; not newly approved by this conversation |
+| Other prior unresolved product topics | [Game concept](../../../../docs/game-concept.md), [roadmap](../../../../docs/development-roadmap.md) and linked evidence; not newly approved by this conversation |
 
 This table is an index, not a prescribed implementation order or a duplicate checklist. Coordinate overlapping renderer/mobile work between the owning changes.
 
@@ -54,7 +54,7 @@ This table is an index, not a prescribed implementation order or a duplicate che
 
 ### Feature questions already owned elsewhere
 
-Resistance centre calculation, history horizon, radius/falloff, point curve/repeat reconciliation, passive decay, soft threshold and floor, restoration distance/cap, diminishing-collection recovery, placement/lifetime, offline offers and late settlement belong to the [gameplay design](../implement-outbreak-resistance-and-field-labs/design.md). Its provisional defaults must not be presented as user-confirmed answers. Use the live artifact for the latest status; do not duplicate its evolving parameter list here.
+Resistance centre calculation, history horizon, radius/falloff, point curve/repeat reconciliation, passive decay, soft threshold and floor, restoration distance/cap, diminishing-collection recovery, placement/lifetime, offline offers and late settlement belong to the [gameplay design](../2026-10-22-implement-outbreak-resistance-and-field-labs/design.md). Its provisional defaults must not be presented as user-confirmed answers. Use the archived evidence for decisions and recorded limitations; do not duplicate its parameter list here.
 
 Size/category thresholds, child-category constraints, split inheritance/conservation, corridor detection and normal-play reachability belong to the concept and a future splitting change. A convincing splitting illustration is not evidence that the player-driven mechanic is complete.
 
@@ -64,7 +64,7 @@ Longer hard cooldowns, permanent exploration-credit incentives, ordinary distant
 
 ## Documentation approach
 
-Create a concise `docs/product-direction.md` for priorities, evaluation and a question index. Link it from the concept and roadmap; keep detailed rules and implementation tasks in their existing owners. Update stale overview paragraphs individually with evidence. Keep `docs/current-goal.md` an index and preserve edits from parallel work. Questions can remain explicitly deferred; closing a chat does not require resolving every product decision.
+Create a concise `docs/product-direction.md` for priorities, evaluation and a question index. Link it from the concept and roadmap; keep detailed rules and implementation tasks in their existing owners. Update stale overview paragraphs individually with evidence. Keep active scope and status in their owning OpenSpec changes, and preserve edits from parallel work. Questions can remain explicitly deferred; closing a chat does not require resolving every product decision.
 
 ## Risks / Trade-offs
 

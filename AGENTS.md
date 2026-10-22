@@ -4,7 +4,7 @@
 
 Sporeward has an Android field recorder with a fullscreen game map, automatic uploads and recaps, an account-owned PostgreSQL/PostGIS world with geographic growth/cleaning, and reusable recorded-GPS simulations and emulator replay. The field world covers the urban Tampere riding region; isolated replay uses a deterministic central Tampere baseline. Personal/group field validation and later product stages remain separate from completed implementation milestones. Follow `docs/architecture.md` and `docs/development-roadmap.md` for the selected stack and broader progression.
 
-The active development scope is indexed by `docs/current-goal.md`; detailed requirements, design and tasks live in the linked `openspec/changes/<change>/`. Read that change before continuing implementation and before declaring completion; preserve user edits. Do not maintain duplicate task lists in the goal file.
+Active development scope, status and acceptance live in their owning `openspec/changes/<change>/` artifacts. Read the relevant change before continuing implementation and before declaring completion; preserve user edits. `docs/finished-goals.md` records completed scope and historical evidence. Do not create a duplicate project-wide task list.
 
 ## Code and checks
 
