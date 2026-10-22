@@ -1,12 +1,10 @@
 # Current work and handoff
 
-## Ongoing — Field Labs and Outbreak Resistance
+## Completed — Field Labs and Outbreak Resistance
 
-The active implementation is [implement-outbreak-resistance-and-field-labs](../openspec/changes/implement-outbreak-resistance-and-field-labs/proposal.md). Thirteen of fourteen tasks are complete; [task 4.4](../openspec/changes/implement-outbreak-resistance-and-field-labs/tasks.md) awaits owner acceptance of the gameplay and integrated emulator presentation.
+The [change](../openspec/changes/archive/2026-10-22-implement-outbreak-resistance-and-field-labs/proposal.md) is archived with all 14 tasks complete. On 2026-10-22, the owner accepted the synthetic integrated gameplay and emulator recap: an ordinary accepted contribution established the resistance centre, followed by a confirmed Field Lab collection with positive offered and actual restoration. The persisted synthetic settlement and emulator recap are recorded in the archived [task evidence](../openspec/changes/archive/2026-10-22-implement-outbreak-resistance-and-field-labs/tasks.md).
 
-The phone visuals accepted on 2026-10-22 close the separate [visual showcase change](../openspec/changes/archive/2026-10-22-replicate-approved-visuals-and-showcase/proposal.md). They do not by themselves accept the Friday reward state or the Field Lab collection/restoration gameplay. No field deployment or outdoor reliability is claimed. A later rendering pass is separate future work.
-
-**Resume with:** repair the emulator review session, launch the isolated Field Labs bench, inspect the Friday reward state plus available/collected lab and confirmed restoration recap, then ask the owner for explicit acceptance. Do not mark task 4.4 complete before that review. The emulator currently displays a blank screen after the latest Metro reload. Temporary feature API port 3113 and Metro port 8082 were stopped; the original port reverses remain (`8081 → 8081`, `3103 → 3120`). Metro is running on 8081 with `EXPO_PUBLIC_TEST_SERVER_URL=http://127.0.0.1:3103`; the isolated API on 3120 is the showcase preview, not the Field Labs bench. No recording was active when checked.
+Friday's 61.66% remains separate deterministic calibration evidence, not the state of that persisted outing. No field deployment, outdoor reliability or physical-phone approval is claimed. A later rendering pass remains separate future work.
 
 ## Pending — Project direction and status documentation
 

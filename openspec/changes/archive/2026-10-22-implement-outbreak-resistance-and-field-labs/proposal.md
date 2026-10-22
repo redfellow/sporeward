@@ -25,6 +25,6 @@ None; accepted OpenSpec baseline is currently empty. These deltas do not claim t
 
 ## Impact
 
-Expected work spans `packages/game`, `packages/protocol`, server world/account persistence and replay fixtures, mobile world presentation, and [concept](../../../docs/game-concept.md)/[player rules](../../../docs/player-rules.md). Preserve historical awards, recording ownership, contact geometry and cleanup rules. No public deployment or historical score recalculation is authorized by this proposal.
+Expected work spans `packages/game`, `packages/protocol`, server world/account persistence and replay fixtures, mobile world presentation, and [concept](../../../../docs/game-concept.md)/[player rules](../../../../docs/player-rules.md). Preserve historical awards, recording ownership, contact geometry and cleanup rules. No public deployment or historical score recalculation is authorized by this proposal.
 
-The [desktop visual study](../archive/2026-10-21-explore-field-labs-and-outbreak-resistance/proposal.md) is proceeding independently; do not edit or reimplement its files during this planning capture. Coordinate eventual adoption with the [archived Android visual-port change](../archive/2026-10-22-replicate-approved-visuals-and-showcase/proposal.md). Achievements, size/category rules and strategic splitting remain separate.
+The [desktop visual study](../2026-10-21-explore-field-labs-and-outbreak-resistance/proposal.md) is proceeding independently; do not edit or reimplement its files during this planning capture. Coordinate eventual adoption with the [archived Android visual-port change](../2026-10-22-replicate-approved-visuals-and-showcase/proposal.md). Achievements, size/category rules and strategic splitting remain separate.
