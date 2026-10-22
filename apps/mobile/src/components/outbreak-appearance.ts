@@ -1,14 +1,8 @@
-import {richerPalettes} from '@sporeward/rendering';
+import {guidePigment,guideState} from '@sporeward/rendering';
 import type {WorldView} from '@sporeward/protocol';
 type Outbreak=WorldView['outbreaks'][number];
-export function outbreakPalette(o:Outbreak){
- if(o.eligibleAt>Date.now()||o.status==='cleared')return richerPalettes.cooldown;
- if(o.status==='clearing')return richerPalettes.clearing;
- if(o.lifecycle==='remnant')return {body:'#c8ad46',deep:'#8f742a',rim:'#f1de95',light:'#fff7c4'};
- if(o.lifecycle==='disintegrating')return {body:'#d46642',deep:'#993c31',rim:'#ffb58a',light:'#ffe3c2'};
- return o.visitsRemaining>5?richerPalettes.crimson:richerPalettes.amber;
-}
-export function outbreakAppearance(o:Outbreak){const p=outbreakPalette(o);return {bodyColor:p.body,rimColor:p.rim};}
+export function outbreakPalette(o:Outbreak,now=Date.now(),visited=false){return guidePigment(guideState(o,now,visited));}
+export function outbreakAppearance(o:Outbreak,now=Date.now(),visited=false){const p=outbreakPalette(o,now,visited);return {bodyColor:p.body,rimColor:p.rim};}
 /** Stable interior detail, bounded per outbreak; no particles or per-frame geometry. */
 export function outbreakSpores(outbreaks:Outbreak[]) {
  const features:{type:'Feature';properties:{color:string};geometry:{type:'Point';coordinates:number[]}}[]=[];

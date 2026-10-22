@@ -2,16 +2,13 @@ import {useEffect,useMemo,useState} from 'react';
 import {AccessibilityInfo,AppState,StyleSheet} from 'react-native';
 import {Canvas,ClipOp,Group,PaintStyle,Picture,Skia,StrokeJoin,TileMode,vec,type SkCanvas,type SkPath,type SkPicture,type SkRect} from '@shopify/react-native-skia';
 import {useDerivedValue,useFrameCallback,useSharedValue,type SharedValue} from 'react-native-reanimated';
-import {identitySeed,membraneMotion,membranePoints,richerMembranes,type Membrane} from '@sporeward/rendering';
+import {identitySeed,membraneMotion,membranePoints,richerMembranes,type Membrane,guideMembranePoints,type GuideState} from '@sporeward/rendering';
 import {outbreakPalette} from './outbreak-appearance';
 import type {WorldView} from '@sporeward/protocol';
-export type Point=[number,number];
+import {growthPoint,growthCoordinate,growthMetresPerRadian,type Point} from './map-coordinates';
+export {growthPoint,growthCoordinate,type Point} from './map-coordinates';
 export type MapViewport={center:Point;bounds:[number,number,number,number];zoom:number};
 export type GrowthCamera={center:Point;zoom:number;bearing:number;width:number;height:number;anchor:Point;scaleFactor?:number};
-const R=6378137,C=Math.cos(61.495*Math.PI/180),ORIGIN:Point=[23.795,61.495],Y0=Math.log(Math.tan(Math.PI/4+ORIGIN[1]*Math.PI/360));
-export function growthPoint([lon,lat]:Point):Point{
- 'worklet';return [(lon-ORIGIN[0])*Math.PI/180*R*C,(Y0-Math.log(Math.tan(Math.PI/4+Math.max(-85,Math.min(85,lat))*Math.PI/360)))*R*C];
-}
 export function pathFor(points:Point[],smooth=false){
  const b=Skia.PathBuilder.Make();
  if(smooth){const last=points.at(-1)!,first=points[0];b.moveTo((last[0]+first[0])/2,(last[1]+first[1])/2);points.forEach((p,i)=>{const n=points[(i+1)%points.length];b.quadTo(p[0],p[1],(p[0]+n[0])/2,(p[1]+n[1])/2);});}
@@ -20,9 +17,9 @@ export function pathFor(points:Point[],smooth=false){
 }
 function picture(draw:(canvas:SkCanvas)=>void,bounds:SkRect){const recorder=Skia.PictureRecorder(),canvas=recorder.beginRecording(bounds);draw(canvas);const result=recorder.finishRecordingAsPicture();recorder.dispose();return result;}
 type Palette=ReturnType<typeof outbreakPalette>;
-export function membranePicture(m:Membrane,p:Palette):SkPicture{
+export function membranePicture(m:Membrane,p:Palette,state?:GuideState):SkPicture{
  return picture(canvas=>{
-  const path=pathFor(membranePoints(m.radius,m.seed),true),paint=Skia.Paint();paint.setAntiAlias(true);
+  const path=pathFor(state?guideMembranePoints(m,state):membranePoints(m.radius,m.seed),state!=='disintegrating'),paint=Skia.Paint();paint.setAntiAlias(true);
   const a=vec(-m.radius,-m.radius),b=vec(m.radius,m.radius);
   const fill=Skia.Shader.MakeLinearGradient(a,b,[(m.light?p.light:p.body)+'55',(m.light?p.light:p.body)+'20',p.body+'08'].map(Skia.Color),[0,.6,1],TileMode.Clamp);
   paint.setShader(fill);canvas.drawPath(path,paint);
@@ -72,7 +69,7 @@ export function RicherOverlay({world,viewport,camera,visited}:{world:WorldView|n
   }
   const result=recorder.finishRecordingAsPicture();recorder.dispose();return result;
  });
- const matrix=useDerivedValue(()=>{const c=camera.value;const p=growthPoint(c.center),scale=(c.scaleFactor??1)*512*2**c.zoom/(2*Math.PI*R*C),a=c.bearing*Math.PI/180,cos=Math.cos(a)*scale,sin=Math.sin(a)*scale;return [cos,sin,c.anchor[0]-cos*p[0]-sin*p[1],-sin,cos,c.anchor[1]+sin*p[0]-cos*p[1],0,0,1];});
+ const matrix=useDerivedValue(()=>{const c=camera.value;const p=growthPoint(c.center),scale=(c.scaleFactor??1)*512*2**c.zoom/(2*Math.PI*growthMetresPerRadian),a=c.bearing*Math.PI/180,cos=Math.cos(a)*scale,sin=Math.sin(a)*scale;return [cos,sin,c.anchor[0]-cos*p[0]-sin*p[1],-sin,cos,c.anchor[1]+sin*p[0]-cos*p[1],0,0,1];});
  if(!active)return null;
  return <Canvas pointerEvents="none" style={StyleSheet.absoluteFill}><Group matrix={matrix}><Picture picture={bodyPicture}/><Picture picture={interiors}/></Group></Canvas>;
 }

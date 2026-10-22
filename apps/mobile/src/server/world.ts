@@ -1,5 +1,5 @@
 import {rememberAccountMode} from './session';
-import {parseWorldView,parseEncounterRecap,parseTesterScores} from '@sporeward/protocol';
+import {parseWorldView,parseEncounterRecap,parseTesterScores,parseFieldLabOffer} from '@sporeward/protocol';
 import {requestHeaders,ConnectionError,SERVER_URL,type Credentials,type HealthRequest} from './client';
 async function get(path:string,credentials:Credentials,request:HealthRequest) {
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
@@ -18,4 +18,12 @@ export async function fetchWorld(credentials:Credentials,request:HealthRequest=f
 export async function fetchRecap(id:string,credentials:Credentials,request:HealthRequest=fetch) {try{return parseEncounterRecap(await get(`/activities/${encodeURIComponent(id)}/encounters`,credentials,request),id);}catch(e){if(e instanceof ConnectionError)throw e;throw new ConnectionError('Unexpected recap response. Keeping the saved recap.');}}
 export async function fetchScores(credentials:Credentials,request:HealthRequest=fetch){
  try{return parseTesterScores(await get('/scores',credentials,request));}catch{throw new ConnectionError('Scores unavailable. Sign in and retry when connected.');}
+}
+export async function fetchLabOffer(id:string,credentials:Credentials,request:HealthRequest=fetch){
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
+ try{
+  const response=await request(`${SERVER_URL}/outings/${encodeURIComponent(id)}/lab-offer`,{method:'POST',headers:{...requestHeaders(credentials),'Content-Type':'application/json'},body:'{}',signal:controller.signal,redirect:'error'});
+  if(!response.ok)throw new ConnectionError('Lab restoration remains provisional until upload.');
+  const offer=parseFieldLabOffer(await response.json());if(offer.outingId!==id)throw new Error('Mismatched outing');return offer;
+ }finally{clearTimeout(timer);}
 }

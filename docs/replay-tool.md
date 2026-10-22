@@ -63,6 +63,39 @@ Observed examples with the private 14 October phone outing: the solo/revisit sch
 
 ## Normal-speed Android recorder replay
 
+### Field Labs and resistance
+
+Use the separate feature bench to avoid changing the normal replay world:
+
+```sh
+REPLAY_FIELD_LABS=1 REPLAY_PORT=3103 npm run replay:server
+```
+
+In another terminal, from `apps/mobile`:
+
+```sh
+EXPO_PUBLIC_TEST_SERVER_URL=http://127.0.0.1:3103 npx expo start --dev-client --localhost --port 8081
+adb -s emulator-5554 reverse tcp:3103 tcp:3103
+adb -s emulator-5554 reverse tcp:8081 tcp:8081
+adb -s emulator-5554 shell am start -a android.intent.action.VIEW -d 'sporeward://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8081' com.sporeward.app
+```
+
+Use disposable gateway credentials `emulator` / `emulator-only` unless overridden for this bench. Its marked file storage is `work/replay/native-field-labs`; if PostgreSQL is explicitly configured, its world/account namespace is `native-field-labs`. The environment endpoint reports `fieldLabs: true`. Reset restores neutral resistance and shared labs only in this isolated feature world. Native stations use the same drawing recipe as the approved desktop study; the hue-227 resistance field stays below roads, masked out of outbreak interiors. Tap a station for personal collection state, expiry and the outing's advertised maximum. Offline contacts remain provisional. A confirmed recap reports actual restoration and any settlement limits.
+
+For deterministic rules/calibration and real recorded-track integration:
+
+```sh
+node --import tsx scripts/replay/resistance-calibration.mts
+node --import tsx scripts/replay/resistance-integrated.mts work/replay/field-phone.json
+node --import tsx scripts/world/check-resistance-migration.mts
+```
+
+The integration runner uses a private normalized recording, unchanged apart from timestamp rebasing, across four commuting weeks and two players. It selects a reproducible accessible lab seed intersecting that recording and uses high-effort persistent targets to isolate scoring from geographic replacement. All uploads use normal authenticated chunk/completion/recap endpoints in a temporary file-backed world. Its output contains aggregate results rather than GPS coordinates; it verifies personal collection, frozen offers, retries, score/recap agreement and restart, then deletes only its temporary data. This is not a PostGIS, outdoor GPS-reliability or field-deployment test. The local walk fixture's nearby lab has a small benefit; the distant weekend reference belongs to the separate calibration runner.
+
+To return to normal replay, stop this feature API and Metro, start `npm run replay:server` without the feature flag, and restart Metro with `EXPO_PUBLIC_TEST_SERVER_URL=http://127.0.0.1:3102`. Reverse port 3102 and reconnect the development client. Feature and normal world data remain separate; the standalone field app continues to use its fixed HTTPS server.
+
+### Standard replay
+
 Use the development emulator for this path. Start the persistent disposable API with `npm run replay:server`; it listens only at `127.0.0.1:3102` and stores its marked data under ignored `work/replay/native-server`. Configure its disposable credentials through `REPLAY_USERNAME` and `REPLAY_PASSWORD` (defaults are `emulator` / `emulator-only`), then use the same credentials in the emulator app. These are separate from the field server credentials.
 
 Start Metro from `apps/mobile` with `EXPO_PUBLIC_TEST_SERVER_URL=http://127.0.0.1:3102 npx expo start --dev-client --localhost --port 8081`. Reverse TCP ports 3102 and 8081 onto the emulator with ADB, and open the existing development client against Metro. Do not use the physical phone for synthetic track replay.
@@ -152,3 +185,28 @@ adb -s emulator-5554 reverse tcp:3102 tcp:3112
 The output file must be new. This viewer binds only to localhost, uses disposable emulator gateway credentials, and accepts only world/health reads. It does not process activities or change field data. The geometry matches the source snapshot after shoreline preparation; game state is newly constructed without player records. Do not record/upload against it. Restore normal replay with `adb -s emulator-5554 reverse tcp:3102 tcp:3102` before GPS tests.
 
 The field map exceeded the former 1,000-outbreak client limit because remnants do not count toward ordinary spawn density. A rejected response left old pre-shoreline geometry cached. The parser now independently bounds total outbreak count and aggregate vertices. For the 2,108-outbreak reproduction, a remote-database replay fetch took 10.5 seconds, while the read-only local response took 485 ms.
+
+### Complete read-only Android render test
+
+Export every guide example without touching a replay world or recordings:
+
+```sh
+node --import tsx scripts/replay/prepare-showcase.mts /tmp/sporeward-render-test.json
+REPLAY_PREVIEW_PORT=3115 node --import tsx scripts/replay/serve-map-preview.mts /tmp/sporeward-render-test.json
+```
+
+Use a new output path on repeat exports. With Metro configured for the feature bench on device port 3103, temporarily forward that port to the preview:
+
+```sh
+adb -s emulator-5554 reverse tcp:3103 tcp:3115
+```
+
+Reopen the development client or wait for its next map refresh. **Next / Previous** fit each named example: Light, Medium, Heavy, Disintegrating, Remnants, Withering, Clearing, Cracks forming, paired Splitting, cooldown, current-outing contact, and cleared protection. Lifecycle data is frozen; bounded membrane motion continues. The fixture uses public-access generation in the compact Hatanpää–Viinikka–Nekala region, synthetic personal states, two labs and a synthetic resistance zone. It is a read-only visual fixture, not a recorded contact, earned reward, or lifecycle-transition test. Starting an outing is unavailable while this fixture is displayed. All ordinary field/replay contact boundaries remain unchanged.
+
+Return to the live feature replay before recording, then refresh/reopen:
+
+```sh
+adb -s emulator-5554 reverse tcp:3103 tcp:3103
+```
+
+The full showcase's advancing/resettable lifecycle controls and final Android visual acceptance remain tracked in OpenSpec. Presence of every example does not establish guide parity or owner approval.

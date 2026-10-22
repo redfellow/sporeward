@@ -7,6 +7,7 @@ import {advanceWorld,createOutbreak,SPATIAL_BALANCE,type Footprint} from '@spore
 import type {Persisted} from '../world-store.ts';
 import {cellKey,cellRing,neighbours,type AccessibleCell} from './access.ts';
 import {resizeOutbreak} from './resize.ts';
+import {remnantCollectionContour} from './remnant-contour.ts';
 import {captureFootprint} from './history.ts';
 /** Advance every geographic transition alongside the deterministic rule tick. */
 export function advanceSpatial(state:Persisted,minutes:number,access:AccessibleCell[]){
@@ -36,7 +37,7 @@ export function advanceSpatial(state:Persisted,minutes:number,access:AccessibleC
    if(selected.length===children.length)for(const [i,child] of children.entries()){
     const cells=[{x:selected[i].x,y:selected[i].y}],surface=geometryVersion>=4?canonicalContour(child.id):undefined;
     let proposed;try{proposed=contour(cells,undefined,child.id,geometryVersion,surface);}catch(e){if(e instanceof NoLandContour){placed.length=0;break;}throw e;}
-    const ring=geometryVersion>=4?separatedContour(proposed,blockers):proposed;
+    const ring=remnantCollectionContour(proposed,geometryVersion,blockers);
     if(!ring){placed.length=0;break;}
     placed.push({id:child.id,name:fixture.name+' remnant '+(i+1),cells,surface,ring,accessWay:selected[i].ways[0],spawnedAt:timestamp});blockers.push(ring);
    }

@@ -1,3 +1,4 @@
+import {remnantCollectionContour} from '../spatial/remnant-contour.ts';
 /** Source-free UI fixture built from the same contours, view model and lifecycle engine. */
 import {tampereWorldFixtures} from '../spatial/tampere.ts';
 import {advanceSpatial} from '../spatial/lifecycle.ts';
@@ -22,7 +23,7 @@ export async function lifecyclePresentation(at:number){
   // committed treatments do the work; production cleaning rules are unchanged.
   targets[4].strength=.001;
   const remnant=targets[5];remnant.remnant=true;remnant.cells=1;remnant.cap=1;remnant.strength=.25;remnant.unit=.25;remnant.bonus=25;remnant.expires=s.engine.time+72*60;
-  const f=s.fixtures.find(f=>f.id===remnant.id)!;f.cells=f.cells!.slice(0,1);f.partial=undefined;f.ring=contour(f.cells,undefined,f.id,5,f.surface);
+  const f=s.fixtures.find(f=>f.id===remnant.id)!;f.cells=f.cells!.slice(0,1);f.partial=undefined;f.ring=remnantCollectionContour(contour(f.cells,undefined,f.id,5,f.surface),5)??f.ring;
   captureFootprint(s.footprints!,{id:f.id,ring:f.ring,validFrom:now,validUntil:null});
   targets[6].deadline=s.engine.time+24*60;targets[7].stabilize=s.engine.time+30;
   const names=['Light effort','Heavy effort','Cleared · protected','Withering','Clearing','Remnant · bonus only','Disintegrating','Stabilizing','Clearing · gradual'];

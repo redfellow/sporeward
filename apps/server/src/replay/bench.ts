@@ -8,7 +8,9 @@ import {ActivityStore} from '../activity-store.ts';
 import {WorldStore} from '../world-store.ts';
 import {tampereWorldFixtures} from '../spatial/tampere.ts';
 import {PostgresWorldPersistence} from '../database/world.ts';
-const root=fileURLToPath(new URL('../../../../work/replay/native-server/',import.meta.url));
+const fieldLabs=process.env.REPLAY_FIELD_LABS==='1';
+if(process.env.REPLAY_FIELD_LABS!==undefined&&!['0','1'].includes(process.env.REPLAY_FIELD_LABS))throw new Error('REPLAY_FIELD_LABS must be 0 or 1.');
+const root=fileURLToPath(new URL(fieldLabs?'../../../../work/replay/native-field-labs/':'../../../../work/replay/native-server/',import.meta.url));
 await mkdir(root,{recursive:true,mode:0o700});if((await lstat(root)).isSymbolicLink())throw new Error('Native replay root must not be a symlink.');
 const marker=join(root,'simulation.json');
 try{if(JSON.parse(await readFile(marker,'utf8')).kind!=='sporeward-native-replay')throw new Error('Unrecognized replay directory.');}
@@ -29,12 +31,15 @@ const port=Number(process.env.REPLAY_PORT??3102);if(!Number.isInteger(port)||por
 // These defaults are disposable local test credentials, never real field credentials.
 const auth={username:process.env.REPLAY_USERNAME??'emulator',password:process.env.REPLAY_PASSWORD??'emulator-only'};
 const {fixtures,access}=await tampereWorldFixtures(73,20,'baseline',5);
-const persistence=process.env.DATABASE_URL?new PostgresWorldPersistence(process.env.DATABASE_URL,'native-living'):undefined;
+const worldId=fieldLabs?'native-field-labs':'native-living';
+const persistence=process.env.DATABASE_URL?new PostgresWorldPersistence(process.env.DATABASE_URL,worldId):undefined;
 const world=new WorldStore(join(root,'world-living'),clockNow,()=>fixtures,{seed:73,allowSimulationReset:true,persistence,spatial:access.cells});
-const accounts=persistence?new AccountStore(persistence.pool,'native-living'):undefined;
+const accounts=persistence?new AccountStore(persistence.pool,worldId):undefined;
+const prepareFeatures=async()=>{if(fieldLabs){await world.configureResistance(true);await world.prepareFieldLabs();}};
+await prepareFeatures();
 const app=await createApp({auth,accounts,...(accounts?{activityStoreFor:(player:string)=>new ActivityStore(join(root,'activities'),player)}:{activityStore:new ActivityStore(join(root,'activities'),auth.username)}),worldStore:world});
-app.get('/replay/environment',async()=>({mode:'native-replay',clock:offsetMinutes?'accelerated':'wall',offsetMinutes,lifecycle:'geographic',accounts:!!accounts,seed:73,resettable:true,storage:persistence?'postgis':'files'}));
-app.post('/replay/reset',async()=>{if(JSON.parse(await readFile(marker,'utf8')).kind!=='sporeward-native-replay')throw new Error('Replay marker changed.');return changeClock(0,()=>world.resetForSimulation());});
+app.get('/replay/environment',async()=>({mode:'native-replay',clock:offsetMinutes?'accelerated':'wall',offsetMinutes,lifecycle:'geographic',fieldLabs,accounts:!!accounts,seed:73,resettable:true,storage:persistence?'postgis':'files'}));
+app.post('/replay/reset',async()=>{if(JSON.parse(await readFile(marker,'utf8')).kind!=='sporeward-native-replay')throw new Error('Replay marker changed.');return changeClock(0,async()=>{const result=await world.resetForSimulation();await prepareFeatures();return result;});});
 // Absolute offsets make a retried control request idempotent. Normal native
 // replay must reset first; it never records GPS against the accelerated clock.
 app.post('/replay/advance',async(req,reply)=>{

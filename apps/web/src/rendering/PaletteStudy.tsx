@@ -1,14 +1,12 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
-import {mapPalettes,membraneMotion,membranePoints,richerMembranes} from '@sporeward/rendering';
+import {guideHaloStrokes,mapPalettes,membranePoints,richerMembranes,guideScheme,guideCrackedRings,guideFractures,guideMembraneMotion,guideMembranePoints,guideRoundedRing,guideClearingRing,guideSplittingPaths,guideRemnantDroplets} from '@sporeward/rendering';
 import {makeFootprint,type Point} from './footprint';
 import {outline} from './material';
+import {ExplorationLabs} from './ExplorationLabs';
 import './palette-study.css';
 type Pigment={body:string;deep:string;rim:string;light:string};
 const pigment=(body:string,deep:string,rim:string,light:string):Pigment=>({body,deep,rim,light});
-const schemes=[
- {id:'ember',name:'Ember & violet',note:'Warm difficulty ladder · unmistakable violet remnants',easy:pigment('#f28a20','#bd4c0d','#ffbb51','#fff2b7'),medium:pigment('#ea6843','#a33324','#ffa082','#ffe1bd'),hard:pigment('#df4058','#8e173b','#ff8194','#ffd0da'),remnant:pigment('#aa7ce9','#5b388d','#dfb5ff','#f5e4ff'),clearing:pigment('#80cdc5','#699fc4','#ccfff3','#f1fff9'),signal:'#8cf0c9'},
-
-];
+const schemes=[guideScheme];
 type State='easy'|'medium'|'hard'|'visited'|'withering'|'clearing'|'remnant'|'cooldown'|'disintegrating'|'stabilizing'|'cracking';
 const states:{id:State;name:string;hint:string;symbol:string}[]=[
  {id:'easy',name:'Light effort',hint:'Category 1: relatively few more visits needed. Light outbreaks cannot split.',symbol:'Ⅰ'},
@@ -37,28 +35,9 @@ const cardFacts:Partial<Record<State,string[]>>={
 };
 function CardFacts({state}:{state:State}){return <div className="palette-study__facts">{cardFacts[state]?.map(fact=><p key={fact}>{fact}</p>)}</div>;}
 function smooth(points:Point[]){const path=new Path2D(),last=points.at(-1)!;path.moveTo((last[0]+points[0][0])/2,(last[1]+points[0][1])/2);points.forEach((p,i)=>{const n=points[(i+1)%points.length];path.quadraticCurveTo(...p,(p[0]+n[0])/2,(p[1]+n[1])/2);});path.closePath();return path;}
-function roundedRing(radius:number,seed:number):Point[]{return Array.from({length:64},(_,i)=>{const a=i/64*Math.PI*2,r=radius*(1+.065*Math.sin(a*3+seed)+.035*Math.cos(a*5-seed));return [Math.cos(a)*r,Math.sin(a)*r] as Point;});}
-function hybridRing(radius:number,seed:number,amount:number):Point[]{return Array.from({length:96},(_,i)=>{const a=i/96*Math.PI*2,r=radius*(1+amount*(.65*Math.sin(a*3+seed)+.35*Math.cos(a*5-seed)+.2*Math.sin(a*7+seed*.7)));return [Math.cos(a)*r,Math.sin(a)*r] as Point;});}
-function stabilizingPath(seed:number){
- const path=new Path2D(),radius=(a:number)=>74*(1+.20*Math.sin(a*3+seed)+.12*Math.cos(a*5-seed)+.065*Math.sin(a*7+seed*.7));
- const top=-radius(-Math.PI/2),bottom=radius(Math.PI/2);
- // Smooth outer silhouettes, but complementary straight-edged zipper seams.
- for(const side of [-1,1]){
-  const points:Point[]=[],start=side===1?-Math.PI/2:Math.PI/2;
-  for(let i=0;i<=48;i++){const a=start+i/48*Math.PI,r=radius(a);points.push([side*4+Math.cos(a)*r,Math.sin(a)*r]);}
-  path.moveTo(...points[0]);
-  for(let i=1;i<points.length-1;i++){const next=points[i+1];path.quadraticCurveTo(...points[i],(points[i][0]+next[0])/2,(points[i][1]+next[1])/2);}
-  path.lineTo(...points[points.length-1]);
-  for(let i=0;i<=24;i++){const t=i/24,y=side===1?bottom+(top-bottom)*t:top+(bottom-top)*t,u=(y-top)/(bottom-top);path.lineTo(side*4+7*Math.sin(u*Math.PI*12)*Math.sin(u*Math.PI),y);}
-  path.closePath();
- }
-
- return path;
-}
-function crackingPath(rings:Parameters<typeof outline>[0]){
- const path=outline(rings),slit:Point[]=[[-59,28],[-33,13],[-18,17],[6,-4],[29,-7],[59,-25],[58,-28],[28,-10],[5,-7],[-19,14],[-34,10],[-60,25]];
- const gap=new Path2D();gap.moveTo(...slit[0]);for(const point of slit.slice(1))gap.lineTo(...point);gap.closePath();path.addPath(gap);return path;
-}
+const roundedRing=guideRoundedRing,hybridRing=guideClearingRing;
+function stabilizingPath(seed:number){const path=new Path2D();for(const commands of guideSplittingPaths(seed))for(const c of commands){if(c.op==='move')path.moveTo(...c.point);else if(c.op==='line')path.lineTo(...c.point);else if(c.op==='quad')path.quadraticCurveTo(...c.control,...c.point);else path.closePath();}return path;}
+function crackingPath(rings:Parameters<typeof outline>[0]){return outline(guideCrackedRings(rings));}
 function swatch(state:State,scheme:typeof schemes[number]):Pigment{
  if(state==='remnant')return scheme.remnant;if(state==='clearing')return scheme.clearing;
  if(state==='cooldown'||state==='visited')return pigment('#879693','#596f72','#becbc6','#e7eee9');if(state==='stabilizing')return scheme.clearing;
@@ -79,15 +58,13 @@ function GrowthSample({state,scheme,bright,motion}:{state:State;scheme:typeof sc
    ctx.fillStyle=map.building;for(let i=0;i<6;i++)ctx.fillRect(14+i*w/6,30+(i%2)*105,18,13);
    ctx.save();ctx.translate(w/2,h/2);const size=state==='remnant'?.63:state==='easy'?.43:state==='medium'?.86/Math.sqrt(2):.86;ctx.scale(size,size);const path=state==='remnant'?smooth(roundedRing(69,seed)):state==='clearing'?smooth(hybridRing(80,seed,.15)):state==='stabilizing'?stabilizingPath(seed):state==='cracking'?crackingPath(footprint.rings):outline(footprint.rings),inactive=state==='cooldown'||state==='visited';
    ctx.lineJoin='round';ctx.lineCap='round';ctx.strokeStyle=p.body;
-   const halo=state==='clearing'||state==='stabilizing'?38:state==='hard'?26:12;
-   for(const [width,alpha] of (state==='stabilizing'?[]:[[halo,.035],[halo*.7,.055],[halo*.38,.1]])){ctx.globalAlpha=alpha;ctx.lineWidth=width;ctx.stroke(path);}ctx.globalAlpha=1;
+   for(const band of guideHaloStrokes){ctx.globalAlpha=band.opacity;ctx.lineWidth=band.width;ctx.stroke(path);}ctx.globalAlpha=1;
    ctx.save();ctx.clip(path,'evenodd');ctx.fillStyle=p.body;ctx.globalAlpha=state==='stabilizing'?.14:state==='clearing'?.12:inactive?.16:.28;ctx.fill(path,'evenodd');ctx.globalAlpha=1;
    const time=motion&&!media.matches?now/1000:0;
    // The fracture sits below the moving membranes, as if the damage is inside the growth.
    if(state==='disintegrating'){
     ctx.save();ctx.clip(path,'evenodd');
-    const cracks=[[-16,-95,3,-70,-10,-48,7,-29,-9,-15,12,1,-2,16,19,28,7,48,15,67,7,96],[3,-70,25,-77,34,-91],[7,-29,31,-39,43,-35],[-2,16,-28,11,-40,20],[19,28,42,24,55,8],[15,67,36,73,47,90]];
-    const branches=[...cracks,[31,-39,39,-53,36,-63],[-28,11,-43,4,-53,9],[42,24,54,32,62,28],[25,-77,20,-85,24,-94],[36,73,48,66,59,69]];
+    const branches=guideFractures;
     // Segment widths taper toward each tip; secondary forks remain hairline thin.
     for(const [index,line] of branches.entries()){
      const count=line.length/2-1;
@@ -101,10 +78,9 @@ function GrowthSample({state,scheme,bright,motion}:{state:State;scheme:typeof sc
    }
    for(const source of richerMembranes([0,0],77,seed)){
     const m=state==='stabilizing'?{...source,center:[source.center[0]*1.18,source.center[1]*1.3] as Point}:source;
-    const hurting=state==='withering'||state==='disintegrating'||state==='visited';
-    const v=membraneMotion(m,hurting?0:time,seed),jitter=state==='disintegrating'?2.4:state==='withering'?1.5:0,shakeRate=state==='withering'?5.5:10;
-    ctx.save();ctx.translate(m.center[0]+v.dx+Math.sin(time*shakeRate+m.seed)*jitter,m.center[1]+v.dy+Math.cos(time*shakeRate*1.27+m.seed*2)*jitter);ctx.transform(v.sx,v.ky,v.kx,v.sy,0,0);
-    const points=membranePoints(m.radius,m.seed),blob=state==='disintegrating'?(()=>{const path=new Path2D();path.moveTo(...points[0]);for(let i=1;i<points.length;i+=Math.max(1,Math.floor(points.length/15))){const point=points[i],factor=.94+.18*Math.sin(i*2.39+m.seed)+.09*Math.cos(i*1.7-m.seed);path.lineTo(point[0]*factor,point[1]*factor);}path.closePath();return path;})():smooth(points),g=ctx.createLinearGradient(-m.radius,-m.radius,m.radius,m.radius),colour=m.light?p.light:p.body;
+    const v=guideMembraneMotion(m,time,seed,state);
+    ctx.save();ctx.translate(m.center[0]+v.dx,m.center[1]+v.dy);ctx.transform(v.sx,v.ky,v.kx,v.sy,0,0);
+    const points=guideMembranePoints(m,state),blob=state==='disintegrating'?(()=>{const path=new Path2D();path.moveTo(...points[0]);for(const point of points.slice(1))path.lineTo(...point);path.closePath();return path;})():smooth(points),g=ctx.createLinearGradient(-m.radius,-m.radius,m.radius,m.radius),colour=m.light?p.light:p.body;
     g.addColorStop(0,colour+'55');g.addColorStop(.6,colour+'20');g.addColorStop(1,p.body+'08');ctx.fillStyle=g;ctx.fill(blob);ctx.strokeStyle=(m.light?p.light:p.rim)+'85';ctx.lineWidth=1.4;ctx.stroke(blob);
     if(m.core){const core=smooth(membranePoints(m.radius*.57,m.seed+8));ctx.fillStyle=p.deep+'20';ctx.fill(core);}ctx.restore();
    }
@@ -115,7 +91,7 @@ function GrowthSample({state,scheme,bright,motion}:{state:State;scheme:typeof sc
    if(state==='withering'||state==='disintegrating')ctx.setLineDash([.5,8]);if(state==='cooldown')ctx.setLineDash([2,5]);ctx.strokeStyle=state==='stabilizing'?p.rim:ctx.strokeStyle;ctx.lineWidth=state==='stabilizing'?2.8:ctx.lineWidth;ctx.stroke(path);ctx.setLineDash([]);
    if(state==='remnant'){
     ctx.fillStyle=p.body+'88';ctx.strokeStyle=p.rim;ctx.lineWidth=1.8;
-    for(let i=0;i<15;i++){const a=i/15*Math.PI*2,r=86+(i%3)*9,x=Math.cos(a)*r,y=Math.sin(a)*r,small=3+(i*7%6);ctx.beginPath();ctx.ellipse(x,y,small,small*.8,a,0,Math.PI*2);ctx.fill();ctx.stroke();}
+    for(const d of guideRemnantDroplets()){ctx.beginPath();ctx.ellipse(d.x,d.y,d.rx,d.ry,d.angle,0,Math.PI*2);ctx.fill();ctx.stroke();}
    }
    ctx.restore();
    const stateInfo=states.find(item=>item.id===state)!;
@@ -144,6 +120,7 @@ export function PaletteStudy(){
   <h2 className="palette-study__section-title">Your map markers</h2>
   <p className="palette-study__note">Muted means unavailable to you. Add a green border and check to mark contact during this outing.</p>
   <section className="palette-study__grid palette-study__grid--markers" aria-label="Your map markers">{states.filter(s=>s.id==='visited'||s.id==='cooldown').map(s=><article key={s.id} className="palette-study__card"><GrowthSample state={s.id} scheme={scheme} bright={bright} motion={motion}/><div className="palette-study__caption"><h2>{s.name}</h2><p>{s.hint}</p><CardFacts state={s.id}/></div></article>)}</section>
+  <ExplorationLabs bright={bright} motion={motion}/>
   <footer>Player guide to the agreed design. The examples illustrate the planned rules; app integration and balancing are still in progress.</footer>
  </main>;
 }

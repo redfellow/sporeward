@@ -10,7 +10,7 @@ export function outbreakView(engine:WorldState,o:Outbreak,f:TestOutbreak,player:
  const lifecycle=o.remnant?'remnant':engine.time<o.stabilize?'stabilizing':disintegrating?'disintegrating':'ordinary';
  const phaseEndsAt=o.cleared!==null?null:o.remnant?(o.expires===null?null:startedAt+o.expires*60000):lifecycle==='stabilizing'?startedAt+o.stabilize*60000:lifecycle==='disintegrating'?startedAt+o.deadline*60000:null;
  const history=Object.hasOwn(o.history,player)?o.history[player]:undefined;
- return {id:o.id,name:f.name,ring:f.ring,spawnedAt:f.spawnedAt??startedAt,clearedAt,
+ return {crossings:o.crossings,id:o.id,name:f.name,ring:f.ring,spawnedAt:f.spawnedAt??startedAt,clearedAt,
   status:o.cleared!==null?'cleared':committed>=o.strength?'clearing':committed>0?'withering':'active',
   lifecycle,phaseEndsAt,strength:o.strength,committedCleaning:committed,
   visitsRemaining:o.cleared!==null?0:o.remnant?1:Math.max(0,Math.ceil((o.strength-committed)/next.power)),

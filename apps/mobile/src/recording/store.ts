@@ -14,6 +14,7 @@ const dbPromise = SQLite.openDatabaseAsync('sporeward-recorder.db').then(async d
  CREATE TABLE IF NOT EXISTS events (time REAL, message TEXT);
  CREATE TABLE IF NOT EXISTS contact_previews (activity TEXT, outbreak TEXT, touched REAL, points INTEGER, PRIMARY KEY(activity,outbreak));
  CREATE TABLE IF NOT EXISTS world_cache (owner TEXT PRIMARY KEY, snapshot TEXT);
+ CREATE TABLE IF NOT EXISTS lab_offers (owner TEXT, activity TEXT, offer TEXT NOT NULL, PRIMARY KEY(owner,activity));
  CREATE TABLE IF NOT EXISTS recording_diagnostics (time REAL, activity TEXT, kind TEXT, data TEXT);`);
  return db;
 });
@@ -131,3 +132,9 @@ export function rememberContacts(id:string,contacts:import('./encounters').Conta
   }
  });});
 }
+
+export async function cachedLabOffer(owner:string,id:string):Promise<unknown|null> {
+ const row=await (await dbPromise).getFirstAsync<{offer:string}>('SELECT offer FROM lab_offers WHERE owner=? AND activity=?',owner,id);
+ return row?JSON.parse(row.offer):null;
+}
+export async function cacheLabOffer(owner:string,id:string,offer:unknown){return write(async()=>{await (await dbPromise).runAsync('INSERT OR REPLACE INTO lab_offers(owner,activity,offer) VALUES(?,?,?)',owner,id,JSON.stringify(offer));});}

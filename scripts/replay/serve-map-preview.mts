@@ -9,7 +9,7 @@ const authorization='Basic '+Buffer.from('emulator:emulator-only').toString('bas
 const server=createServer((req,res)=>{
  res.setHeader('Content-Type','application/json');res.setHeader('Cache-Control','no-store');
  if(req.headers.authorization!==authorization){res.writeHead(401);res.end(JSON.stringify({error:'Unauthorized'}));return;}
- if(req.method==='GET'&&req.url==='/world'){res.end(JSON.stringify({...world,serverTime:Date.now()}));return;}
+ if(req.method==='GET'&&req.url==='/world'){res.end(JSON.stringify({...world,serverTime:world.renderTest?world.serverTime:Date.now()}));return;}
  if(req.method==='GET'&&req.url==='/health'){res.end(JSON.stringify({service:'sporeward',status:'ok',accounts:false,mode:'read-only-map-preview'}));return;}
  res.writeHead(405);res.end(JSON.stringify({error:'Read-only map preview; restore the replay API before recording.'}));
 });

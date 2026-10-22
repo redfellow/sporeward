@@ -143,10 +143,10 @@ function Game() {
   {!history.some(a=>a.status==='finished')&&<Text style={styles.body}>Your saved outings will appear here.</Text>}
   {!!activity&&<Text style={styles.body}>Finish your current outing to review past outings.</Text>}
  </ScrollView></SafeAreaView>;
- if(screen==='review')return <SafeAreaView style={styles.screen}><StatusBar style="light"/><View style={{flex:1}}><RouteMap brightMap={brightMap} fixes={fixes} activityId={displayed?.id??null} world={encounterWorld.world} visited={encounterPreview.visited} recording={false} fullscreen topInset={70} bottomInset={20}/><Pressable accessibilityRole="button" style={[styles.gameMenu,{position:'absolute',top:12,left:12}]} onPress={()=>setScreen('recap')}><Text style={styles.secondaryText}>Back to recap</Text></Pressable></View><MapAttribution/></SafeAreaView>;
+ if(screen==='review')return <SafeAreaView style={styles.screen}><StatusBar style="light"/><View style={{flex:1}}><RouteMap brightMap={brightMap} fixes={fixes} activityId={displayed?.id??null} world={encounterWorld.world} labOffer={encounterWorld.labOffer} labRecap={encounterWorld.recap} visited={encounterPreview.visited} recording={false} fullscreen topInset={70} bottomInset={20}/><Pressable accessibilityRole="button" style={[styles.gameMenu,{position:'absolute',top:12,left:12}]} onPress={()=>setScreen('recap')}><Text style={styles.secondaryText}>Back to recap</Text></Pressable></View><MapAttribution/></SafeAreaView>;
  if(screen==='recap'&&displayed?.status==='finished')return <SafeAreaView style={styles.screen}><StatusBar style="light"/><OutingRecap activity={displayed} distance={stats.meters} elapsed={duration(recordingDuration(segments,Date.now()))} recap={encounterWorld.recap} provisional={encounterPreview.provisionalPoints} touched={encounterPreview.visited.size} coverage={encounterPreview.distanceMetres} onMap={()=>void run(returnToWorld)} onRoute={()=>setScreen('review')} onUploaded={receipt=>{if(receipt.encounters)encounterWorld.acceptRecap(receipt.encounters);void encounterWorld.refresh();}}/></SafeAreaView>;
  if(screen==='map')return <SafeAreaView style={styles.screen}><StatusBar style="light"/><View style={{flex:1}}>
-  <RouteMap brightMap={brightMap} fixes={fixes} activityId={displayed?.id??null} world={encounterWorld.world} visited={encounterPreview.visited} recording={activity?.status==='recording'} fullscreen bottomInset={hudHeight} topInset={topHudHeight}/>
+  <RouteMap brightMap={brightMap} fixes={fixes} activityId={displayed?.id??null} world={encounterWorld.world} labOffer={encounterWorld.labOffer} labRecap={encounterWorld.recap} visited={encounterPreview.visited} recording={activity?.status==='recording'} fullscreen bottomInset={hudHeight} topInset={topHudHeight}/>
   <View style={styles.gameTop} pointerEvents="box-none" onLayout={event=>setTopHudHeight(Math.ceil(event.nativeEvent.layout.height)+24)}><View style={styles.gamePanel}>
    <View style={styles.gameRow}><Text style={styles.gameTitle}>Sporeward</Text><View style={{flexDirection:'row',gap:8}}><Pressable accessibilityRole="button" accessibilityLabel="Past outings" onPress={()=>setScreen('outings')} style={styles.gameMenu}><Text style={styles.smallLabel}>Outings</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Open setup" onPress={()=>setScreen('details')} style={styles.gameMenu}><Text style={styles.smallLabel}>☰</Text></Pressable></View></View>
    {!encounterWorld.status.startsWith('Map updated')&&<Text style={styles.body} accessibilityLiveRegion="polite">{encounterWorld.status}</Text>}
@@ -158,7 +158,7 @@ function Game() {
    {!encounterWorld.recap&&encounterPreview.heldPoints>0&&<Text style={styles.body}>{encounterPreview.heldPoints} potential visit points · reach 500 m of GPS coverage to qualify</Text>}
    {encounterWorld.recap?.pendingCleanupPoints? <Text style={styles.body}>+{encounterWorld.recap.pendingCleanupPoints} possible cleanup points pending</Text>:null}
    </>}
-   <View style={styles.actions}>{!activity?button('Start outing',()=>recorder.start()):<>{activity.status==='recording'?button('Pause',()=>recorder.pause()):button('Resume',()=>recorder.start(true))}{button('Finish',finishOuting)}</>}</View>
+   <View style={styles.actions}>{!activity?(encounterWorld.world?.renderTest?<Text style={styles.body}>Read-only render test · return to replay before recording</Text>:button('Start outing',()=>recorder.start())):<>{activity.status==='recording'?button('Pause',()=>recorder.pause()):button('Resume',()=>recorder.start(true))}{button('Finish',finishOuting)}</>}</View>
 
   </View>
  </View><MapAttribution/></SafeAreaView>;
@@ -186,7 +186,7 @@ function Game() {
    </>}
 
   </View>
-  {details&&<RouteMap brightMap={brightMap} fixes={fixes} activityId={displayed?.id ?? null} world={encounterWorld.world} visited={encounterPreview.visited} recording={activity?.status==='recording'}/>}
+  {details&&<RouteMap brightMap={brightMap} fixes={fixes} activityId={displayed?.id ?? null} world={encounterWorld.world} labOffer={encounterWorld.labOffer} labRecap={encounterWorld.recap} visited={encounterPreview.visited} recording={activity?.status==='recording'}/>}
   <Text style={styles.body}>{encounterWorld.status}</Text>
   <Pressable accessibilityRole="button" style={styles.secondary} onPress={()=>void encounterWorld.refresh()}><Text style={styles.secondaryText}>Refresh outbreaks & recap</Text></Pressable>
   {details&&encounterWorld.world && <View style={styles.card}><Text style={styles.metric}>Test outbreaks</Text>{encounterWorld.world.outbreaks.map(o=><Text key={o.id} style={styles.body}>{o.name}{encounterPreview.visited.has(o.id)?' · touched':''}: {o.status==='cleared'?`cleared${o.clearedAt!==null&&Date.now()<=o.clearedAt+600000?' · 10-minute protection window':''}`:`${o.visitPoints} + ${o.cleanupBonus} bonus · ~${o.visitsRemaining} visits · ${o.status}`}{o.eligibleAt>Date.now()?` · revisit ${new Date(o.eligibleAt).toLocaleTimeString()}`:''}</Text>)}</View>}
