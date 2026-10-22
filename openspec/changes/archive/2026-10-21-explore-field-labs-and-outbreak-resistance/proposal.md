@@ -20,7 +20,7 @@ Sporeward should first encourage worthwhile A-to-B cycling detours and discovery
 
 ### Modified Capabilities
 
-None. The existing pending `outbreak-visuals` and `visual-showcase` capabilities remain owned by [the Android visual-port change](../../replicate-approved-visuals-and-showcase/proposal.md).
+None. The existing pending `outbreak-visuals` and `visual-showcase` capabilities remain owned by [the Android visual-port change](../2026-10-22-replicate-approved-visuals-and-showcase/proposal.md).
 
 ## Impact
 

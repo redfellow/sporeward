@@ -2,7 +2,7 @@
 
 ## Context
 
-See [proposal.md](proposal.md) for motivation. The desktop field guide is `apps/web/src/rendering/PaletteStudy.tsx`; its accepted ordinary-outbreak baseline is `754a5c1`. The separate [Android visual-port change](../../replicate-approved-visuals-and-showcase/design.md) remains in progress. This design is needed to separate visual simulation from future authoritative gameplay and preserve decisions from the exploration.
+See [proposal.md](proposal.md) for motivation. The desktop field guide is `apps/web/src/rendering/PaletteStudy.tsx`; its accepted ordinary-outbreak baseline is `754a5c1`. The separate [Android visual-port change](../2026-10-22-replicate-approved-visuals-and-showcase/design.md) remains in progress. This design is needed to separate visual simulation from future authoritative gameplay and preserve decisions from the exploration.
 
 ## Goals / Non-Goals
 
