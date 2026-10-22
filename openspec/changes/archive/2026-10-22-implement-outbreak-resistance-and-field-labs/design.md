@@ -2,7 +2,7 @@
 
 ## Context
 
-See [proposal.md](proposal.md). `packages/game/src/balance.ts` currently sets six-hour cooldowns and repeat cleaning strengths of 1, .75, .6, then .5. `world-store.ts` accepts contacts, persists contribution identity and updates scores; `outbreak-view.ts` exposes the next reward. PostGIS persistence and account ownership already exist. The [desktop study](../archive/2026-10-21-explore-field-labs-and-outbreak-resistance/proposal.md) is independently implementing illustrative visuals, not these authoritative rules.
+See [proposal.md](proposal.md). `packages/game/src/balance.ts` currently sets six-hour cooldowns and repeat cleaning strengths of 1, .75, .6, then .5. `world-store.ts` accepts contacts, persists contribution identity and updates scores; `outbreak-view.ts` exposes the next reward. PostGIS persistence and account ownership already exist. The [desktop study](../2026-10-21-explore-field-labs-and-outbreak-resistance/proposal.md) is independently implementing illustrative visuals, not these authoritative rules.
 
 ## Goals / Non-Goals
 
