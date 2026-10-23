@@ -86,7 +86,7 @@ export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes, act
  const visualRings=(o:WorldView['outbreaks'][number])=>outbreakGeometry(o,world).rings.map(ring=>[[...ring,ring[0]]]);
  const outbreaks=useMemo(()=>({type:'FeatureCollection' as const,features:viewport.zoom<12?[]:visibleOutbreaks.flatMap(o=>{
   const shape=outbreakGeometry(o,world),strokeScale=shape.special?shape.materialRadius/77:1;
-  return visualRings(o).map((polygon,index)=>({type:'Feature' as const,properties:{...outbreakAppearance(o,world!.serverTime,visited.has(o.id)),id:o.id,strokeScale,satellite:index>0&&o.lifecycle==='remnant',
+  return visualRings(o).map((polygon,index)=>({type:'Feature' as const,properties:{...outbreakAppearance(o,world!.serverTime),id:o.id,strokeScale,satellite:index>0&&o.lifecycle==='remnant',
    visited:visited.has(o.id),withering:o.status==='withering',remnant:o.lifecycle==='remnant',
    intensity:index>0&&o.lifecycle==='remnant'?.53:o.lifecycle==='stabilizing'?.14:o.status==='clearing'||o.status==='cleared'?.12:o.eligibleAt>world!.serverTime?.16:.28},geometry:{type:'Polygon' as const,coordinates:polygon}}));
  })}),[visibleOutbreaks,visited,world,viewport.zoom]);
@@ -110,7 +110,7 @@ export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes, act
     {<Layer key="native-richer-withering" id="native-richer-withering" minzoom={12} type="line" filter={['==',['get','withering'],true]} paint={{'line-color':'#8cf0c9','line-opacity':.8,'line-dasharray':[.5,8],'line-width':['interpolate',['exponential',2],['zoom'],10,['*',.08,['get','strokeScale']],14,['*',1.3,['get','strokeScale']],18,['*',20.8,['get','strokeScale']]]}}/>}
     {<Layer key="native-richer-visited" id="native-richer-visited" minzoom={12} type="line" filter={['==',['get','visited'],true]} paint={{'line-color':'#30ddc7','line-opacity':.8,'line-dasharray':[5,2],'line-width':['interpolate',['exponential',2],['zoom'],10,['*',.08,['get','strokeScale']],14,['*',1.3,['get','strokeScale']],18,['*',20.8,['get','strokeScale']]]}}/>}
    </GeoJSONSource>
-   {<RicherMapImages world={world} viewport={materialViewport} visited={visited}/>}
+   {<RicherMapImages world={world} viewport={materialViewport}/>}
    <GeoJSONSource key="outbreak-labels" id="outbreak-labels" data={labels}>
     <Layer key="outbreak-label" id="outbreak-label" type="symbol" minzoom={renderTest?14:17} layout={{'text-field':['get','label'],'text-font':['Noto Sans Regular'],'text-size':11}} paint={{'text-color':'#231333','text-halo-color':'#ffffff','text-halo-width':1}}/>
    </GeoJSONSource>

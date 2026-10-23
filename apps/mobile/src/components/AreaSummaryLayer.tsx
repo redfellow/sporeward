@@ -1,8 +1,9 @@
 import {useMemo,useRef} from 'react';
 import {GeoJSONSource,Layer,type GeoJSONSourceRef,type CircleLayerSpecification} from '@maplibre/maplibre-react-native';
-import {guideOverviewScale,guideState,guidePigment,mapPalettes} from '@sporeward/rendering';
+import {guideOverviewScale,mapPalettes} from '@sporeward/rendering';
 import type {Coordinate,WorldView} from '@sporeward/protocol';
 import {outbreakMarkers} from './outbreak-geometry';
+import {outbreakMarkerComposition} from './outbreak-appearance';
 type SummaryData={type:'FeatureCollection';features:{type:'Feature';geometry:{type:'Point';coordinates:Coordinate};properties:Record<string,string|number>}[]};
 type Expand=(center:Coordinate,zoom:number)=>void;
 const clusterProperties={outbreaks:['+',['get','outbreaks']],labs:['+',['get','labs']],active:['+',['get','active']],remnants:['+',['get','remnants']],clearing:['+',['get','clearing']],unavailable:['+',['get','unavailable']],effort:['+',['get','effort']],effortCount:['+',['get','effortCount']]} as const;
@@ -10,8 +11,8 @@ const clusterProperties={outbreaks:['+',['get','outbreaks']],labs:['+',['get','l
 export function AreaSummaryLayer({world,bright,visited,overviewZoom,onExpand}:{world:WorldView|null;bright:boolean;visited:Set<string>;overviewZoom:number;onExpand:Expand}){
  const data=useMemo(()=>({type:'FeatureCollection' as const,features:[
   ...outbreakMarkers(world).map(({outbreak:o,anchor,members})=>{
-   const state=guideState(o,world!.serverTime,visited.has(o.id)),group=state==='remnant'?'remnants':state==='clearing'||state==='stabilizing'?'clearing':state==='cooldown'||state==='visited'?'unavailable':'active';
-   return {type:'Feature' as const,geometry:{type:'Point' as const,coordinates:anchor},properties:{circleScale:guideOverviewScale(state),color:guidePigment(state).body,icon:'badge-'+state,outbreaks:members.length,labs:0,effort:members.reduce((sum,m)=>sum+m.visitsRemaining,0),effortCount:members.length,active:group==='active'?1:0,remnants:group==='remnants'?1:0,clearing:group==='clearing'?1:0,unavailable:group==='unavailable'?1:0}};
+   const marker=outbreakMarkerComposition(o,world!.serverTime,visited.has(o.id)),group=marker.summaryGroup;
+   return {type:'Feature' as const,geometry:{type:'Point' as const,coordinates:anchor},properties:{circleScale:guideOverviewScale(marker.lifecycle),color:marker.palette.body,icon:marker.icon,contacted:marker.contacted,contactIcon:marker.contactIcon??'',outbreaks:members.length,labs:0,effort:members.reduce((sum,m)=>sum+m.visitsRemaining,0),effortCount:members.length,active:group==='active'?1:0,remnants:group==='remnants'?1:0,clearing:group==='clearing'?1:0,unavailable:group==='unavailable'?1:0}};
   }),
   ...(world?.fieldLabs??[]).filter(l=>l.expiresAt>(world?.serverTime??0)).map(l=>({type:'Feature' as const,geometry:{type:'Point' as const,coordinates:l.position},properties:{color:'#b9f7df',icon:l.collected?'badge-lab-collected':'badge-lab',outbreaks:0,labs:1,effort:0,effortCount:0,active:0,remnants:0,clearing:0,unavailable:0}})),
  ]}),[world,visited]);
@@ -32,5 +33,6 @@ function SummaryBand({id,min,max,radius,data,bright,onExpand}:{id:string;min:num
   <Layer key="count" id={prefix+'-count'} type="symbol" minzoom={min} maxzoom={max} filter={['has','point_count']} layout={{'text-field':['to-string',['+',['get','outbreaks'],['get','labs']]],'text-size':12,'text-font':['Noto Sans Bold'],'text-allow-overlap':true,'text-ignore-placement':true}} paint={{'text-color':'#e0dbc9'}}/>
   <Layer key="body" id={prefix+'-body'} type="circle" minzoom={min} maxzoom={Math.min(12,max)} filter={['all',['!', ['has','point_count']],['>', ['get','outbreaks'],0]]} paint={{'circle-radius':['interpolate',['linear'],['zoom'],3,['*',12,['get','circleScale']],10,['*',16,['get','circleScale']],12,['*',22,['get','circleScale']]],'circle-color':['get','color'],'circle-opacity':.55,'circle-stroke-color':['get','color'],'circle-stroke-width':1.5}}/>
   <Layer key="badge" id={prefix+'-badge'} type="symbol" minzoom={min} maxzoom={max} filter={['!', ['has','point_count']]} layout={{'icon-image':['get','icon'],'icon-size':['interpolate',['linear'],['zoom'],3,['case',['>', ['get','labs'],0],.3,.16],10,['case',['>', ['get','labs'],0],.38,.18],12,['case',['>', ['get','labs'],0],.55,.25],14,['case',['>', ['get','labs'],0],.8,.5]],'icon-allow-overlap':true}}/>
+  <Layer key="contact-check" id={prefix+'-contact-check'} type="symbol" minzoom={min} maxzoom={max} filter={['all',['!', ['has','point_count']],['>', ['get','outbreaks'],0],['==',['get','contacted'],true]]} layout={{'icon-image':['get','contactIcon'],'icon-size':['interpolate',['linear'],['zoom'],3,.16,10,.2,12,.22,14,.24],'icon-offset':[12,12],'icon-allow-overlap':true,'icon-ignore-placement':true}}/>
  </GeoJSONSource>;
 }
