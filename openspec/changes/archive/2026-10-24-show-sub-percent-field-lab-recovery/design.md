@@ -2,7 +2,7 @@
 
 ## Context
 
-See [proposal.md](proposal.md) for the issue and scope. On the current main baseline, `OutingRecap.tsx` formats `lab.actualFraction` inline with `Math.round(... * 100)` and always renders “Your resistance was reduced everywhere.” for a confirmed result. `LabCollectionResult` already provides both `actualFraction` and `resistanceReduction`; no Field Lab feedback helper exists. The accepted contract is [Understandable expedition benefit](../../../openspec/specs/renewable-exploration/spec.md#requirement-understandable-expedition-benefit).
+See [proposal.md](proposal.md) for the issue and scope. On the current main baseline, `OutingRecap.tsx` formats `lab.actualFraction` inline with `Math.round(... * 100)` and always renders “Your resistance was reduced everywhere.” for a confirmed result. `LabCollectionResult` already provides both `actualFraction` and `resistanceReduction`; no Field Lab feedback helper exists. The accepted contract is [Understandable expedition benefit](../../../../openspec/specs/renewable-exploration/spec.md#requirement-understandable-expedition-benefit).
 
 ## Goals / Non-Goals
 

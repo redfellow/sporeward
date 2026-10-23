@@ -23,5 +23,5 @@ None. This corrects recap presentation of the existing contract without changing
 
 ## Impact
 
-- [Accepted renewable-exploration contract](../../../openspec/specs/renewable-exploration/spec.md), especially “Understandable expedition benefit” and its positive-restoration recap scenario.
-- [Outing recap](../../../apps/mobile/src/components/OutingRecap.tsx), a new pure formatter in `apps/mobile/src/components/outing-recap-format.ts`, and its focused Vitest coverage in `apps/mobile/src/components/outing-recap-format.test.ts`.
+- [Accepted renewable-exploration contract](../../../../openspec/specs/renewable-exploration/spec.md), especially “Understandable expedition benefit” and its positive-restoration recap scenario.
+- [Outing recap](../../../../apps/mobile/src/components/OutingRecap.tsx), a new pure formatter in `apps/mobile/src/components/outing-recap-format.ts`, and its focused Vitest coverage in `apps/mobile/src/components/outing-recap-format.test.ts`.
