@@ -3,25 +3,25 @@ import {AccessibilityInfo,AppState} from 'react-native';
 import {ClipOp,PaintStyle,Skia,StrokeJoin} from '@shopify/react-native-skia';
 import {Directory,File,Paths} from 'expo-file-system';
 import {ImageSource,Layer} from '@maplibre/maplibre-react-native';
-import {guideHaloStrokes,identitySeed,richerMembranes,guideState,guideFractures,guideMembraneMotion} from '@sporeward/rendering';
+import {guideHaloStrokes,identitySeed,richerMembranes,guideFractures,guideMembraneMotion} from '@sporeward/rendering';
 import type {WorldView} from '@sporeward/protocol';
 import {growthPoint,pathFor,membranePicture,type MapViewport,type Point} from './RicherOverlay';
 import {outbreakGeometry} from './outbreak-geometry';
-import {outbreakPalette} from './outbreak-appearance';
+import {outbreakMarkerComposition,outbreakPalette} from './outbreak-appearance';
 import {outbreakPreparationIndex,selectPreparedOutbreaks} from './map-preparation';
 type Outbreak=WorldView['outbreaks'][number];
 type Material={key:string;id:string;url:string;coordinates:[Point,Point,Point,Point]};
 const directory=new Directory(Paths.cache,'richer-native-prototype');
 let initialized=false;
 const FRAMES=8,STEP=500,ANIMATED_LIMIT=4;
-function render(outbreak:Outbreak,key:string,frame:number,output:Directory,now:number,visited:boolean,world:WorldView|null):Material{
+function render(outbreak:Outbreak,key:string,frame:number,output:Directory,now:number,world:WorldView|null):Material{
  const geometry=outbreakGeometry(outbreak,world),rings=geometry.rings.map(ring=>ring.map(growthPoint)),points=rings.flat(),xs=points.map(p=>p[0]),ys=points.map(p=>p[1]);
  const radius=geometry.materialRadius,padding=radius*.28,west=Math.min(...xs)-padding,north=Math.min(...ys)-padding,width=Math.max(...xs)-west+padding,height=Math.max(...ys)-north+padding;
  const scale=512/Math.max(width,height),w=Math.max(1,Math.ceil(width*scale)),h=Math.max(1,Math.ceil(height*scale));
  const surface=Skia.Surface.Make(w,h);if(!surface)throw new Error('Richer material surface unavailable.');
  const canvas=surface.getCanvas();canvas.clear(Skia.Color('transparent'));canvas.scale(scale,scale);canvas.translate(-west,-north);
  const builder=Skia.PathBuilder.Make();for(const ring of rings){ring.forEach((p,i)=>i?builder.lineTo(...p):builder.moveTo(...p));builder.close();}const path=builder.detach();builder.dispose();
- const center=geometry.center,seed=geometry.seed,state=guideState(outbreak,now,visited),palette=outbreakPalette(outbreak,now,visited);
+ const center=geometry.center,seed=geometry.seed,state=outbreakMarkerComposition(outbreak,now).lifecycle,palette=outbreakPalette(outbreak,now);
  // Restore Clearing's broad layered stroke bands for every state. Cached Skia
  // strokes preserve round joins on irregular boundaries and avoid native spikes.
  canvas.save();
@@ -56,7 +56,7 @@ function render(outbreak:Outbreak,key:string,frame:number,output:Directory,now:n
  return {key,id:outbreak.id,url:file.uri,coordinates:[coordinate(west,north),coordinate(west+w/scale,north),coordinate(west+w/scale,north+h/scale),coordinate(west,north+h/scale)]};
 }
 /** Cached vector poses crossfade natively; no camera following or per-frame raster work. */
-export function RicherMapImages({world,viewport,visited}:{world:WorldView|null;viewport:MapViewport;visited:Set<string>}){
+export function RicherMapImages({world,viewport}:{world:WorldView|null;viewport:MapViewport}){
  const [output]=useState(()=>new Directory(directory,'view-'+Math.random().toString(36).slice(2)));
  const outputRevision=useRef(0);
  useEffect(()=>{const revision=++outputRevision.current;return()=>{setTimeout(()=>{if(outputRevision.current!==revision)return;try{if(output.exists)output.delete();}catch{}},5000);};},[output]);
@@ -67,8 +67,8 @@ export function RicherMapImages({world,viewport,visited}:{world:WorldView|null;v
  const preparationIndex=useMemo(()=>outbreakPreparationIndex(world?.outbreaks??[]),[world]);
  const wanted=useMemo(()=>{
   if(!foreground||viewport.zoom<11.5)return [];
-  return selectPreparedOutbreaks(preparationIndex,viewport).map(({outbreak:o,visible})=>({o,visible,key:JSON.stringify(['layered-clearing-halo-v1',o.id,outbreakGeometry(o,world).rings,guideState(o,world!.serverTime,visited.has(o.id)),outbreakPalette(o,world!.serverTime,visited.has(o.id))])}));
- },[world,preparationIndex,viewport,foreground,visited]);
+  return selectPreparedOutbreaks(preparationIndex,viewport).map(({outbreak:o,visible})=>({o,visible,key:JSON.stringify(['layered-clearing-halo-v1',o.id,outbreakGeometry(o,world).rings,outbreakMarkerComposition(o,world!.serverTime).lifecycle,outbreakPalette(o,world!.serverTime)])}));
+ },[world,preparationIndex,viewport,foreground]);
  useEffect(()=>{
   let cancelled=false,timer:ReturnType<typeof setTimeout>;
   for(const v of wanted)for(let frame=0;frame<FRAMES;frame++){const key=v.key+':'+frame,item=cache.current.get(key);if(item){cache.current.delete(key);cache.current.set(key,item);}}
@@ -78,7 +78,7 @@ export function RicherMapImages({world,viewport,visited}:{world:WorldView|null;v
   const next=()=>{
    if(cancelled||AppState.currentState!=='active')return;
    const item=queue.shift();if(!item)return;
-   try{cache.current.set(item.key+':'+item.frame,render(item.o,item.key,item.frame,output,world!.serverTime,visited.has(item.o.id),world));while(cache.current.size>192){const key=cache.current.keys().next().value!,old=cache.current.get(key)!;cache.current.delete(key);try{new File(old.url).delete();}catch{}}setRevision(v=>v+1);}catch(error){console.warn('Richer native-map material unavailable.',String(error));}
+   try{cache.current.set(item.key+':'+item.frame,render(item.o,item.key,item.frame,output,world!.serverTime,world));while(cache.current.size>192){const key=cache.current.keys().next().value!,old=cache.current.get(key)!;cache.current.delete(key);try{new File(old.url).delete();}catch{}}setRevision(v=>v+1);}catch(error){console.warn('Richer native-map material unavailable.',String(error));}
    timer=setTimeout(next,16);
   };
   timer=setTimeout(next,0);return()=>{cancelled=true;clearTimeout(timer);};

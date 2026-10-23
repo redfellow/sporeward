@@ -1,8 +1,15 @@
-import {guidePigment,guideState} from '@sporeward/rendering';
+import {guidePigment,guideState,type GuideState} from '@sporeward/rendering';
 import type {WorldView} from '@sporeward/protocol';
 type Outbreak=WorldView['outbreaks'][number];
-export function outbreakPalette(o:Outbreak,now=Date.now(),visited=false){return guidePigment(guideState(o,now,visited));}
-export function outbreakAppearance(o:Outbreak,now=Date.now(),visited=false){const p=outbreakPalette(o,now,visited);return {bodyColor:p.body,rimColor:p.rim};}
+export type OutbreakMarkerComposition={lifecycle:GuideState;palette:ReturnType<typeof guidePigment>;contacted:boolean;icon:string;contactIcon:'badge-visited'|null;summaryState:GuideState;summaryGroup:'active'|'remnants'|'clearing'|'unavailable'};
+/** Contact remains an additive signal; lifecycle drives marker identity and effort appearance. */
+export function outbreakMarkerComposition(o:Outbreak,now=Date.now(),contacted=false):OutbreakMarkerComposition{
+ const lifecycle=guideState(o,now),summaryState=guideState(o,now,contacted);
+ const summaryGroup=summaryState==='remnant'?'remnants':summaryState==='clearing'||summaryState==='stabilizing'?'clearing':summaryState==='cooldown'||summaryState==='visited'?'unavailable':'active';
+ return {lifecycle,palette:guidePigment(lifecycle),contacted,icon:'badge-'+lifecycle,contactIcon:contacted?'badge-visited':null,summaryState,summaryGroup};
+}
+export function outbreakPalette(o:Outbreak,now=Date.now()){return outbreakMarkerComposition(o,now).palette;}
+export function outbreakAppearance(o:Outbreak,now=Date.now()){const p=outbreakPalette(o,now);return {bodyColor:p.body,rimColor:p.rim};}
 /** Stable interior detail, bounded per outbreak; no particles or per-frame geometry. */
 export function outbreakSpores(outbreaks:Outbreak[]) {
  const features:{type:'Feature';properties:{color:string};geometry:{type:'Point';coordinates:number[]}}[]=[];
