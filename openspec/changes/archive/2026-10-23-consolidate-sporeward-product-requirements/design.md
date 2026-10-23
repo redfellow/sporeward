@@ -5,7 +5,7 @@
 See [proposal.md](proposal.md) for motivation and scope. This design records the initial cross-reference and a staged approach for turning it into a durable product contract.
 The statement-by-statement evidence and disposition ledger is in [traceability.md](traceability.md). It separates product decisions, implementation, verification and acceptance scope.
 
-The game idea presently visible across [game-concept.md](../../../docs/game-concept.md), [player-rules.md](../../../docs/player-rules.md), [product-direction.md](../../../docs/product-direction.md), and the archived product-direction work has a clear player priority: make an A-to-B outing more worthwhile through optional detours; motivate outings that otherwise would not happen; then support score growth and competition. Exploration must stay renewable so familiar routes and short local outings remain worthwhile. Achievements are an interest, not a specified feature.
+The game idea presently visible across [game-concept.md](../../../../docs/game-concept.md), [player-rules.md](../../../../docs/player-rules.md), [product-direction.md](../../../../docs/product-direction.md), and the archived product-direction work has a clear player priority: make an A-to-B outing more worthwhile through optional detours; motivate outings that otherwise would not happen; then support score growth and competition. Exploration must stay renewable so familiar routes and short local outings remain worthwhile. Achievements are an interest, not a specified feature.
 
 The intended loop can be expressed as:
 
