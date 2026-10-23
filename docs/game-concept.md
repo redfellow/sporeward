@@ -59,9 +59,9 @@ Outbreaks remain separate and never merge, even when their fluid-looking edges t
 - A ride can earn points from any number of distinct eligible outbreaks.
 - GPS tracks supply crossing geometry and a combined heatmap for splitting mechanics, independently of visit scoring.
 
-Use a 10-metre contact tolerance around the visible outbreak boundary. Imported GPS recordings require the 1-second recording setting, with timestamps on contact samples. Untimed GPS points cannot establish a visit. Allow up to a 2-second gap between consecutive timestamped fixes when inferring a crossing from their connecting segment, accommodating minor timing jitter or an isolated missed fix. For longer gaps, a visit requires an actual timestamped fix within the contact boundary, including its tolerance. Reject uncertain contacts rather than the entire activity; independently valid contacts elsewhere still count.
+Contact matching uses timestamped GPS fixes and a 10-metre tolerance around the outbreak boundary. Untimed fixes cannot establish a visit. A crossing may be inferred only between consecutive fixes in the same recorded segment when their timestamps are no more than 2 seconds apart. Longer gaps and segment boundaries do not support interpolation, though a directly observed fix can still qualify under the same geometric tolerance. An uncertain contact does not invalidate other independently valid contacts in the activity.
 
-In-app contact detection may combine timestamped location fixes and their accuracy with short consecutive track segments to detect boundary crossings more reliably than testing individual points alone. Apply the same 2-second segment-inference limit. This cannot establish physical contact without adequate location evidence. Exact location accuracy limits remain to be specified.
+Reported fix accuracy is informational in the MVP. It does not filter a geometrically qualifying fix or expand the 10-metre tolerance, and no accuracy threshold is applied.
 
 ## Cleaning, growth, and splitting
 
@@ -124,7 +124,7 @@ Use uniform initial scoring for ordinary outbreaks rather than difficulty-scaled
 
 Outbreak colour communicates remaining cleaning difficulty after subtracting all committed, not-yet-delivered cleaning effects, allowing equal-sized outbreaks to require different numbers of visits. The explicit remaining-visit estimate uses the same accounting. Colour can change as new treatment is committed or growth increases the remaining requirement. When committed effects suffice to destroy the outbreak without further visits, use a distinct "clearing" appearance rather than an ordinary difficulty colour. This does not reserve the finishing bonus; accepted visits can still change the finishing position. Ember & violet is selected; exact category thresholds remain open for balancing. Preserve distinct eligibility and current-activity contact indicators so difficulty colour does not obscure those states.
 
-For legacy scoring versions, visit-point recovery begins after a 72-hour absence and reaches full value over roughly two weeks. Resistance scoring uses the continuous passive recovery described above instead. Historical recaps retain their original scoring version.
+For legacy scoring versions, let `n` be the number of preceding accepted visits to the outbreak. The unrecovered ordinary visit value is `max(minimum, floor(normal / 2^n))`. After the configured delay without another accepted visit, that value recovers linearly to `normal` over the configured duration; round the final value to the nearest whole point, with half points rounded upward. Current provisional values are 100 normal points, a five-point minimum, a 72-hour delay and a 14-day duration. Resistance scoring uses the separate continuous curve described above instead. Historical recaps retain their original scoring version, and confirmed awards are not recalculated.
 
 The cleanup bonus goes to the last accepted visitor before destruction, whether fast or slow decay finishes it. A later accepted visitor takes over the finishing position even if most cleaning came from earlier players. A proposed "clearing" state indicates that committed decay is sufficient; this does not reserve the bonus for the player who first triggered that state. Earlier participants share the bonus if their visits fall within the established group window; outside it, arriving at the right moment is an intentional competitive opportunity.
 
@@ -229,7 +229,7 @@ After an activity has been open for 24 hours, stop collecting new location data 
 
 An in-app pause only suspends that recording source. Independently valid Strava contacts still count, including when the player forgot the app on pause. Reconcile overlapping contacts under the same earliest-contact and cooldown rules.
 
-Keep in-app and Strava recordings as separate source records underneath the shared outing view: either may contain only part of an outing. Combine their outbreak contacts without discarding contacts unique to either source. For the same player's duplicate contact with the same outbreak, use the earliest recorded contact timestamp once for scoring, cleaning, and cooldown accounting, regardless of receipt order. Later genuinely separate visits remain eligible under the 6-hour rule. Exact contact matching, duplicate GPS/heatmap handling, and reconciliation with already-granted points remain open.
+Keep in-app and Strava recordings as separate source records underneath the shared outing view: either may contain only part of an outing. Combine their outbreak contacts without discarding contacts unique to either source. For the same player's duplicate contact with the same outbreak, use the earliest recorded contact timestamp once for scoring, cleaning, and cooldown accounting, regardless of receipt order. Later genuinely separate visits remain eligible under the 6-hour rule. Duplicate GPS/heatmap handling and reconciliation with already-granted points remain open. Strava remains deferred.
 
 Match imported visits against outbreak positions and eligibility at the recorded contact time, then start their treatment in the present without rewinding the live world. Historically eligible points remain awardable without revoking prior awards. For already cleared targets, award historically eligible points but apply no cleaning to unrelated replacements. For split targets, divide imported treatment among surviving descendants without multiplying its total effect; exact allocation remains open. Finishing order uses recorded visit time rather than import receipt or support-squad arrival time.
 
@@ -253,17 +253,16 @@ The experiment has three repeatable button-driven scenarios across West, Central
 
 Provisional simulation assumptions: a full-strength visit delivers one cleaning unit; initial effort is selectable at 3, 4, or 6 units; growth adds proportional strength over a four-day baseline; the lifecycle clock advances even when treatment suppresses growth. A one-day announced disintegration phase follows, with accepted extensions capped at one additional day. This clock is an experiment rather than a finalized lifecycle specification.
 
-The experiment uses continuous cell-equivalent area, illustrative contours, minute-resolution time steps, and equal split allocation. It does not validate real routes, model accessibility or imports, generate replacements, or implement the final collapse animation. Visit-point recovery uses a provisional linear curve; cleaning strength retains its repeat-visit floor because recovery of cleaning strength is still unresolved.
+The experiment uses continuous cell-equivalent area, illustrative contours, minute-resolution time steps, and equal split allocation. It does not validate real routes, model accessibility or imports, generate replacements, or implement the final collapse animation. Its visit-point recovery follows the current legacy linear recovery rule; cleaning strength retains its repeat-visit floor because recovery of cleaning strength is still unresolved.
 
 ### Open decisions
 
 - Late historical event ordering, duplicate contact reconciliation, and leaderboard settlement without revoking granted points.
-- Visual/contact boundary agreement, location accuracy limits, and historical contact matching.
+- Visual/contact boundary agreement.
 - Growth curve and proportional strength accounting for added cells.
 - Per-visit lifetime extensions and whether expired treatment resumes growth during an already-announced disintegration countdown.
 - Split corridor tolerances and allocation and integer rounding of inherited properties.
 - Density accounting after splitting/disintegration and replacement scheduling when target density is already met.
-- Visit-point rounding and diminishing/recovery curve.
 - Administrative-region launch thresholds and leaderboard settlement timing.
 - Replay event presentation and recap details.
 - Location precision and protection-area boundary behaviour.
