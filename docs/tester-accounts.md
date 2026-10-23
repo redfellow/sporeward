@@ -35,11 +35,11 @@ Sessions are securely stored per API endpoint and last 30 days. Local recording 
 
 The disposable account used for real API verification is stored privately in `work/replay/emulator-account.json`; it is only for the isolated emulator world. It is not embedded in the APK or source.
 
-## Remaining work
+## Verification boundary
 
-The Android account UI has not yet completed its assembled emulator sign-in/record/upload/switch check. Existing unassigned phone recordings remain preserved under the legacy local identity and require an explicit owner migration, alongside the server's historical contributions and upload storage. The shared field server has been migrated; the owner must explicitly link earlier local phone recordings after signing in. Group score comparison and full small-group onboarding verification also remain in the active goal.
+Account persistence, authenticated upload ownership, legacy-owner linking, local transfer preservation, and isolated multi-account score/cleanup scenarios have dated verification in [finished goals](finished-goals.md). These checks do not establish real small-group field acceptance or privacy behavior; see the [roadmap](development-roadmap.md) for those gates. Linking earlier local recordings remains an explicit user-confirmed operation after signing in.
 
-The account-owned native recorder/upload pipeline is verified using private replay bootstrap. Interactive form entry in the emulator still needs resolution. Run the reusable real-account group check with `node --env-file=work/replay/database.env --import tsx scripts/world/check-account-group.mts`: it provisions five disposable accounts in a unique realm, uses the same outing ID across them, retries uploads, delays one delivery by 30 minutes, advances cleaning and checks shared bonuses plus named scores. A second disposable world spaces the same five accounts’ visits 30 minutes apart and verifies that only the last visitor earns the cleanup bonus, while earlier visitors keep their visit points. It cleans up only its own test realm and world.
+For a repeatable isolated multi-account check, run `node --env-file=work/replay/database.env --import tsx scripts/world/check-account-group.mts`: it provisions five disposable accounts in a unique realm, uses the same outing ID across them, retries uploads, delays one delivery by 30 minutes, advances cleaning and checks shared bonuses plus named scores. A second disposable world spaces the same five accounts’ visits 30 minutes apart and verifies that only the last visitor earns the cleanup bonus, while earlier visitors keep their visit points. It cleans up only its own test realm and world.
 
 ## Link the existing owner explicitly
 

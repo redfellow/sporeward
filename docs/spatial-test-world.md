@@ -51,9 +51,9 @@ The live field world was migrated on 16 October 2026 with a final quiesced backu
 
 The field configuration uses `WORLD_ACCESS=urban` and `WORLD_DENSITY=600`. The urban extract has 40,432 accessible cells in longitude 23.38–24.20 and latitude 61.27–61.62. Live HTTPS verification after the southern extension found 600 outbreaks, including 100 added south of the previous boundary. The native simulation's 20-outbreak baseline remains separate.
 
-## Remaining limitations
+## Limits and evidence
 
-Full continuous contour animation and extended performance profiling at regional density remain unfinished. Historical matching and treatment are implemented, including retained parent identities; later sections describe the spatial checks. The active goal still requires its assembled Android and replay completion checks.
+Historical matching and treatment are implemented, including retained parent identities; the dated checks below document their scope. Extended performance profiling at regional density and outdoor acceptance remain open gates in the [roadmap](development-roadmap.md). The archived gameplay and visual changes record their completed emulator and owner-acceptance scope.
 
 Spatial operations follow the [PostGIS documentation](https://postgis.net/docs/), and transactions follow [node-postgres's single-client transaction guidance](https://node-postgres.com/features/transactions).
 
@@ -69,7 +69,7 @@ Ordinary outbreaks now evolve through a fractional edge cell rather than snappin
 
 Growth, replacement and remnant placement reserve separation from other live/protected footprints. The read-only PostGIS command `node --env-file=work/replay/database.env --import tsx scripts/world/check-contours.mts` verified 1,800 polygons across ten seeds and nine growth/shrink sizes, with no invalid rings or overlaps above 0.01 square metres. The database adapter now batches only changed footprint-history rows; restart, rollback and isolated reset checks still pass.
 
-Regenerate [the interactive contour preview](visualizations/outbreak-contours.html) with `node --import tsx scripts/world/render-contours.mts`. It shows the real geometry algorithm, not an activity or scoring simulation. The mobile map adds a subtle foreground-only opacity pulse without moving the contact boundary; its timer stops when backgrounded. Full in-app lifecycle/layout verification remains open.
+Regenerate [the interactive contour preview](visualizations/outbreak-contours.html) with `node --import tsx scripts/world/render-contours.mts`. It shows the geometry algorithm, not an activity or scoring simulation. Its display does not establish field reliability or broader device performance; see the archived [visual showcase evidence](../openspec/changes/archive/2026-10-22-replicate-approved-visuals-and-showcase/tasks.md) for the accepted phone baseline and its limits.
 
 ## Southern field extension
 

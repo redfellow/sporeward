@@ -8,7 +8,7 @@ The browser and server use `npm run dev:web` and `npm run dev:server`. Run them 
 
 ## First Android development build
 
-The native app contains a local GPS recording experiment. Recorded-route maps and recaps are implemented; outbreak gameplay is not connected yet.
+The native app records and uploads outings to the test service, which validates contacts and returns points, cleaning and recap results. The service and recorder have replay/emulator evidence; physical-device background reliability and outdoor acceptance remain separate gates in the [roadmap](development-roadmap.md).
 
 1. Install Android Studio and follow [Expo's local Android environment guide](https://docs.expo.dev/guides/local-app-development/) to configure a compatible Java development kit, Android SDK, emulator/device tools, and environment paths. Use the SDK required by the installed Expo/React Native versions.
 2. Enable Developer options and USB debugging on the phone. Connect it with a data-capable USB cable and accept its authorization prompt.
@@ -82,7 +82,7 @@ Record elapsed time, location timestamps/accuracy, maximum gaps, battery change,
 
 ## Database and maps
 
-The recorder uses SQLite for on-device storage and MapLibre React Native for route rendering. OpenFreeMap supplies the online basemap. PostgreSQL/PostGIS, authoritative outbreak geometry, and server persistence remain to be implemented.
+The recorder uses SQLite for on-device storage and MapLibre React Native for route rendering. OpenFreeMap supplies the online basemap. The isolated server/replay service uses PostgreSQL/PostGIS for geographic world state and persistence; this is not a public production deployment.
 
 ## Dependency status
 
@@ -106,7 +106,7 @@ The first Android development APK was built, installed, and launched on the Gala
 
 ## WSL2 test API
 
-The test backend is deployed separately in WSL2 on port **3101**, bound to `0.0.0.0`. Windows nginx and public HTTPS are managed by the project owner. See [test-server deployment](../ops/test-server/README.md) for container commands, credential handling, and current API limits. The recorder now includes a Test server panel for authenticated HTTPS health checks. Finished activities can now be explicitly uploaded in retryable batches. World/contact matching is not implemented.
+The test backend is deployed separately in WSL2 on port **3101**, bound to `0.0.0.0`. Windows nginx and public HTTPS are managed by the project owner. See [test-server deployment](../ops/test-server/README.md) for container commands, credential handling, and API limits. The recorder supports authenticated connection checks and activity upload; accepted uploads can be matched to the geographic test world and return validated points, cleaning and recaps. This test service is not a production deployment.
 
 Deployment verification on 12 October 2026: the container is healthy and listens on `0.0.0.0:3101`. Authenticated health requests returned 200, missing/invalid credentials returned 401, and unknown authenticated routes returned 404. A request from the development Mac to the WSL address also returned 401 without credentials. The project owner configured Windows nginx. Public-domain checks confirmed HTTP redirects to HTTPS, TLS certificate verification succeeds, authenticated `/health` returns 200, and missing/invalid credentials return 401. These checks used the development Mac and WSL host; cellular-network validation remains part of the next outing.
 
@@ -114,7 +114,7 @@ Deployment verification on 12 October 2026: the container is healthy and listens
 
 In the app’s **Test server** panel, tap **Configure**, enter the current tester username/password from the private server environment file, and save. Tap **Check connection** to verify `https://sporeward.redlan.co/health`, including over cellular during an outing. Settings survive app updates and restarts through Expo SecureStore; they are excluded from Android backup. Credentials are not embedded in the APK, included in route exports, or logged. Use **Forget credentials** to remove them, or configure again after a server credential change.
 
-Connection checks are explicit and time out after eight seconds. Offline access, rejected credentials, and rate limits are displayed separately; none blocks local recording. The connection panel checks connectivity only. A separate Upload recording action sends finished recordings; eligible uploaded contacts now award points through the encounter slice.
+Connection checks are explicit and time out after eight seconds. Offline access, rejected credentials, and rate limits are displayed separately; none blocks local recording. The connection panel checks connectivity only. Finished outings upload for authoritative contact validation and settlement in the test world.
 
 The connection-panel field APK was built and installed on the Fold5 on 12 October 2026. All 25 workspace tests pass, and the same client request code successfully authenticated against the public HTTPS health endpoint from the development machine. Native credential entry/persistence and cellular connectivity still need verification on the phone.
 
@@ -122,9 +122,9 @@ The connection-panel field APK was built and installed on the Fold5 on 12 Octobe
 
 Finishing a new recording automatically queues its precise GPS locations and timestamps for upload to the configured Sporeward test server. This applies to both the in-app Finish button and notification Finish control. The recap shows upload/confirmation progress without a separate confirmation click. Interrupted transfers remain pending and retry while the app is open, on reopening/returning to the foreground, and at one-minute intervals. Retry upload is also available explicitly. A separate ongoing upload notification shows pending outing count and a native countdown to the saved retry deadline while the app is active. It switches to an open-app reminder in the background, shows progress during transfers and clears when the current account has no pending uploads. Android background execution is not guaranteed; finishing does not wait for network access, and the saved recording remains on the phone. Earlier recordings without a queued upload can still be uploaded manually. Uploads use 1,000-fix batches, with progress and a final receipt. Offline failures leave the local recording intact and save a pending state; retry explicitly when connected. There is no automatic background upload yet.
 
-The server validates batch shape, coordinates, ordered timestamps, section membership, and counts. Identical batches and repeat completion are idempotent; changing already-uploaded content for the same ID returns a conflict. Partial uploads survive server restarts in a Docker volume. Each recording is capped at 100,000 fixes and 256 sections for this test service. Receipts distinguish stored diagnostics from basic game eligibility: at least 500 metres of GPS coverage and receipt within 24 hours of activity completion. Distance does not bridge pauses or GPS gaps over two seconds. These checks are not complete anti-cheat. Eligible uploads additionally pass timestamped outbreak-contact matching in the fixed encounter slice. Ineligible test recordings can still be stored for inspection.
+The server validates batch shape, coordinates, ordered timestamps, section membership, and counts. Identical batches and repeat completion are idempotent; changing already-uploaded content for the same ID returns a conflict. Partial uploads survive server restarts in a Docker volume. Each recording is capped at 100,000 fixes and 256 sections for this test service. Receipts distinguish stored diagnostics from basic game eligibility: at least 500 metres of GPS coverage and receipt within 24 hours of activity completion. Distance does not bridge pauses or GPS gaps over two seconds. These checks are not complete anti-cheat. Eligible uploads additionally pass timestamped contact, scoring and world-settlement rules in the isolated test service. Ineligible test recordings can still be stored for inspection.
 
-Eligible outbreak contacts now contribute cleaning and points. Keep local recordings/exports during field validation; the broader geographic lifecycle is still being developed.
+Eligible outbreak contacts contribute cleaning and points in the test world. Keep local recordings/exports during field validation; the [roadmap](development-roadmap.md) tracks device and outdoor acceptance separately from server/replay implementation.
 
 Upload verification on 13 October 2026: all 32 workspace tests pass. The deployed HTTPS API accepted 1,001 synthetic fixes in two batches, returned an identical receipt on retry, and preserved that receipt through a container restart. The synthetic fixture was removed after verification. The updated standalone APK was built, installed over USB on the Fold5, and launched without reported JavaScript or Android runtime errors. No real outing was uploaded by the development agent.
 

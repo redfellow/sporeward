@@ -36,7 +36,7 @@ The southern extension includes Säijä, Nurmi and Lempoinen. Its idempotent mig
 node --import tsx scripts/migration/preview-shorelines.mts PRIVATE_SNAPSHOT.json
 ```
 
-This command freezes the snapshot clock and runs continuous-surface and shoreline preparation on an in-memory copy. It does not connect to a database or write migrated world state. Keep source snapshots under ignored private storage. It checks that scores, contributions, bonuses and activities are unchanged and reports elapsed time and peak memory. A 500-fixture regional preview took 46.6 seconds for continuous surfaces and 1.53 seconds for shorelines locally; the current public field world has not yet been preflighted or migrated.
+This command freezes the snapshot clock and runs continuous-surface and shoreline preparation on an in-memory copy. It does not connect to a database or write migrated world state. Keep source snapshots under ignored private storage. It checks that scores, contributions, bonuses and activities are unchanged and reports elapsed time and peak memory. An earlier 500-fixture regional preview took 46.6 seconds for continuous surfaces and 1.53 seconds for shorelines locally. The later public field preflight and rollout are recorded below.
 
 ## Shoreline rollout — 2026-10-21
 
