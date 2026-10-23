@@ -42,3 +42,7 @@ The system SHALL evaluate each recorded contact time against the footprint versi
 #### Scenario: Footprint version boundary
 - **WHEN** a fix timestamp equals a footprint's start time or end time
 - **THEN** the start time belongs to that footprint and the end time does not
+
+#### Scenario: Inferred contact rounds to a footprint boundary
+- **WHEN** an inferred first-contact timestamp for a former footprint rounds up to that footprint's exclusive end
+- **THEN** the former footprint does not receive the contact, and the footprint beginning at that boundary may match it from its inclusive start

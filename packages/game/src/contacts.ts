@@ -69,7 +69,10 @@ export function matchContacts(fixes:readonly ContactFix[],footprints:readonly Fo
     for(let step=0;step<45;step++){const mid=(lo+hi)/2;if(distance(mid)<=tolerance)hi=mid;else lo=mid;}
     first=Math.min(first,hi);
    }
-   if(Number.isFinite(first))found.set(footprint.id,Math.min(found.get(footprint.id)??Infinity,Math.ceil(first)));
+   if(Number.isFinite(first)) {
+    const timestamp=Math.ceil(first);
+    if(timestamp<until)found.set(footprint.id,Math.min(found.get(footprint.id)??Infinity,timestamp));
+   }
   }
  }
  return [...found].map(([outbreakId,timestamp])=>({outbreakId,timestamp})).sort((a,b)=>a.timestamp-b.timestamp||a.outbreakId.localeCompare(b.outbreakId));

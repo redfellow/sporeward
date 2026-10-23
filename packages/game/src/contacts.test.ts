@@ -22,6 +22,13 @@ describe('historical outbreak contacts',()=>{
   const result=matchContacts([fix(1000,22.999),fix(2000,23.001)],[{...zone,validFrom:1700}]);
   expect(result).toEqual([]);
  });
+ it('keeps inferred contacts within a half-open interval after rounding',()=>{
+  const fixes=[fix(1000,22.999),fix(2000,23.001002)];
+  const former={...zone,validUntil:1500};
+  const current={...zone,validFrom:1500};
+  expect(matchContacts(fixes,[former],0)).toEqual([]);
+  expect(matchContacts(fixes,[former,current],0)).toEqual([{outbreakId:'test',timestamp:1500}]);
+ });
  it('returns the earliest contact even with multiple footprint versions',()=>{
   const result=matchContacts([fix(1000,23.0001),fix(2000,23.0001)],[{...zone,validFrom:1500},zone]);
   expect(result).toEqual([{outbreakId:'test',timestamp:1000}]);
