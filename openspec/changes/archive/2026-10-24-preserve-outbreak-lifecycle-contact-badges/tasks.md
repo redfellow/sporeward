@@ -7,4 +7,4 @@
 
 ## 2. Emulator Visual Owner Acceptance
 
-- [ ] 2.1 Review the implementation in the Android emulator at individual overview and detailed zoom with representative contacted lifecycle states; verify the check and lifecycle glyph are both legible, remain attached during pan/zoom, and still communicate contact rather than an award, then record the visual result and obtain explicit owner acceptance.
+- [x] 2.1 Review the implementation in the Android emulator at individual overview and detailed zoom with representative contacted lifecycle states; verify the check and lifecycle glyph are both legible, remain attached during pan/zoom, and still communicate contact rather than an award, then record the visual result and obtain explicit owner acceptance.
