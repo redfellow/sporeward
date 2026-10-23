@@ -2,5 +2,6 @@
 
 ## 1. Truthful recap percentage
 
-- [ ] 1.1 Add an isolated formatter for confirmed Field Lab restoration and use it in the recap; add focused regression cases for positive sub-percent, positive whole-percent, and zero reductions, verifying the positive sub-percent label is `<1%` and never `0%`.
-- [ ] 1.2 Run the focused mobile Vitest case and the mobile TypeScript check; record both results with the change.
+- [ ] 1.1 Add `apps/mobile/src/components/outing-recap-format.ts` and use it in `OutingRecap.tsx` to format the percentage from `actualFraction` and select explanatory copy from `resistanceReduction`.
+- [ ] 1.2 Add `apps/mobile/src/components/outing-recap-format.test.ts` covering positive sub-percent, positive whole-percent, and zero reductions; verify the zero case does not claim resistance was reduced.
+- [ ] 1.3 Run `npm test -- apps/mobile/src/components/outing-recap-format.test.ts` and `npm run typecheck --workspace @sporeward/mobile`; record both results with the change.
