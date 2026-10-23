@@ -43,4 +43,4 @@ The field migration was backed up before applying. Contour version 4 and all 620
 
 Mobile, web, server and shared-rendering typechecks pass. Focused material, contact/history, continuous-outline and neighbour-separation checks pass. No field world reset was performed.
 
-The standalone release APK builds and passes the packaged Android permissions check. It was installed in place on the owner's USB-connected Fold5 after confirming no app service was active. Its existing account and recordings were retained; physical-phone visual acceptance remains the owner's next check.
+The standalone release APK was installed in place on the owner's USB-connected Fold5 after confirming no app service was active; its account and recordings were retained. The owner later accepted the Android phone visual baseline on 22 October 2026, including map containment. See the [archived visual showcase evidence](../openspec/changes/archive/2026-10-22-replicate-approved-visuals-and-showcase/tasks.md). That acceptance does not establish GPS reliability, broad performance or gameplay field acceptance.
