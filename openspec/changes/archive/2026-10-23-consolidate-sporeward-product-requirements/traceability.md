@@ -34,4 +34,3 @@ This ledger distinguishes approved intent from code presence and from the scope 
 | Production readiness | [Architecture boundary](../../../docs/architecture.md#production-boundary), [roadmap](../../../docs/development-roadmap.md#remaining-outcome-gates) | This change does not claim public production launch, deployment readiness, or a live multi-player service. | Production deployment, authentication/migration/live-update work remains later scope and needs its own evidence. |
 
 The capability delta files add no acceptance claims beyond the linked product decision and implementation evidence. They do not turn configuration-dependent Resistance into an always-on deployment guarantee, or deferred third-party integrations, expanded rankings, live sharing, privacy controls, or splitting into MVP requirements.
-
