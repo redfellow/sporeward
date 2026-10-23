@@ -29,15 +29,15 @@ Resistance SHALL be personal, survive replacement of nearby outbreaks and recove
 - **THEN** resistance declines without requiring a Field Lab or new geographic unlocks.
 
 ### Requirement: Combined bounded visit rewards
-Eligible ordinary visit rewards SHALL use one combined personal reduction, reconciling existing repeat-point penalties with resistance. Provisional targets are about 50% of normal fresh-target visit points after four commuting weeks, slower accumulation below 50%, and an absolute 25% minimum under intensive local riding. Cooldown rejection SHALL still award no visit points.
+Eligible ordinary visit rewards SHALL use one combined personal reduction, reconciling existing repeat-point penalties with resistance. The current versioned implementation's 25% reward floor is a provisional code parameter, not a product or acceptance target. Cooldown rejection SHALL still award no visit points.
 
 #### Scenario: Repeated eligible local visit
 - **WHEN** repeat history and geographic resistance both apply
 - **THEN** the resulting eligible ordinary visit reward respects the combined floor rather than multiplying independent penalties beneath it.
 
 #### Scenario: Soft threshold
-- **WHEN** further equivalent local contributions occur below the provisional 50% reward threshold
-- **THEN** rewards continue decreasing more slowly toward the provisional minimum rather than stopping abruptly at 50%.
+- **WHEN** further equivalent local contributions increase accumulated resistance
+- **THEN** eligible ordinary rewards continue to decrease smoothly according to the current versioned curve, bounded by its provisional code floor, without a week-specific percentage target.
 
 ### Requirement: Consistent authoritative reward feedback
 Map offers, authoritative awards and recaps SHALL use the same versioned resistance/reward rules. Resistance SHALL NOT retroactively reduce confirmed awards or modify committed cleaning strength, cleanup bonuses or inherited cooldowns in this change.
@@ -47,8 +47,26 @@ Map offers, authoritative awards and recaps SHALL use the same versioned resista
 - **THEN** the outing's already confirmed awards remain unchanged.
 
 ### Requirement: Weekly balancing evidence
-The implementation SHALL provide deterministic simulations for commuting, weekend restoration, local walks, alternating destinations and intensive riding. Published results SHALL distinguish provisional tuning targets from measured outcomes and account for passive recovery, repeat strength and replacement outbreaks.
+The implementation SHALL provide deterministic simulations for commuting, weekend restoration, local walks, alternating destinations and intensive riding. Published results SHALL report scenario inputs and measured outcomes, distinguish those measurements from product or acceptance targets, and account for passive recovery, repeat strength and replacement outbreaks.
 
 #### Scenario: Four weeks without labs
 - **WHEN** the documented reference commute runs for four weeks without lab collection
-- **THEN** results show combined reward progression against the approximate 50% target, with bounded rewards and repeatable outputs.
+- **THEN** results report the scenario's measured reward progression with its inputs and timing, without grading it against a fixed percentage target.
+
+### Requirement: Spatial ordinary reward evaluation
+Resistance-based ordinary visit pricing SHALL weight the player's applicable cleaning contributions by proximity to the evaluated target. Global lab restoration SHALL reduce accumulated contribution resistance without making resistance uniform everywhere. The displayed centre SHALL NOT substitute for local evaluation of the contribution geography.
+
+#### Scenario: Compare local and distant visits
+- **WHEN** two eligible targets have different proximity to the player's accumulated cleaning contributions
+- **THEN** their resistance reductions are evaluated locally rather than using one identical global resistance value.
+
+#### Scenario: Restore a concentrated footprint
+- **WHEN** lab restoration reduces contributions concentrated around the player's usual cleaning area
+- **THEN** resistance-based point loss is reduced where those contributions carry spatial weight, subject to subsequent play, elapsed time and reward rounding.
+
+### Requirement: Gradually responsive resistance centre
+The established presentation centre SHALL be able to follow changes in the concentration of recent accepted cleaning gradually. Cleaning during adventures SHALL contribute to this geography under the ordinary contribution rules. Travelling without accepted cleaning SHALL NOT add resistance contributions.
+
+#### Scenario: Clean along an adventure
+- **WHEN** accepted cleaning along an adventure changes the concentration of recent contributions toward that area
+- **THEN** the summary centre can gradually shift in that direction while local reward evaluation continues to use spatial contributions and an existing outing's lab offer retains its frozen reference.

@@ -12,22 +12,34 @@ Exploration must remain renewable. Do not make permanent tile exhaustion push ev
 
 These priorities guide evaluation; they do not define additional gameplay rules or numeric targets.
 
+## Confirmed MVP loop
+
+An ordinary A-to-B journey can become a little longer when a reachable outbreak or Field Lab makes an optional detour worthwhile, sometimes toward an unfamiliar place. Familiar rides, commutes and short local walks remain useful; longer outings add benefit without becoming mandatory maintenance.
+
+Weekday cleaning builds personal, spatial Outbreak Resistance, reducing ordinary visit points around regularly cleaned places. A weekend Field Lab hunt reduces accumulated resistance so subsequent familiar outings lose fewer points than equivalent play without that recovery. Several labs can provide greater relief under diminishing returns. This does not promise a full reset, a fixed recovery percentage or a resistance-free following week; later cleaning continues to add resistance.
+
+Recovery is most relevant where the player's contributions are concentrated. Local rewards use distance-weighted contributions, rather than one uniform global resistance meter. The displayed centre summarizes that geography. Cleaning outbreaks along an adventure can gradually shift the centre toward that direction as the concentration changes; following where the player actually plays is desirable.
+
+The [renewable exploration contract](../openspec/specs/renewable-exploration/spec.md) owns this player experience; the [Field Lab contract](../openspec/specs/field-labs/spec.md) and [resistance contract](../openspec/specs/outbreak-resistance/spec.md) own the mechanics. Resistance affects ordinary visit points, while committed cleaning and cleanup bonuses retain their existing rules. The implementation remains configuration-dependent; this product contract does not establish field acceptance.
+
 ## Proposed evaluations
 
 ### A-to-B detour
 
 Use an ordinary journey with several plausible route choices. Ask a player to choose a route, then record whether they can:
 
-- identify an attractive optional detour and explain why it is worthwhile;
+- identify an attractive optional detour through reachable outbreaks or a Field Lab and explain why it is worthwhile;
 - estimate the added distance and reward before choosing;
-- understand what their crossing contributed afterward; and
+- understand the visit points, cleaning or lab recovery their crossing contributed afterward; and
 - say whether the destination or resulting world state gives them a reason to return.
 
 Use more than one familiar and unfamiliar route when practical. No route planner, automatic routing feature, success threshold or required detour distance has been agreed.
 
 ### Outing and reward return
 
-Ask the player to inspect an available opportunity and decide whether it would motivate an outing they otherwise would not take. After play, ask them to explain visit points, committed cleaning, gradual shrinkage, potential cleanup bonuses and personal eligibility using the existing map, guide and recap. Review reward comprehension as well as visual appearance. No outing-motivation or comprehension threshold has been agreed.
+Ask the player whether hunting one or several available Field Labs would motivate an outing they otherwise would not take, considering the reduced resistance-based point loss on subsequent familiar outings. Observe whether the actual recovery helps them want to return; how noticeable one lab should feel remains open.
+
+After play, ask them to explain actual resistance reduction, ordinary visit points, committed cleaning, gradual shrinkage, potential cleanup bonuses and personal eligibility using the existing map, guide and recap. Check that they understand partial spatial recovery and continuing accumulation rather than expect a complete reset or a promised percentage. No outing-motivation or comprehension threshold has been agreed.
 
 These are proposed product observations. Passing them would not establish correctness of automated rules, emulator integration, physical-phone behavior, outdoor GPS reliability or group/field acceptance.
 
@@ -36,9 +48,9 @@ These are proposed product observations. Passing them would not establish correc
 | Question | Status | Owner / next action |
 |---|---|---|
 | Which achievements should reward which experiences, without undermining renewable local exploration? | Open; owner has further ideas not captured here | Ask the owner when achievement work is scoped; do not infer requirements from this page. |
-| Which A-to-B rides and observable outcomes show a worthwhile detour? | Proposed evaluation; thresholds open | Run the small evaluation above and agree any threshold separately. |
-| What makes a player return for an outing when no commute is planned? | Open | Evaluate current world and reward feedback before proposing another feature. |
-| Can players distinguish visit points, committed cleaning, gradual shrinkage, potential cleanup bonuses and personal eligibility? | Open | Check comprehension with the existing map, guide and recap, apart from appearance review. |
+| Which A-to-B rides and observable outcomes show a worthwhile detour? | Proposed evaluation; thresholds open | Observe choices between reachable outbreak/lab opportunities and the usual route; agree any threshold separately. |
+| Does Field Lab recovery motivate an outing when no commute is planned and make following familiar outings more worthwhile? | Recovery relationship confirmed; perceived benefit open | Observe the expedition decision and later local play; do not infer a new incentive or fixed recovery target. |
+| Can players distinguish actual spatial resistance reduction, visit points, committed cleaning and conditional cleanup bonuses? | Open comprehension question within the confirmed loop | Use the existing map, guide and recap; check that recovery is understood without a full-reset promise. |
 | When should size/category and strategic splitting work be scoped relative to visual integration and field validation? | Deferred; no ordering agreed | Use the [game concept](game-concept.md) and create a separate proposal before implementation. |
 | Which implementation and acceptance claims are current, and which field gates remain? | Reconciled for this documentation pass; ongoing | Follow the evidence and next steps in the [roadmap](development-roadmap.md), [finished-goals record](finished-goals.md) and owning changes. |
 | How should late historical events, duplicates and leaderboard settlement interact? | Open design question | See [game concept: open decisions](game-concept.md#open-decisions); resolve in an owning gameplay change. |
