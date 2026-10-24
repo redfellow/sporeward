@@ -63,3 +63,9 @@ Group fill and glow use the arithmetic mean of remaining outbreak visits through
 Group discs use muted opaque effort colors with heavier soft cream numerals and no text halo; water-colored borders and tapered glow preserve area context without neon fills.
 
 New lab spawns use a 64-vertex circular contact footprint with diameter twice the previous z17 cell width (about 292 m near Tampere). The same ring drives map presentation and upload matching; stored earlier footprints remain unchanged for historical matching. Native center-circle decoration is doubled and all Field Lab map labels are removed; selection details retain the reward offer.
+
+### Persisted resistance replay evidence
+
+`npm run replay:resistance:postgis` now defines a repeatable matched control/lab scenario against the isolated `sporeward_replay` PostGIS database. It uses Tampere fixtures at seed 73, four weekday blocks, a weekend outing and the following weekday block; it verifies restart/retry invariants, compares aggregate runs, checks unrelated database rows and removes its run-scoped records. The full setup and evidence limits are in [Replay tool](replay-tool.md#persisted-postgis-resistance-comparison).
+
+The aggregate database run remains unverified: this implementation environment has no Docker command or configured `REPLAY_DATABASE_URL`. No PostGIS result, visit total, collection fraction or restoration amount is recorded here. The existing file-backed integration figures above remain separate evidence and must not be presented as persisted PostGIS results. Once the isolated replay database is available, run the documented command and append its aggregate output here without coordinates or credentials.
