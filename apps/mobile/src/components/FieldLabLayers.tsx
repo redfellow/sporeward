@@ -3,7 +3,7 @@ import {AccessibilityInfo,AppState} from 'react-native';
 import {Skia} from '@shopify/react-native-skia';
 import {Directory,File,Paths} from 'expo-file-system';
 import {GeoJSONSource,ImageSource,Images,Layer} from '@maplibre/maplibre-react-native';
-import {surveyStationSvg,guideBadgeSvg,type GuideState} from '@sporeward/rendering';
+import {surveyStationSvg,guideBadgeSvg,guideContactSvg,guideBaseState,guidePigment,type GuideState} from '@sporeward/rendering';
 import type {WorldView} from '@sporeward/protocol';
 import {outbreakMarkers} from './outbreak-geometry';
 import {outbreakMarkerComposition} from './outbreak-appearance';
@@ -33,6 +33,10 @@ export function FieldLabLayers({world,viewport,bright,provisional,visited,onSele
     const surface=Skia.Surface.Make(96,96),svg=Skia.SVG.MakeFromString(guideBadgeSvg(state,bright));if(!surface||!svg)throw new Error('Guide badge unavailable');
     surface.getCanvas().clear(Skia.Color('transparent'));surface.getCanvas().drawSvg(svg,96,96);const image=surface.makeImageSnapshot(),file=new File(directory,'badge-'+state+'-'+bright+'.png');file.write(image.encodeToBytes());result['badge-'+state]=file.uri;image.dispose();svg.dispose();surface.dispose();
    }
+   for(const state of ['easy','medium','hard','disintegrating','remnant','withering','clearing','cracking','stabilizing','cooldown'] as GuideState[]){
+    const surface=Skia.Surface.Make(96,96),svg=Skia.SVG.MakeFromString(guideContactSvg(state,bright));if(!surface||!svg)throw new Error('Contact marker artwork unavailable');
+    surface.getCanvas().clear(Skia.Color('transparent'));surface.getCanvas().drawSvg(svg,96,96);const image=surface.makeImageSnapshot(),file=new File(directory,'badge-contact-'+state+'-'+bright+'.png');file.write(image.encodeToBytes());result['badge-contact-'+state]=file.uri;image.dispose();svg.dispose();surface.dispose();
+   }
    setImages(result);
   }catch{setImages({});}
  },[bright,directory]);
@@ -43,7 +47,7 @@ export function FieldLabLayers({world,viewport,bright,provisional,visited,onSele
  },[world,viewport]);
  const animated=foreground&&!reduced&&viewport.zoom>=14.5&&visible.some(lab=>!lab.collected&&!provisional.has(lab.id));
  useEffect(()=>{if(!animated)return;const timer=setInterval(()=>setPhase(value=>(value+1)%FRAMES),STEP);return()=>clearInterval(timer);},[animated]);
- const badges=useMemo(()=>({type:'FeatureCollection' as const,features:outbreakMarkers(world).map(({outbreak:o,anchor})=>{const marker=outbreakMarkerComposition(o,world!.serverTime,visited.has(o.id));return {type:'Feature' as const,properties:{id:o.id,icon:marker.icon,contacted:marker.contacted,contactIcon:marker.contactIcon??'',color:marker.palette.body},geometry:{type:'Point' as const,coordinates:anchor}};})}),[world,visited]);
+ const badges=useMemo(()=>({type:'FeatureCollection' as const,features:outbreakMarkers(world).map(({outbreak:o,anchor})=>{const lifecycle=guideBaseState(o,world!.serverTime),contacted=visited.has(o.id);return {type:'Feature' as const,properties:{id:o.id,icon:'badge-'+lifecycle,contacted,contactIcon:contacted?'badge-contact-'+lifecycle:'',color:guidePigment(lifecycle).body},geometry:{type:'Point' as const,coordinates:anchor}};})}),[world,visited]);
  const footprints=useMemo(()=>({type:'FeatureCollection' as const,features:visible.map(lab=>({type:'Feature' as const,properties:{id:lab.id,collected:lab.collected||provisional.has(lab.id)},geometry:{type:'Polygon' as const,coordinates:[[...lab.ring,lab.ring[0]]]}}))}),[visible,provisional]);
  const stations=useMemo(()=>visible.flatMap(lab=>{
   const collected=lab.collected||provisional.has(lab.id),name=`lab-${bright?'day':'night'}-${collected?'collected':'available'}-${collected||!animated?0:phase}`,url=images[name];
@@ -56,7 +60,7 @@ export function FieldLabLayers({world,viewport,bright,provisional,visited,onSele
   <Images images={Object.fromEntries(Object.entries(images).filter(([key])=>key.startsWith('badge-')))}/>
   <GeoJSONSource key="outbreak-guide-badges" id="outbreak-guide-badges" data={badges} onPress={event=>{const id=event.nativeEvent.features[0]?.properties?.id;if(typeof id==='string')onOutbreakSelect(id);event.stopPropagation();}}>
    <Layer key="outbreak-guide-badge-icons" id="outbreak-guide-badge-icons" type="symbol" minzoom={14} layout={{'icon-image':['get','icon'],'icon-size':['interpolate',['linear'],['zoom'],10,.18,12,.25,14,.5],'icon-allow-overlap':true}}/>
-   <Layer key="outbreak-contact-check" id="outbreak-contact-check" type="symbol" minzoom={14} filter={['==',['get','contacted'],true]} layout={{'icon-image':['get','contactIcon'],'icon-size':['interpolate',['linear'],['zoom'],10,.18,12,.2,14,.22],'icon-offset':[12,12],'icon-allow-overlap':true,'icon-ignore-placement':true}}/>
+   <Layer key="outbreak-contact-check" id="outbreak-contact-check" type="symbol" minzoom={14} filter={['==',['get','contacted'],true]} layout={{'icon-image':['get','contactIcon'],'icon-size':['interpolate',['linear'],['zoom'],10,.18,12,.25,14,.5],'icon-allow-overlap':true,'icon-ignore-placement':true,'icon-anchor':'center'}}/>
   </GeoJSONSource>
   <GeoJSONSource key="field-lab-collection-areas" id="field-lab-collection-areas" data={footprints} onPress={event=>{const id=event.nativeEvent.features[0]?.properties?.id;if(typeof id==='string')onSelect(id);event.stopPropagation();}}>
    <Layer key="field-lab-area-fill" id="field-lab-area-fill" type="fill" minzoom={13} paint={{'fill-color':bright?'#247d71':'#70e5cd','fill-opacity':['case',['get','collected'],.035,.12]}}/>

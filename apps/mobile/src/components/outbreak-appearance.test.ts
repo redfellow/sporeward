@@ -9,6 +9,10 @@ const outbreak=(overrides:Partial<Parameters<typeof outbreakMarkerComposition>[0
 } as Parameters<typeof outbreakMarkerComposition>[0]);
 
 const cases=[
+ {name:'active',overrides:{},lifecycle:'medium',uncontactedGroup:'active'},
+ {name:'disintegrating',overrides:{lifecycle:'disintegrating'},lifecycle:'disintegrating',uncontactedGroup:'active'},
+ {name:'cracking',overrides:{crossings:3},lifecycle:'cracking',uncontactedGroup:'active'},
+ {name:'stabilizing',overrides:{lifecycle:'stabilizing'},lifecycle:'stabilizing',uncontactedGroup:'clearing'},
  {name:'clearing',overrides:{status:'clearing'},lifecycle:'clearing',uncontactedGroup:'clearing'},
  {name:'withering',overrides:{status:'withering'},lifecycle:'withering',uncontactedGroup:'active'},
  {name:'remnant',overrides:{lifecycle:'remnant'},lifecycle:'remnant',uncontactedGroup:'remnants'},
@@ -27,8 +31,9 @@ describe('outbreak marker contact composition',()=>{
    expect(uncontacted.contacted).toBe(false);
    expect(uncontacted.contactIcon).toBeNull();
    expect(contacted.contacted).toBe(true);
-   expect(contacted.contactIcon).toBe('badge-visited');
+   expect(contacted.contactIcon).toBe(`badge-contact-${state.lifecycle}`);
    expect(uncontacted.summaryGroup).toBe(state.uncontactedGroup);
+   expect(contacted.summaryState).toBe('visited');
    // Group summaries retain their established contact-sensitive unavailable bucket.
    expect(contacted.summaryGroup).toBe('unavailable');
    expect(contacted).not.toHaveProperty('points');
