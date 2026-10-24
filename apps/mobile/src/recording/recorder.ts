@@ -6,6 +6,7 @@ import * as TaskManager from 'expo-task-manager';
 import { Alert, AppState } from 'react-native';
 import { requestNotificationPermission, updateNotification, locationServiceRunning } from './notification';
 import { deliveryDiagnostic } from './delivery';
+import { recoverRecorder, recoverySegmentEnd, resumeRecording } from './recovery';
 import * as store from './store';
 const TASK = 'sporeward-location';
 let replayGpsSuspended=false;
@@ -44,26 +45,29 @@ export async function start(resume = false) {
  replayGpsSuspended=false;
  await permissions();
  const notificationsAllowed=await requestNotificationPermission();
- if (resume) await store.transition('recording'); else await store.begin(await recordingIdentity());
- try { await startService(); await store.event(resume ? 'Recording resumed.' : 'Recording started.'); await store.diagnostic('service-start',{resume,notificationsAllowed}); await updateNotification(true); if(!notificationsAllowed) await store.event('Recording started; notifications are disabled. Enable them in Android settings for recording controls.'); }
- catch (e) { await store.transition('paused'); throw e; }
+ if(resume) await resumeRecording((status,recovery)=>store.transition(status,recovery),startService);
+ else await store.begin(await recordingIdentity());
+ try { if(!resume)await startService(); await store.event(resume ? 'Recording resumed.' : 'Recording started.'); await store.diagnostic('service-start',{resume,notificationsAllowed}); await updateNotification(true); if(!notificationsAllowed) await store.event('Recording started; notifications are disabled. Enable them in Android settings for recording controls.'); }
+ catch (e) { if(!resume)await store.transition('paused'); throw e; }
 }
 export async function pause(finish = false, autoUpload = true) { if(finish)replayGpsSuspended=false;await store.transition(finish ? 'finished' : 'paused',false,autoUpload); await stopService(); await store.event(finish ? 'Activity saved.' : 'Recording paused.'); await updateNotification(true); if(finish&&autoUpload)void syncPendingActivities().catch(()=>{}); }
 export async function recover() {
- await updateNotification();
- const a = await store.current();
- if (a?.status !== 'recording') { await stopService(); await updateNotification(); return; }
- if(replayGpsSuspended&&replayAllowed())return;
- if (Date.now() >= a.deadline) { await pause(); await store.event('24-hour limit reached. Resume or finish explicitly.'); return; }
- const registered=await Location.hasStartedLocationUpdatesAsync(TASK);
- const serviceRunning=await locationServiceRunning();
- if (!registered || serviceRunning===false) {
-  if (!(await Location.getBackgroundPermissionsAsync()).granted) { await store.transition('paused',true); throw new Error('Recording paused: location permission is missing.'); }
-  if(registered) await stopService();
-  await store.transition('recording',true);
-  try { await startService(); await store.event('Recording recovered; a new route segment was started.'); await store.diagnostic('service-recovered',{registered,serviceRunning}); await updateNotification(true); }
-  catch(e) { await store.transition('paused'); throw e; }
- }
+ await recoverRecorder({
+  updateNotification,
+  current:store.current,
+  replayGpsSuspended,
+  replayAllowed:replayAllowed(),
+  now:Date.now,
+  stopService,
+  backgroundLocationGranted:async()=> (await Location.getBackgroundPermissionsAsync()).granted,
+  locationUpdatesRegistered:()=>Location.hasStartedLocationUpdatesAsync(TASK),
+  locationServiceRunning,
+  transition:(status,recovery)=>store.transition(status,recovery),
+  startService,
+  pause:()=>pause(),
+  event:store.event,
+  diagnostic:(registered,serviceRunning)=>store.diagnostic('service-recovered',{registered,serviceRunning}),
+ });
 }
 
 export async function applyNotificationAction(action:import('./notification-action').NotificationAction) {
