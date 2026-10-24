@@ -8,7 +8,7 @@ import {replayCommand,applyReplayCommand,publishReplayStatus,restoreReplayContro
 import {useWorld} from './src/server/use-world';
 import {useEncounters} from './src/recording/use-encounters';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, Linking, Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View, useWindowDimensions } from 'react-native';
+import { AppState, BackHandler, Linking, Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaProvider, SafeAreaView, initialWindowMetrics } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { File, Paths } from 'expo-file-system';
@@ -22,7 +22,12 @@ import { ActivityUpload } from './src/components/ActivityUpload';
 import { ServerConnection } from './src/components/ServerConnection';
 import {useMapPreference} from './src/components/use-map-preference';
 import { RouteMap } from './src/components/RouteMap';
+import {OutingThumbnail} from './src/components/OutingThumbnail';
+import {loadCredentials} from './src/server/credentials';
+import {fetchActivityFootprints} from './src/server/world';
+import {parseEncounterRecap,type ActivityFootprint, type EncounterRecap} from '@sporeward/protocol';
 const duration = (ms:number) => {const seconds=Math.floor(ms/1000);return `${Math.floor(seconds/3600)}h ${Math.floor(seconds/60)%60}m ${seconds%60}s`;};
+const NO_FOOTPRINTS:ActivityFootprint[]=[];
 export default function App(){return <SafeAreaProvider initialMetrics={initialWindowMetrics}><Game/></SafeAreaProvider>;}
 function Game() {
  const [brightMap,setBrightMap]=useMapPreference();
@@ -35,15 +40,29 @@ function Game() {
  const [hudHeight,setHudHeight]=useState(260);
  const [topHudHeight,setTopHudHeight]=useState(76);
  const compact=useWindowDimensions().width<380;
- const [screen,setScreen]=useState<'map'|'details'|'recap'|'outings'|'review'>('map');
+ const [screen,setScreen]=useState<'map'|'details'|'recap'|'recap-details'|'outings'|'review'>('map');
  const [message,setMessage] = useState('Ready for a recording test.');
  const [busy,setBusy] = useState(false);
  const [details,setDetails]=useState(false);
  const recordingActive=useRef(false);
  const operation = useRef(false), selectedId=useRef<string|null>(null);
+ const recapOrigin=useRef<'map'|'outings'>('map');
+ const [historyPreviews,setHistoryPreviews]=useState<Record<string,{fixes:Fix[];segments:Segment[];footprints:ActivityFootprint[];recap:EncounterRecap|null;provisionalPoints:number;contacts:number;pending:boolean}>>({});
+ const [historicalSnapshot,setHistoricalSnapshot]=useState<{activityId:string;footprints:ActivityFootprint[]}|null>(null);
+ const historyGeneration=useRef(0);
  const handledNotificationActions=useRef(new Set<string>());
  const encounterWorld=useWorld(displayed?.id??null);
  const encounterPreview=useEncounters(displayed?.id??null,fixes,encounterWorld.world,encounterWorld.recap);
+ const shownRecap=encounterWorld.recap?.activityId===displayed?.id?encounterWorld.recap:historyPreviews[displayed?.id??'']?.recap??null;
+ const historicalFootprints=historicalSnapshot&&historicalSnapshot.activityId===displayed?.id?historicalSnapshot.footprints:historyPreviews[displayed?.id??'']?.footprints??NO_FOOTPRINTS;
+ const finishedId=displayed?.status==='finished'?displayed.id:null;
+ const hasRecap=!!shownRecap;
+ useEffect(()=>{
+  let alive=true;setHistoricalSnapshot(null);
+  if(!finishedId||!hasRecap)return;
+  void loadCredentials().then(async credentials=>{if(!credentials)return;const result=await fetchActivityFootprints(finishedId,credentials);if(alive)setHistoricalSnapshot(result);}).catch(()=>{});
+  return()=>{alive=false;};
+ },[finishedId,hasRecap,identityGeneration]);
  const stats=useMemo(()=>summarize(fixes),[fixes]);
  async function refresh() {
   const owner=(await savedSession(true))?.tester.id??'legacy-local';
@@ -62,7 +81,7 @@ function Game() {
  }
  async function finishOuting() {
   if(!await confirmFinish())return;
-  selectedId.current=(await store.current())?.id??null;await recorder.pause(true);setScreen('recap');
+  selectedId.current=(await store.current())?.id??null;recapOrigin.current='map';await recorder.pause(true);setScreen('recap');
  }
  async function userNotificationAction(action:NotificationAction) {
   if(action.action==='finish') {
@@ -73,7 +92,7 @@ function Game() {
     return;
    }
   }
-  if(action.action==='finish')selectedId.current=action.activity;
+  if(action.action==='finish'){selectedId.current=action.activity;recapOrigin.current='map';}
   await recorder.applyNotificationAction(action);
   if(action.action==='finish')setScreen('recap');
  }
@@ -83,6 +102,27 @@ function Game() {
   const retrySub=AppState.addEventListener('change',state=>{if(state==='active')synchronize();});
   return()=>{clearInterval(retryTimer);retrySub.remove();};
  },[]);
+ useEffect(()=>{
+  const sub=BackHandler.addEventListener('hardwareBackPress',()=>{
+   if(screen==='recap'){setScreen(recapOrigin.current);return true;}
+   if(screen==='recap-details'||screen==='review'){setScreen('recap');return true;}
+   if(screen==='outings'){setScreen('map');return true;}
+   return false;
+  });return()=>sub.remove();
+ },[screen]);
+ async function loadHistoryCards(items:store.Activity[]){
+  const generation=historyGeneration.current;
+  const credentials=await loadCredentials().catch(()=>null);
+  const rows=await Promise.all(items.filter(a=>a.status==='finished').map(async a=>{
+   const [points,sections,upload,localContacts]=await Promise.all([store.points(a.id),store.segments(a.id),store.uploadState(a.id),store.contactPreviews(a.id)]);
+   let recap:EncounterRecap|null=null;let footprints:ActivityFootprint[]=[];
+   try{if(upload?.state==='uploaded'&&upload.receipt){const value=JSON.parse(upload.receipt) as {encounters?:unknown};if(value.encounters)recap=parseEncounterRecap(value.encounters,a.id);}
+    if(credentials&&upload?.state==='uploaded')footprints=(await fetchActivityFootprints(a.id,credentials)).footprints;
+   }catch{/* Older uploads can lack saved encounter geometry; keep their GPS route preview. */}
+   return [a.id,{fixes:points,segments:sections,footprints,recap,provisionalPoints:localContacts.reduce((total,c)=>total+c.visitPoints,0),contacts:localContacts.length,pending:upload?.state!=='uploaded'}] as const;
+  }));if(generation===historyGeneration.current)setHistoryPreviews(Object.fromEntries(rows));
+ }
+ async function showHistory(){setScreen('outings');const generation=++historyGeneration.current;try{const owner=(await savedSession(true))?.tester.id??'legacy-local',items=await store.recent(owner);if(generation!==historyGeneration.current)return;setHistory(items);void loadHistoryCards(items).catch(()=>{});}catch{}}
  useEffect(() => {
   let alive = true;
   const update = async () => { if(operation.current) return; operation.current = true; try { await recorder.recover(); if(alive) await refresh(); } catch(e) { if(alive) setMessage(String(e)); } finally {operation.current = false;} };
@@ -139,16 +179,25 @@ function Game() {
  if(screen==='outings')return <SafeAreaView style={styles.screen}><StatusBar style="light"/><ScrollView contentContainerStyle={styles.content}>
   <Pressable accessibilityRole="button" style={styles.secondary} onPress={()=>void run(returnToWorld)}><Text style={styles.secondaryText}>Back to the world</Text></Pressable>
   <Text style={styles.title}>Past outings</Text>
-  {history.filter(a=>a.status==='finished').map(a=><Pressable key={a.id} disabled={busy||!!activity} style={styles.card} onPress={()=>void run(async()=>{selectedId.current=a.id;await refresh();setScreen('recap');})} accessibilityRole="button"><Text style={styles.metric}>{new Date(a.started).toLocaleString()}</Text><Text style={styles.body}>View outing recap and route</Text></Pressable>)}
+  {history.filter(a=>a.status==='finished').map(a=>{const preview=historyPreviews[a.id],summary=summarize(preview?.fixes??[]),elapsed=preview?duration(recordingDuration(preview.segments,a.ended??a.started)):'';const points=preview?.recap?preview.recap.confirmedVisitPoints+preview.recap.confirmedCleanupPoints:preview?.provisionalPoints;return <Pressable key={a.id} disabled={busy||!!activity} style={styles.historyCard} onPress={()=>void run(async()=>{recapOrigin.current='outings';selectedId.current=a.id;await refresh();setScreen('recap');})} accessibilityRole="button">
+   <View style={styles.historyHeading}><View style={{flex:1}}><Text style={styles.metric}>{new Date(a.started).toLocaleString()}</Text><Text style={styles.body}>{preview?`${(summary.meters/1000).toFixed(2)} km · ${elapsed}`:'Loading outing…'}</Text></View><View style={styles.historyScore}><Text style={styles.historyPoints}>{points===undefined?'—':preview?.pending||!preview?.recap?'~'+points:points}</Text><Text style={styles.smallLabel}>{preview?.pending?'pending':preview?.recap?'confirmed':'estimate'}</Text>{!!preview?.recap?.pendingCleanupPoints&&<Text style={styles.pendingPoints}>+{preview.recap.pendingCleanupPoints} possible</Text>}</View></View>
+   {preview&&<OutingThumbnail fixes={preview.fixes} footprints={preview.footprints} brightMap={brightMap}/>}
+   <Text style={styles.body}>{preview?(preview.pending?'Waiting to upload':'Uploaded'):'Loading…'} · Open full-screen recap</Text>
+  </Pressable>})}
   {!history.some(a=>a.status==='finished')&&<Text style={styles.body}>Your saved outings will appear here.</Text>}
   {!!activity&&<Text style={styles.body}>Finish your current outing to review past outings.</Text>}
  </ScrollView></SafeAreaView>;
- if(screen==='review')return <SafeAreaView style={styles.screen}><StatusBar style="light"/><View style={{flex:1}}><RouteMap brightMap={brightMap} fixes={fixes} activityId={displayed?.id??null} world={encounterWorld.world} labOffer={encounterWorld.labOffer} labRecap={encounterWorld.recap} visited={encounterPreview.visited} recording={false} fullscreen topInset={70} bottomInset={20} onRenderTestClock={encounterWorld.controlRenderTestClock}/><Pressable accessibilityRole="button" style={[styles.gameMenu,{position:'absolute',top:12,left:12}]} onPress={()=>setScreen('recap')}><Text style={styles.secondaryText}>Back to recap</Text></Pressable></View><MapAttribution/></SafeAreaView>;
- if(screen==='recap'&&displayed?.status==='finished')return <SafeAreaView style={styles.screen}><StatusBar style="light"/><OutingRecap activity={displayed} distance={stats.meters} elapsed={duration(recordingDuration(segments,Date.now()))} recap={encounterWorld.recap} provisional={encounterPreview.provisionalPoints} touched={encounterPreview.visited.size} coverage={encounterPreview.distanceMetres} onMap={()=>void run(returnToWorld)} onRoute={()=>setScreen('review')} onUploaded={receipt=>{if(receipt.encounters)encounterWorld.acceptRecap(receipt.encounters);void encounterWorld.refresh();}}/></SafeAreaView>;
+ if(screen==='review')return <SafeAreaView style={styles.screen}><StatusBar style="light"/><View style={{flex:1}}><RouteMap brightMap={brightMap} fixes={fixes} activityId={displayed?.id??null} world={encounterWorld.world} labOffer={encounterWorld.labOffer} labRecap={encounterWorld.recap} visited={encounterPreview.visited} recording={false} fullscreen historicalOnly historicalFootprints={historicalFootprints} topInset={64} bottomInset={20}/><Pressable accessibilityRole="button" style={[styles.gameMenu,{position:'absolute',top:12,left:12}]} onPress={()=>setScreen('recap')}><Text style={styles.secondaryText}>Back to recap</Text></Pressable></View><MapAttribution/></SafeAreaView>;
+ if(screen==='recap'&&displayed?.status==='finished')return <SafeAreaView style={styles.screen}><StatusBar style="light"/><View style={{flex:1}}><RouteMap brightMap={brightMap} fixes={fixes} activityId={displayed.id} world={encounterWorld.world} labOffer={encounterWorld.labOffer} labRecap={encounterWorld.recap} visited={encounterPreview.visited} recording={false} fullscreen historicalOnly historicalFootprints={historicalFootprints} topInset={145} bottomInset={130}/>
+   <Pressable accessibilityRole="button" accessibilityLabel="Back" style={[styles.gameMenu,{position:'absolute',top:12,left:12}]} onPress={()=>setScreen(recapOrigin.current)}><Text style={styles.secondaryText}>‹</Text></Pressable>
+  <View style={styles.recapScore}><Text style={styles.recapPoints}>{shownRecap?shownRecap.confirmedVisitPoints+shownRecap.confirmedCleanupPoints:recapOrigin.current==='outings'?historyPreviews[displayed.id]?.provisionalPoints??0:encounterPreview.provisionalPoints} pts</Text><Text style={styles.body}>{shownRecap?'Confirmed':historyPreviews[displayed.id]?.pending?'Pending confirmation':'Provisional'} · {shownRecap?.encounters.filter(e=>e.accepted).length??(historicalFootprints.length||historyPreviews[displayed.id]?.contacts||encounterPreview.visited.size)} touched</Text>{!!shownRecap?.pendingCleanupPoints&&<Text style={styles.pendingPoints}>+{shownRecap.pendingCleanupPoints} possible cleanup</Text>}<Text style={styles.metric}>{(stats.meters/1000).toFixed(2)} km · {duration(recordingDuration(segments,displayed.ended??Date.now()))}</Text></View>
+   <View style={styles.recapActions}><Pressable accessibilityRole="button" style={styles.recapButton} onPress={()=>setScreen('recap-details')}><Text style={styles.buttonText}>Outing details</Text></Pressable><Pressable accessibilityRole="button" style={styles.recapButtonSecondary} onPress={()=>{if(recapOrigin.current==='outings')setScreen('outings');else void run(returnToWorld);}}><Text style={styles.secondaryText}>{recapOrigin.current==='outings'?'Close recap':'Back to the map'}</Text></Pressable></View>
+  </View><MapAttribution/></SafeAreaView>;
+ if(screen==='recap-details'&&displayed?.status==='finished')return <SafeAreaView style={styles.screen}><StatusBar style="light"/><OutingRecap activity={displayed} distance={stats.meters} elapsed={duration(recordingDuration(segments,displayed.ended??Date.now()))} recap={shownRecap} provisional={recapOrigin.current==='outings'?historyPreviews[displayed.id]?.provisionalPoints??0:encounterPreview.provisionalPoints} touched={shownRecap?.encounters.filter(e=>e.accepted).length??(historicalFootprints.length||historyPreviews[displayed.id]?.contacts||encounterPreview.visited.size)} coverage={encounterPreview.distanceMetres} onMap={()=>setScreen('recap')} onRoute={()=>setScreen('review')} onUploaded={receipt=>{if(receipt.encounters)encounterWorld.acceptRecap(receipt.encounters);void encounterWorld.refresh();}}/></SafeAreaView>;
  if(screen==='map')return <SafeAreaView style={styles.screen}><StatusBar style="light"/><View style={{flex:1}}>
   <RouteMap brightMap={brightMap} fixes={fixes} activityId={displayed?.id??null} world={encounterWorld.world} labOffer={encounterWorld.labOffer} labRecap={encounterWorld.recap} visited={encounterPreview.visited} recording={activity?.status==='recording'} fullscreen bottomInset={hudHeight} topInset={topHudHeight} onRenderTestClock={encounterWorld.controlRenderTestClock}/>
   <View style={styles.gameTop} pointerEvents="box-none" onLayout={event=>setTopHudHeight(Math.ceil(event.nativeEvent.layout.height)+24)}><View style={styles.gamePanel}>
-   <View style={styles.gameRow}><Text style={styles.gameTitle}>Sporeward</Text><View style={{flexDirection:'row',gap:8}}><Pressable accessibilityRole="button" accessibilityLabel="Past outings" onPress={()=>setScreen('outings')} style={styles.gameMenu}><Text style={styles.smallLabel}>Outings</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Open setup" onPress={()=>setScreen('details')} style={styles.gameMenu}><Text style={styles.smallLabel}>☰</Text></Pressable></View></View>
+   <View style={styles.gameRow}><Text style={styles.gameTitle}>Sporeward</Text><View style={{flexDirection:'row',gap:8}}><Pressable accessibilityRole="button" accessibilityLabel="Past outings" onPress={()=>void showHistory()} style={styles.gameMenu}><Text style={styles.smallLabel}>Outings</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Open setup" onPress={()=>setScreen('details')} style={styles.gameMenu}><Text style={styles.smallLabel}>☰</Text></Pressable></View></View>
    {!encounterWorld.status.startsWith('Map updated')&&<Text style={styles.body} accessibilityLiveRegion="polite">{encounterWorld.status}</Text>}
   </View></View>
   <View style={[styles.gameBottom,!activity&&styles.idleBottom]} onLayout={event=>setHudHeight(Math.ceil(event.nativeEvent.layout.height)+24)}>{activity&&<><View style={styles.gameRow}>
@@ -165,7 +214,7 @@ function Game() {
  return <SafeAreaView style={styles.screen}><StatusBar style="light"/><ScrollView contentContainerStyle={styles.content}>
   <Pressable accessibilityRole="button" onPress={()=>void run(returnToWorld)} style={styles.secondary}><Text style={styles.secondaryText}>Back to map</Text></Pressable><Text style={styles.title}>Sporeward</Text><Text style={styles.subtitle}>Outbreak field test</Text>
   <Text style={styles.body}>Choose a detour, push back the spores, and finish your outing to confirm your score.</Text>
-  <TesterAccount disabled={!!activity} onChanged={()=>{setIdentityGeneration(n=>n+1);selectedId.current=null;setDisplayed(null);setHistory([]);setFixes([]);setSegments([]);void refresh();void encounterWorld.resetIdentity();}}/>
+  <TesterAccount disabled={!!activity} onChanged={()=>{historyGeneration.current++;setIdentityGeneration(n=>n+1);selectedId.current=null;setDisplayed(null);setHistory([]);setHistoryPreviews({});setHistoricalSnapshot(null);setFixes([]);setSegments([]);void refresh();void encounterWorld.resetIdentity();}}/>
   <ServerConnection locked={!!activity} onChanged={()=>void encounterWorld.refresh()}/>
   <View style={[styles.card,{flexDirection:'row',alignItems:'center',justifyContent:'space-between'}]}><View><Text style={styles.state}>Bright map</Text><Text style={styles.body}>Use a lighter map background</Text></View><Switch accessibilityLabel="Bright map" value={brightMap} onValueChange={setBrightMap}/></View>
   <TesterScores key={identityGeneration}/>
@@ -203,5 +252,5 @@ const styles = StyleSheet.create({
  idleBottom:{backgroundColor:'transparent',padding:0,alignItems:'center'},
  smallLabel:{color:'#eef8ef',fontSize:14,fontWeight:'600'},gameTop:{position:'absolute',top:8,left:12,right:12},gamePanel:{backgroundColor:'#10271fee',borderRadius:16,paddingHorizontal:12,paddingVertical:6,gap:4},gameRow:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',gap:12},gameTitle:{color:'#eef8ef',fontSize:21,fontWeight:'800'},gameMenu:{padding:10,backgroundColor:'#284c3a',borderRadius:12},gameBottom:{position:'absolute',bottom:12,left:12,right:12,backgroundColor:'#10271ff2',padding:16,borderRadius:20,gap:8},gameScore:{color:'#bca0ff',fontSize:28,fontWeight:'800'},
 
- screen:{flex:1,backgroundColor:'#10271f'},content:{padding:24,gap:18,width:'100%',maxWidth:700,alignSelf:'center'},title:{color:'#eef8ef',fontSize:34,fontWeight:'700'},subtitle:{color:'#b5e1c4',fontSize:20},heading:{color:'#eef8ef',fontSize:21,fontWeight:'600'},body:{color:'#a8c6b5',fontSize:15,lineHeight:22},card:{backgroundColor:'#1c3a2e',padding:20,borderRadius:18,gap:12},state:{color:'#8ce8ac',fontWeight:'700',letterSpacing:2},distance:{color:'#eef8ef',fontSize:42,fontWeight:'600'},metric:{color:'#e6f2ea',fontSize:16},actions:{flexDirection:'row',flexWrap:'wrap',gap:12},button:{backgroundColor:'#9be9b4',paddingHorizontal:22,paddingVertical:16,borderRadius:12},buttonText:{color:'#10271f',fontSize:17,fontWeight:'700'},secondary:{padding:16,borderRadius:12,backgroundColor:'#284c3a'},secondaryText:{color:'#e6f2ea',fontSize:16,fontWeight:'600'}
+ screen:{flex:1,backgroundColor:'#10271f'},content:{padding:24,gap:18,width:'100%',maxWidth:700,alignSelf:'center'},title:{color:'#eef8ef',fontSize:34,fontWeight:'700'},subtitle:{color:'#b5e1c4',fontSize:20},heading:{color:'#eef8ef',fontSize:21,fontWeight:'600'},body:{color:'#a8c6b5',fontSize:15,lineHeight:22},card:{backgroundColor:'#1c3a2e',padding:20,borderRadius:18,gap:12},historyCard:{backgroundColor:'#1c3a2e',padding:14,borderRadius:18,gap:10,borderWidth:1,borderColor:'#355943'},historyHeading:{flexDirection:'row',alignItems:'center',gap:10},historyScore:{minWidth:70,alignItems:'center',paddingHorizontal:10,paddingVertical:7,borderRadius:12,backgroundColor:'#3d285f'},historyPoints:{color:'#c8a7ff',fontSize:23,fontWeight:'800'},recapScore:{position:'absolute',top:12,right:12,minWidth:145,maxWidth:'58%',padding:12,borderRadius:15,backgroundColor:'#10271fee',gap:3},recapPoints:{color:'#c8a7ff',fontSize:27,fontWeight:'800'},pendingPoints:{color:'#f2c27c',fontSize:14,fontWeight:'700'},recapActions:{position:'absolute',bottom:12,left:12,right:12,flexDirection:'row',gap:10},recapButton:{flex:1,alignItems:'center',backgroundColor:'#9be9b4',padding:15,borderRadius:14},recapButtonSecondary:{alignItems:'center',justifyContent:'center',backgroundColor:'#10271fee',paddingHorizontal:15,borderRadius:14},state:{color:'#8ce8ac',fontWeight:'700',letterSpacing:2},distance:{color:'#eef8ef',fontSize:42,fontWeight:'600'},metric:{color:'#e6f2ea',fontSize:16},actions:{flexDirection:'row',flexWrap:'wrap',gap:12},button:{backgroundColor:'#9be9b4',paddingHorizontal:22,paddingVertical:16,borderRadius:12},buttonText:{color:'#10271f',fontSize:17,fontWeight:'700'},secondary:{padding:16,borderRadius:12,backgroundColor:'#284c3a'},secondaryText:{color:'#e6f2ea',fontSize:16,fontWeight:'600'}
 });

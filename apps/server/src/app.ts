@@ -77,6 +77,10 @@ export async function createApp(options: AppOptions = {}): Promise<FastifyInstan
    if(!/^[A-Za-z0-9-]{1,100}$/.test(req.params.id))return reply.code(400).send({error:'Invalid activity ID.'});
    const recap=await world.activity(player(req),req.params.id);return recap??reply.code(404).send({error:'Activity has not been processed.'});
   });
+  app.get<{Params:{id:string}}>('/activities/:id/footprints',async(req,reply)=>{
+   if(!/^[A-Za-z0-9-]{1,100}$/.test(req.params.id))return reply.code(400).send({error:'Invalid activity ID.'});
+   const footprints=await world.activityFootprints(player(req),req.params.id);return footprints??reply.code(404).send({error:'Activity has not been processed.'});
+  });
  }
  app.get('/health',async():Promise<HealthResponse>=>({service:'sporeward',status:'ok',accounts:!!options.accounts}));
  return app;

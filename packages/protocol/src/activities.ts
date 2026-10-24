@@ -5,6 +5,8 @@ export type RecordedFix={timestamp:number;latitude:number;longitude:number;accur
 export type RecordedSection={id:number;started:number;ended:number};
 export type ActivityChunk={activity:{id:string;started:number;ended:number;sections:RecordedSection[]};totalFixes:number;chunkCount:number;fixes:RecordedFix[]};
 export type ActivityReceipt={id:string;status:'stored';fixCount:number;distanceMetres:number;eligibleForGame:boolean;reasons:string[];receivedAt:number;encounters?:EncounterRecap};
+export type ActivityFootprint={outbreakId:string;contactAt:number;ring:[number,number][]};
+export type ActivityFootprints={activityId:string;footprints:ActivityFootprint[]};
 const record=(x:unknown):x is Record<string,unknown>=>typeof x==='object'&&x!==null&&!Array.isArray(x);
 const integer=(x:unknown):x is number=>typeof x==='number'&&Number.isSafeInteger(x)&&x>=0;
 const finite=(x:unknown):x is number=>typeof x==='number'&&Number.isFinite(x);
@@ -43,4 +45,16 @@ export function activityReceipt(activity:ActivityChunk['activity'],fixes:Recorde
  if(now-activity.ended>86400000) reasons.push('outside-upload-window');
  if(activity.ended>now+30000) reasons.push('future-activity');
  return {id:activity.id,status:'stored',fixCount:fixes.length,distanceMetres,eligibleForGame:reasons.length===0,reasons,receivedAt:now};
+}
+export function parseActivityFootprints(value:unknown,activityId:string):ActivityFootprints {
+ const fail=():never=>{throw new Error('Invalid activity footprints.');};
+ if(!/^[A-Za-z0-9-]{1,100}$/.test(activityId)||!record(value)||!keys(value,['activityId','footprints'])||value.activityId!==activityId||!Array.isArray(value.footprints)||value.footprints.length>1000)return fail();
+ let vertices=0;const footprints:ActivityFootprint[]=[];
+ for(const item of value.footprints){
+  if(!record(item)||!keys(item,['outbreakId','contactAt','ring'])||typeof item.outbreakId!=='string'||!item.outbreakId||!integer(item.contactAt)||!Array.isArray(item.ring)||item.ring.length<3||item.ring.length>1000||(vertices+=item.ring.length)>100000)return fail();
+  const ring:[number,number][]=[];
+  for(const point of item.ring){if(!Array.isArray(point)||point.length!==2||!finite(point[0])||Math.abs(point[0])>180||!finite(point[1])||Math.abs(point[1])>85)return fail();ring.push([point[0],point[1]]);}
+  footprints.push({outbreakId:item.outbreakId,contactAt:item.contactAt,ring});
+ }
+ return {activityId,footprints};
 }
