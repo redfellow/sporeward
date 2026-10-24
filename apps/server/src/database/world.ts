@@ -3,26 +3,27 @@ import {Pool,type PoolClient} from 'pg';
 import {createHash} from 'node:crypto';
 import type {Persisted} from '../world-store.ts';
 export interface WorldPersistence {transaction<T>(initial:()=>Persisted,operation:(state:Persisted)=>Promise<T>):Promise<T>;historicalFootprints?(from:number,until:number):Promise<Footprint[]>}
-const schema=`
-CREATE EXTENSION IF NOT EXISTS postgis;
-CREATE TABLE IF NOT EXISTS sw_worlds(id text PRIMARY KEY, snapshot jsonb NOT NULL, updated_at bigint NOT NULL);
-CREATE TABLE IF NOT EXISTS sw_footprints(
+const schema=[
+	'CREATE EXTENSION IF NOT EXISTS postgis',
+	'CREATE TABLE IF NOT EXISTS sw_worlds(id text PRIMARY KEY, snapshot jsonb NOT NULL, updated_at bigint NOT NULL)',
+	`CREATE TABLE IF NOT EXISTS sw_footprints(
  world_id text NOT NULL REFERENCES sw_worlds(id), outbreak_id text NOT NULL,
  valid_from bigint NOT NULL, valid_until bigint,
  shape geometry(Polygon,4326) NOT NULL, fingerprint text NOT NULL,
- PRIMARY KEY(world_id,outbreak_id,valid_from), CHECK(valid_until IS NULL OR valid_until>=valid_from));
-CREATE TABLE IF NOT EXISTS sw_world_imports(world_id text PRIMARY KEY REFERENCES sw_worlds(id),source_hash text NOT NULL,imported_at bigint NOT NULL);
-CREATE INDEX IF NOT EXISTS sw_footprints_shape ON sw_footprints USING gist(shape);
-CREATE INDEX IF NOT EXISTS sw_footprints_time ON sw_footprints(world_id,valid_from,valid_until);
-CREATE TABLE IF NOT EXISTS sw_contributions(
+ PRIMARY KEY(world_id,outbreak_id,valid_from), CHECK(valid_until IS NULL OR valid_until>=valid_from))
+`,
+	'CREATE TABLE IF NOT EXISTS sw_world_imports(world_id text PRIMARY KEY REFERENCES sw_worlds(id),source_hash text NOT NULL,imported_at bigint NOT NULL)',
+	'CREATE INDEX IF NOT EXISTS sw_footprints_shape ON sw_footprints USING gist(shape)',
+	'CREATE INDEX IF NOT EXISTS sw_footprints_time ON sw_footprints(world_id,valid_from,valid_until)',
+	`CREATE TABLE IF NOT EXISTS sw_contributions(
  world_id text NOT NULL REFERENCES sw_worlds(id), id text NOT NULL, player_id text NOT NULL,
  activity_id text NOT NULL, outbreak_id text NOT NULL, contact_at bigint NOT NULL, visit_points integer NOT NULL,
- PRIMARY KEY(world_id,id));
-CREATE INDEX IF NOT EXISTS sw_contributions_player ON sw_contributions(world_id,player_id,outbreak_id,contact_at);
-CREATE TABLE IF NOT EXISTS sw_bonus_owners(
+ PRIMARY KEY(world_id,id))`,
+	'CREATE INDEX IF NOT EXISTS sw_contributions_player ON sw_contributions(world_id,player_id,outbreak_id,contact_at)',
+	`CREATE TABLE IF NOT EXISTS sw_bonus_owners(
  world_id text NOT NULL REFERENCES sw_worlds(id), award_key text NOT NULL, contribution_id text NOT NULL,
- PRIMARY KEY(world_id,award_key), FOREIGN KEY(world_id,contribution_id) REFERENCES sw_contributions(world_id,id));
-`;
+ PRIMARY KEY(world_id,award_key), FOREIGN KEY(world_id,contribution_id) REFERENCES sw_contributions(world_id,id))`,
+];
 /** One checked-out client owns the lock, engine update, geometry and rewards. */
 export class PostgresWorldPersistence implements WorldPersistence {
  readonly pool:Pool;private ready:Promise<void>|null=null;
@@ -33,7 +34,7 @@ export class PostgresWorldPersistence implements WorldPersistence {
  private initialize(){return this.ready??=this.migrate().catch(e=>{this.ready=null;throw e;});}
  private async migrate(){
   const client=await this.pool.connect();
-  try{await client.query('BEGIN');await client.query("SELECT pg_advisory_xact_lock(hashtextextended('sporeward-schema',0))");await client.query(schema);await client.query('COMMIT');}
+  try{await client.query('BEGIN');await client.query("SELECT pg_advisory_xact_lock(hashtextextended('sporeward-schema',0))");for(const statement of schema)await client.query(statement);await client.query('COMMIT');}
   catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}
  }
  async transaction<T>(initial:()=>Persisted,operation:(state:Persisted)=>Promise<T>):Promise<T>{

@@ -23,6 +23,13 @@ describe('persisted resistance replay isolation', () => {
 		await cleanupReplayWorlds(pool, ids);
 		const deletes = query.mock.calls.filter(([sql]) => String(sql).startsWith('DELETE'));
 		expect(deletes).toHaveLength(5);
+		expect(deletes.map(([sql]) => sql)).toEqual([
+			'DELETE FROM sw_bonus_owners WHERE world_id = ANY($1::text[])',
+			'DELETE FROM sw_contributions WHERE world_id = ANY($1::text[])',
+			'DELETE FROM sw_footprints WHERE world_id = ANY($1::text[])',
+			'DELETE FROM sw_world_imports WHERE world_id = ANY($1::text[])',
+			'DELETE FROM sw_worlds WHERE id = ANY($1::text[])',
+		]);
 		for (const [, values] of deletes) expect(values).toEqual([ids]);
 		expect(query.mock.calls.at(-1)?.[0]).toBe('COMMIT');
 		expect(release).toHaveBeenCalledOnce();

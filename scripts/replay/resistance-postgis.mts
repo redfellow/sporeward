@@ -89,14 +89,24 @@ async function runArm(worldId: string, includeLab: boolean, captureBaseline: boo
 		return { world, app, persistence };
 	};
 	try {
+		console.log(`Starting ${includeLab ? 'lab' : 'control'} arm ${worldId.slice(0, 7)}.`);
 		let current = await rebuild();
 		await current.world.view('rider');
+		console.log(`Initialized world ${worldId.slice(0, 7)}.`);
 		schemaReady = true;
-		if (captureBaseline) untouchedBefore = await unrelatedCounts(allWorldIds);
+		if (captureBaseline) {
+			console.log(`Capturing unrelated-row baseline for ${worldId.slice(0, 7)}.`);
+			untouchedBefore = await unrelatedCounts(allWorldIds);
+			console.log(`Captured unrelated-row baseline for ${worldId.slice(0, 7)}.`);
+		}
+		console.log(`Setting effort for ${worldId.slice(0, 7)}.`);
 		await current.persistence.transaction(() => { throw new Error('Replay world should already be initialized.'); }, async (state: Persisted) => {
+			console.log(`Loaded ${state.engine.targets.length} targets for ${worldId.slice(0, 7)}.`);
 			for (const target of state.engine.targets) { target.strength = 100; target.unit = 20; }
 		});
+		console.log(`Set effort for ${worldId.slice(0, 7)}.`);
 		await current.world.configureResistance(true);
+		console.log(`Configured resistance for ${worldId.slice(0, 7)}.`);
 
 		const upload = async (id: string, started: number, position: { longitude: number; latitude: number }) => {
 			const payload = makeRide(id, started, position);
@@ -122,7 +132,10 @@ async function runArm(worldId: string, includeLab: boolean, captureBaseline: boo
 		};
 
 		// Four identical weekday blocks establish a measurable local resistance field.
-		for (let week = 0; week < 4; week++) await rides(`week-${week + 1}`, week * 7, week * 7 + 4);
+		for (let week = 0; week < 4; week++) {
+			await rides(`week-${week + 1}`, week * 7, week * 7 + 4);
+			console.log(`Completed weekday block ${week + 1} in ${worldId.slice(0, 7)}.`);
+		}
 
 		const weekendStarted = baseline + 26 * day + 10 * 3600000;
 		now = weekendStarted;
@@ -132,6 +145,7 @@ async function runArm(worldId: string, includeLab: boolean, captureBaseline: boo
 			offer = parseFieldLabOffer((await current.app.inject({ method: 'POST', url: '/outings/weekend-lab/lab-offer', headers, payload: {} })).json());
 		}
 		const weekend = await upload('weekend-lab', weekendStarted, point(weekendLab.position));
+		console.log(`Completed weekend outing in ${worldId.slice(0, 7)}.`);
 		const collections = weekend.recap.labCollections ?? [];
 		if (includeLab) {
 			const confirmed = collections.find(result => result.status === 'confirmed');
@@ -165,6 +179,7 @@ async function runArm(worldId: string, includeLab: boolean, captureBaseline: boo
 		}
 
 		await rides('following-week', 28, 32);
+		console.log(`Completed following weekday block in ${worldId.slice(0, 7)}.`);
 		const standings = await current.world.standings();
 		assert.equal(standings.find(entry => entry.playerId === 'rider')?.points, totals.get('rider'));
 		const final = await current.world.view('rider');

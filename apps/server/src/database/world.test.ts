@@ -19,6 +19,8 @@ it('saves history using compact PostGIS metadata without loading a second snapsh
  const store=new PostgresWorldPersistence('postgres://unused','test');
  await store.transaction(()=>state,async()=>undefined);
  const queries=db.query.mock.calls.map(([sql])=>sql as string);
+ expect(queries.filter(sql=>sql.startsWith('CREATE '))).toHaveLength(9);
+ expect(queries.every(sql=>!sql.includes(';'))).toBe(true);
  expect(queries.filter(sql=>sql.startsWith('SELECT snapshot FROM'))).toEqual(['SELECT snapshot FROM sw_worlds WHERE id=$1 FOR UPDATE']);
  expect(queries.some(sql=>sql.startsWith('INSERT INTO sw_footprints'))).toBe(false);
  db.query.mockClear();
