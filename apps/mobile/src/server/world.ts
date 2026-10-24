@@ -1,5 +1,5 @@
 import {rememberAccountMode} from './session';
-import {parseWorldView,parseEncounterRecap,parseTesterScores,parseFieldLabOffer} from '@sporeward/protocol';
+import {parseWorldView,parseEncounterRecap,parseActivityFootprints,parseTesterScores,parseFieldLabOffer} from '@sporeward/protocol';
 import {requestHeaders,ConnectionError,SERVER_URL,type Credentials,type HealthRequest} from './client';
 async function get(path:string,credentials:Credentials,request:HealthRequest) {
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
@@ -16,6 +16,7 @@ async function get(path:string,credentials:Credentials,request:HealthRequest) {
 }
 export async function fetchWorld(credentials:Credentials,request:HealthRequest=fetch) {try{return parseWorldView(await get('/world',credentials,request));}catch(e){if(e instanceof ConnectionError)throw e;throw new ConnectionError('Unexpected world response. Keeping the saved map.');}}
 export async function fetchRecap(id:string,credentials:Credentials,request:HealthRequest=fetch) {try{return parseEncounterRecap(await get(`/activities/${encodeURIComponent(id)}/encounters`,credentials,request),id);}catch(e){if(e instanceof ConnectionError)throw e;throw new ConnectionError('Unexpected recap response. Keeping the saved recap.');}}
+export async function fetchActivityFootprints(id:string,credentials:Credentials,request:HealthRequest=fetch) {try{return parseActivityFootprints(await get(`/activities/${encodeURIComponent(id)}/footprints`,credentials,request),id);}catch(e){if(e instanceof ConnectionError)throw e;throw new ConnectionError('Unexpected outing map response.');}}
 export async function fetchScores(credentials:Credentials,request:HealthRequest=fetch){
  try{return parseTesterScores(await get('/scores',credentials,request));}catch{throw new ConnectionError('Scores unavailable. Sign in and retry when connected.');}
 }

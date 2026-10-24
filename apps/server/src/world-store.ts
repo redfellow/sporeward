@@ -21,7 +21,7 @@ import {mkdir,readFile,writeFile,rename,open} from 'node:fs/promises';
 import {join} from 'node:path';
 import {randomUUID,createHash} from 'node:crypto';
 import {BALANCE,reconcileCleanupBonuses,createWorld,advanceWorld,applyVisit,matchContacts,pendingCleaning,type WorldState} from '@sporeward/game';
-import type {ActivityChunk,ActivityReceipt,EncounterRecap,EncounterResult,WorldView,FieldLabOffer,LabCollectionResult} from '@sporeward/protocol';
+import type {ActivityChunk,ActivityReceipt,ActivityFootprints,EncounterRecap,EncounterResult,WorldView,FieldLabOffer,LabCollectionResult} from '@sporeward/protocol';
 import {tampereTestOutbreaks,type TestOutbreak} from './test-outbreaks.ts';
 type Contribution={id:string;player:string;activityId:string;outbreakId:string;contactAt:number;visitPoints:number;scoringVersion?:2};
 type SavedActivity={player:string;started:number;ended:number;results:EncounterResult[];labCollections?:LabCollectionResult[]};
@@ -242,6 +242,20 @@ export class WorldStore {
  async tick(){return this.locked(async s=>({time:s.engine.time,outbreaks:s.fixtures.length}));}
  async standings(){return this.locked(async s=>Object.entries(s.engine.scores).map(([playerId,points])=>({playerId,points})).sort((a,b)=>b.points-a.points||a.playerId.localeCompare(b.playerId)).slice(0,1000));}
  async activity(player:string,id:string):Promise<EncounterRecap|null> {return this.locked(async s=>Object.hasOwn(s.activities,this.key(player,id))?this.recap(s,player,id):null);}
+ async activityFootprints(player:string,id:string):Promise<ActivityFootprints|null> {
+  return this.locked(async s=>{
+   const activity=s.activities[this.key(player,id)];if(!activity)return null;
+   const contacts=activity.results.map(({outbreakId,contactAt})=>({outbreakId,contactAt}));if(!contacts.length)return {activityId:id,footprints:[]};
+   const from=Math.min(...contacts.map(c=>c.contactAt)),until=Math.max(...contacts.map(c=>c.contactAt));
+   const archived=await this.options.persistence?.historicalFootprints?.(from,until)??[];
+   const footprints=[...(s.footprints??[]),...archived],byContact=new Map<string,Footprint>();
+   for(const contact of contacts){
+    const matching=footprints.filter(f=>f.id===contact.outbreakId&&f.validFrom<=contact.contactAt&&(f.validUntil===null||f.validUntil>contact.contactAt)).sort((a,b)=>b.validFrom-a.validFrom)[0];
+    if(matching)byContact.set(`${contact.outbreakId}:${contact.contactAt}`,matching);
+   }
+   return {activityId:id,footprints:contacts.flatMap(contact=>{const match=byContact.get(`${contact.outbreakId}:${contact.contactAt}`);return match?[{outbreakId:contact.outbreakId,contactAt:contact.contactAt,ring:match.ring.map(([x,y])=>[x,y] as [number,number])}]:[]})};
+  });
+ }
  private settleBonuses(s:Persisted) {
   for(const o of s.engine.targets)for(const player of o.awarded) {
    const key=this.key(player,o.id);if(Object.hasOwn(s.bonuses,key))continue;

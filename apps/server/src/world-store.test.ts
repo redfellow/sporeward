@@ -64,7 +64,21 @@ describe('persistent encounter pipeline',()=>{
    const result=await app.inject({method:'POST',url:'/activities/ride/complete',headers,payload:{}});expect(result.json().encounters.confirmedVisitPoints).toBe(200);
    const retry=await app.inject({method:'POST',url:'/activities/ride/complete',headers,payload:{}});expect(retry.json()).toEqual(result.json());
    expect((await app.inject({url:'/activities/ride/encounters',headers})).json().confirmedVisitPoints).toBe(200);
+  const footprints=await app.inject({url:'/activities/ride/footprints',headers});expect(footprints.statusCode).toBe(200);expect(footprints.json().activityId).toBe('ride');expect(footprints.json().footprints).toHaveLength(2);
+  expect((await app.inject({url:'/activities/other/footprints',headers})).statusCode).toBe(404);
   }finally{await app.close();}
+ });
+ it('returns only the footprint valid at an owned activity contact time',async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'sporeward-footprint-history-'));dirs.push(dir);let now=T;const clock=()=>now;
+  const oldRing=fixtures[0]!.ring,newRing=oldRing.map(([longitude,latitude])=>[longitude+.02,latitude] as [number,number]);
+  const current=fixtures.map(o=>o.id==='west'?{...o,ring:newRing}:o),world=new WorldStore(join(dir,'world'),clock,()=>current);await world.view('rider');
+  const path=join(dir,'world','world.json'),state=JSON.parse(await readFile(path,'utf8'));
+  const original=state.footprints.find((f:{id:string})=>f.id==='west');state.footprints=state.footprints.filter((f:{id:string})=>f.id!=='west');
+  state.footprints.push({...original,ring:oldRing,validFrom:T,validUntil:T+180000},{...original,ring:newRing,validFrom:T+180000,validUntil:null});await writeFile(path,JSON.stringify(state));
+  const p=payload();now=p.activity.ended;const recap=await world.process('rider',p.activity,p.fixes,activityReceipt(p.activity,p.fixes,now));
+  const west=recap.encounters.find(e=>e.outbreakId==='west')!;expect(west.contactAt).toBeLessThan(T+180000);
+  const result=await world.activityFootprints('rider','ride');expect(result?.footprints.find(f=>f.outbreakId==='west')?.ring).toEqual(oldRing);
+  expect(await world.activityFootprints('someone-else','ride')).toBeNull();
  });
 });
 it('the Tampere fixture footprints include their publicly checked access paths',()=>{
