@@ -1,6 +1,8 @@
 import * as SQLite from 'expo-sqlite';
 import { Fix, validFix } from './model';
 import { recoverySegmentEnd } from './recovery';
+import {CONTACT_FEEDBACK_SCHEMA,readFeedbackRows,saveFeedbackRows} from './feedback-storage';
+import type {ContactEntry,FeedbackScope} from './contact-feedback';
 export type Activity = { id: string; started: number; status: 'recording' | 'paused' | 'finished'; deadline: number; ended: number | null };
 const dbPromise = SQLite.openDatabaseAsync('sporeward-recorder.db').then(async db => {
  await db.execAsync(`PRAGMA busy_timeout = 5000;
@@ -17,6 +19,7 @@ const dbPromise = SQLite.openDatabaseAsync('sporeward-recorder.db').then(async d
  CREATE TABLE IF NOT EXISTS world_cache (owner TEXT PRIMARY KEY, snapshot TEXT);
  CREATE TABLE IF NOT EXISTS lab_offers (owner TEXT, activity TEXT, offer TEXT NOT NULL, PRIMARY KEY(owner,activity));
  CREATE TABLE IF NOT EXISTS recording_diagnostics (time REAL, activity TEXT, kind TEXT, data TEXT);`);
+ await db.execAsync(CONTACT_FEEDBACK_SCHEMA);
  return db;
 });
 // Exclusive transactions use another native connection. Queue all local writes so
@@ -145,3 +148,9 @@ export async function cachedLabOffer(owner:string,id:string):Promise<unknown|nul
  return row?JSON.parse(row.offer):null;
 }
 export async function cacheLabOffer(owner:string,id:string,offer:unknown){return write(async()=>{await (await dbPromise).runAsync('INSERT OR REPLACE INTO lab_offers(owner,activity,offer) VALUES(?,?,?)',owner,id,JSON.stringify(offer));});}
+
+/** Presentation metadata only. Reads/writes verify the recording owner; never uploaded. */
+export async function contactFeedback(scope:FeedbackScope){return readFeedbackRows(await dbPromise,scope);}
+export function rememberContactFeedback(scope:FeedbackScope,entries:ContactEntry[]){
+ return write(async()=>{let claimed:ContactEntry[]=[];await transaction(async tx=>{claimed=await saveFeedbackRows(tx,scope,entries);});return claimed;});
+}
