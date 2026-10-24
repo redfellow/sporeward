@@ -31,8 +31,14 @@ export async function cleanupReplayWorlds(pool: ReplayPool, worldIds: readonly s
 	const client = await pool.connect();
 	try {
 		await client.query('BEGIN');
-		for (const table of ['sw_bonus_owners', 'sw_contributions', 'sw_footprints', 'sw_world_imports', 'sw_worlds']) {
-			await client.query(`DELETE FROM ${table} WHERE world_id = ANY($1::text[])`, [worldIds]);
+		for (const [table, column] of [
+			['sw_bonus_owners', 'world_id'],
+			['sw_contributions', 'world_id'],
+			['sw_footprints', 'world_id'],
+			['sw_world_imports', 'world_id'],
+			['sw_worlds', 'id'],
+		] as const) {
+			await client.query(`DELETE FROM ${table} WHERE ${column} = ANY($1::text[])`, [worldIds]);
 		}
 		await client.query('COMMIT');
 	} catch (error) {

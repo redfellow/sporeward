@@ -108,7 +108,7 @@ npm run replay:resistance:postgis
 unset REPLAY_DATABASE_URL REPLAY_DB_PASSWORD
 ```
 
-The compose database volume persists between runs; stopping the service does not delete it. This evidence covers deterministic server and database integration only. It does not establish outdoor GPS reliability, field-server safety, gameplay balance or player acceptance. The aggregate PostGIS run is pending because Docker and `REPLAY_DATABASE_URL` were unavailable in the implementation environment; do not interpret the runner's existence as a completed database result.
+The compose database volume persists between runs; stopping the service does not delete it. A completed isolated run against `sporeward_replay` is recorded in [Field Labs integration](field-labs-integration.md#persisted-postgis-replay-evidence). This evidence covers deterministic server and database integration only. It does not establish outdoor GPS reliability, field-server safety, gameplay balance or player acceptance.
 
 To return to normal replay, stop this feature API and Metro, start `npm run replay:server` without the feature flag, and restart Metro with `EXPO_PUBLIC_TEST_SERVER_URL=http://127.0.0.1:3102`. Reverse port 3102 and reconnect the development client. Feature and normal world data remain separate; the standalone field app continues to use its fixed HTTPS server.
 
