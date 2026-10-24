@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import { Fix, validFix } from './model';
+import { recoverySegmentEnd } from './recovery';
 export type Activity = { id: string; started: number; status: 'recording' | 'paused' | 'finished'; deadline: number; ended: number | null };
 const dbPromise = SQLite.openDatabaseAsync('sporeward-recorder.db').then(async db => {
  await db.execAsync(`PRAGMA busy_timeout = 5000;
@@ -58,7 +59,13 @@ export function transition(status: 'paused' | 'finished' | 'recording', recovery
   if (!a) return;
   if (status === a.status && !recovery) return;
   // If the native service disappeared, avoid connecting the last fix to the new session.
-  if(recovery) await tx.runAsync('UPDATE segments SET ended = MAX(started,COALESCE((SELECT MAX(timestamp) FROM fixes WHERE fixes.segment=segments.id AND fixes.activity=segments.activity),started)) WHERE activity = ? AND ended IS NULL',a.id);
+  if(recovery) {
+   const open = await tx.getAllAsync<{id:number;started:number}>('SELECT id,started FROM segments WHERE activity = ? AND ended IS NULL',a.id);
+   for(const segment of open) {
+    const last = await tx.getFirstAsync<{timestamp:number|null}>('SELECT MAX(timestamp) AS timestamp FROM fixes WHERE activity = ? AND segment = ?',a.id,segment.id);
+    await tx.runAsync('UPDATE segments SET ended = ? WHERE id = ? AND activity = ? AND ended IS NULL',recoverySegmentEnd(segment.started,last?.timestamp??null),segment.id,a.id);
+   }
+  }
   else await tx.runAsync('UPDATE segments SET ended = ? WHERE activity = ? AND ended IS NULL',now,a.id);
   if (status === 'recording') await tx.runAsync('INSERT INTO segments(activity,started) VALUES (?,?)', a.id, now);
   await tx.runAsync('UPDATE activities SET status = ?, ended = ?, deadline = ? WHERE id = ?', status, status === 'finished' ? now : null, status === 'recording' && !recovery ? now+86400000 : a.deadline, a.id);
