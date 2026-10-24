@@ -6,6 +6,8 @@ Sporeward has an Android field recorder with a fullscreen game map, automatic up
 
 Active development scope, status and acceptance live in their owning `openspec/changes/<change>/` artifacts. Read the relevant change before continuing implementation and before declaring completion; preserve user edits. `docs/finished-goals.md` records completed scope and historical evidence. Do not create a duplicate project-wide task list.
 
+Use the relevant OpenSpec skills for each phase: explore and clarify, propose the repository plan, wait for plan review and acceptance before applying, then obtain independent review. Return rejected review findings to the implementer and implementation ambiguity to the explorer. Mark a change complete, sync specs, or archive only after review and required acceptance gates pass. Report OpenSpec status separately from Git checkout, branch, commit, push, and main integration. See the [OpenSpec working loop](docs/openspec-workflow.md).
+
 ## Code and checks
 
 `apps/web` uses React/Vite, `apps/mobile` uses React Native/Expo, and `apps/server` uses Fastify. `packages/game` holds pure TypeScript rules and `packages/protocol` holds shared data contracts. Keep platform-specific UI and recording separate from shared rules.
