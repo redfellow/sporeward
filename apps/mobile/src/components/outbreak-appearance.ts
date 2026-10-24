@@ -1,12 +1,12 @@
-import {guidePigment,guideState,type GuideState} from '@sporeward/rendering';
+import {guideBaseState,guidePigment,guideState,type GuideState} from '@sporeward/rendering';
 import type {WorldView} from '@sporeward/protocol';
 type Outbreak=WorldView['outbreaks'][number];
-export type OutbreakMarkerComposition={lifecycle:GuideState;palette:ReturnType<typeof guidePigment>;contacted:boolean;icon:string;contactIcon:'badge-visited'|null;summaryState:GuideState;summaryGroup:'active'|'remnants'|'clearing'|'unavailable'};
-/** Contact remains an additive signal; lifecycle drives marker identity and effort appearance. */
+export type OutbreakMarkerComposition={lifecycle:GuideState;palette:ReturnType<typeof guidePigment>;contacted:boolean;icon:string;contactIcon:string|null;summaryState:GuideState;summaryGroup:'active'|'remnants'|'clearing'|'unavailable'};
+/** Keep lifecycle identity and palette independent from the additive outing-contact ring and check. */
 export function outbreakMarkerComposition(o:Outbreak,now=Date.now(),contacted=false):OutbreakMarkerComposition{
- const lifecycle=guideState(o,now),summaryState=guideState(o,now,contacted);
+ const lifecycle=guideBaseState(o,now),summaryState=guideState(o,now,contacted);
  const summaryGroup=summaryState==='remnant'?'remnants':summaryState==='clearing'||summaryState==='stabilizing'?'clearing':summaryState==='cooldown'||summaryState==='visited'?'unavailable':'active';
- return {lifecycle,palette:guidePigment(lifecycle),contacted,icon:'badge-'+lifecycle,contactIcon:contacted?'badge-visited':null,summaryState,summaryGroup};
+ return {lifecycle,palette:guidePigment(lifecycle),contacted,icon:'badge-'+lifecycle,contactIcon:contacted?'badge-contact-'+lifecycle:null,summaryState,summaryGroup};
 }
 export function outbreakPalette(o:Outbreak,now=Date.now()){return outbreakMarkerComposition(o,now).palette;}
 export function outbreakAppearance(o:Outbreak,now=Date.now()){const p=outbreakPalette(o,now);return {bodyColor:p.body,rimColor:p.rim};}

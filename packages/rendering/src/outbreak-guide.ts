@@ -8,8 +8,7 @@ export const guideScheme={id:'ember',name:'Ember & violet',note:'Warm difficulty
  clearing:{body:'#80cdc5',deep:'#699fc4',rim:'#ccfff3',light:'#f1fff9'},signal:'#8cf0c9'};
 export type GuideState='easy'|'medium'|'hard'|'visited'|'withering'|'clearing'|'remnant'|'cooldown'|'disintegrating'|'stabilizing'|'cracking';
 type View={status:string;lifecycle?:string;crossings?:number;eligibleAt:number;visitsRemaining:number};
-export function guideState(o:View,now:number,visited=false):GuideState{
- if(visited)return 'visited';
+export function guideBaseState(o:View,now:number):GuideState{
  if(o.lifecycle==='stabilizing')return 'stabilizing';
  if(o.eligibleAt>now||o.status==='cleared')return 'cooldown';
  if(o.lifecycle==='remnant')return 'remnant';
@@ -18,6 +17,10 @@ export function guideState(o:View,now:number,visited=false):GuideState{
  if((o.crossings??0)>=3)return 'cracking';
  if(o.status==='withering')return 'withering';
  return o.visitsRemaining<=2?'easy':o.visitsRemaining<=5?'medium':'hard';
+}
+/** Contact is a personal marker layered over the outbreak's unchanged visual state. */
+export function guideState(o:View,now:number,visited=false):GuideState{
+ return visited?'visited':guideBaseState(o,now);
 }
 export function guidePigment(state:GuideState){
  if(state==='remnant')return guideScheme.remnant;
@@ -50,6 +53,17 @@ export function guideBadgeSvg(state:GuideState|'lab'|'lab-collected',bright:bool
   cooldown:'M24 18V24L29 27',visited:'M17 24L22 29L31 19'};
  const colour=state==='visited'?guideScheme.signal:state==='lab'||state==='lab-collected'?'#b9f7df':guidePigment(state).rim;
  return `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 48 48"><circle cx="24" cy="24" r="15" fill="${bright?'#163c34':'#102c29'}" stroke="${colour}" stroke-width="1.8"/><path d="${paths[state]}" fill="${state==='disintegrating'?colour:'none'}" stroke="${colour}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>${state==='lab-collected'?`<circle cx="36" cy="35" r="7" fill="#173e38" stroke="${colour}" stroke-width="1.5"/><path d="M32 35L35 38L40 32" fill="none" stroke="${colour}" stroke-width="1.8"/>`:''}${state==='cooldown'?`<circle cx="24" cy="24" r="8" fill="none" stroke="${colour}" stroke-width="1.4"/>`:''}</svg>`;
+}
+
+/** Composite contact badge keeps the lifecycle glyph above a centered check. */
+export function guideContactSvg(state:GuideState,bright:boolean){
+ const paths:Record<GuideState,string>={easy:'M24 17V31',medium:'M21 17V31M27 17V31',hard:'M18 17V31M24 17V31M30 17V31',
+  disintegrating:'M26 15L18 25H24L22 33L30 22H25Z',remnant:'M24 16L26 22L32 24L26 26L24 32L22 26L16 24L22 22Z',
+  withering:'M24 16V31M18 25L24 31L30 25',clearing:'M17 22Q20 18 24 22T31 22M17 28Q20 24 24 28T31 28',
+  cracking:'M17 17L24 24L17 31M31 17L24 24L31 31',stabilizing:'M17 24H18M23 24H25M30 24H31',cooldown:'M24 18V24L29 27',visited:'M17 24L22 29L31 19'};
+ const pigment=guidePigment(state),signal=guideScheme.signal,background=bright?'#163c34':'#102c29',fill=state==='disintegrating'?pigment.rim:'none';
+ const cooldown=state==='cooldown'?`<circle cx="24" cy="20" r="6.6" fill="none" stroke="${pigment.rim}" stroke-width="1.2"/>`:'';
+ return `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 48 48"><circle cx="24" cy="24" r="20" fill="${background}" stroke="${signal}" stroke-width="2.8"/><g transform="translate(4 -4) scale(.83)"><path d="${paths[state]}" fill="${fill}" stroke="${pigment.rim}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>${cooldown}</g><path d="M17 24L22 29L31 19" fill="none" stroke="#10271f" stroke-width="4.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 24L22 29L31 19" fill="none" stroke="${signal}" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
 
 /** Relative simplified-body diameter; heavy effort is the reference size. */

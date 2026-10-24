@@ -38,6 +38,10 @@ Cooldown SHALL use a muted appearance. Contact during the current outing SHALL a
 - **WHEN** a player crosses an outbreak during this outing while on cooldown
 - **THEN** the map records this outing's contact with a green marker without implying a new score award.
 
+#### Scenario: Contact an outbreak in another lifecycle state
+- **WHEN** a player contacts an outbreak during this outing while it is active, withering, disintegrating, clearing, splitting, or a remnant
+- **THEN** its existing effort and lifecycle appearance remains visible beneath the green contact border and centered check.
+
 ### Requirement: Stable camera alignment and bounded animation
 Android outbreak bodies, membranes, gaps and badges SHALL remain attached to the same geographic position during pan, zoom and rotation. Animation SHALL be bounded to nearby foreground content and respect reduced motion.
 

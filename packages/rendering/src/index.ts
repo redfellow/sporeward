@@ -4,5 +4,5 @@ export {richerPalettes,mapPalettes,richerMembranes,membraneMotion,membranePoints
 export {drawSurveyStation,RESISTANCE_HUE,type SurveyStationCanvas} from './survey-station';
 export {surveyStationSvg} from './station-svg';
 export {resistanceHazeStops,resistanceContour,resistanceTint,resistanceContourColour} from './resistance-artwork';
-export {guideHaloStrokes,guideOverviewScale,guideScheme,guideBadgeSvg,guideState,guidePigment,guideFractures,guideMembranePoints,guideMembraneMotion,type GuideState} from './outbreak-guide';
+export {guideHaloStrokes,guideOverviewScale,guideScheme,guideBadgeSvg,guideContactSvg,guideState,guideBaseState,guidePigment,guideFractures,guideMembranePoints,guideMembraneMotion,type GuideState} from './outbreak-guide';
 export {guideCrackedRings,clipGuideRings,guideRoundedRing,guideClearingRing,guideSplittingPaths,sampleShape,smoothShape,guideRemnantDroplets,remnantShapeRings,type ShapePoint} from './outbreak-shapes';
