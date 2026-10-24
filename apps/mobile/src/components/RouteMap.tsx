@@ -18,6 +18,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Map as NativeMap, Camera, type CameraRef, GeoJSONSource, Layer, type StyleSpecification } from '@maplibre/maplibre-react-native';
 import { type Fix, routeGeometry } from '../recording/model';
+import { overviewBounds as worldOverviewBounds } from './map-preparation';
 const OFFLINE_STYLE: StyleSpecification = {version:8,sources:{},layers:[{id:'background',type:'background',paint:{'background-color':'#152e26'}}]};
 export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes, activityId,world,visited:recordedVisited,recording,fullscreen=false,bottomInset=280,topInset=160,onRenderTestClock}:{brightMap?:boolean;labOffer?:FieldLabOffer|null;labRecap?:EncounterRecap|null;fixes:Fix[];activityId:string | null;world:WorldView|null;visited:Set<string>;recording:boolean;fullscreen?:boolean;bottomInset?:number;topInset?:number;onRenderTestClock?:(action:'pause'|'resume'|'advance'|'reset',minutes?:number)=>Promise<void>}) {
  const renderTest=typeof __DEV__!=='undefined'&&__DEV__&&SERVER_URL.startsWith('http://127.0.0.1:')?world?.renderTest:undefined;
@@ -55,16 +56,7 @@ export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes, act
  useEffect(()=>{setFollow(recording);followedActivity.current=null;},[activityId]);
  useEffect(()=>{if(ready&&!activityId&&idlePosition&&!idleCentered.current&&!panned){idleCentered.current=true;camera.current?.easeTo({center:idlePosition,zoom:14,duration:300});}},[ready,activityId,idlePosition,panned]);
  const route=useMemo(()=>routeGeometry(fixes),[fixes]);
- const overviewBounds=useMemo(()=>{
-  const points=(world?.outbreaks??[]).flatMap(outbreak=>outbreak.ring);
-  points.push(...(world?.fieldLabs??[]).map(lab=>lab.position));
-  const zone=world?.resistance;
-  if(zone?.centre&&zone.centreResistance>0){
-   const [lon,lat]=zone.centre,dy=zone.radiusMetres/111320,dx=dy/Math.cos(lat*Math.PI/180);
-   points.push([lon-dx,lat-dy],[lon+dx,lat+dy]);
-  }
-  return points.length?[Math.min(...points.map(p=>p[0])),Math.min(...points.map(p=>p[1])),Math.max(...points.map(p=>p[0])),Math.max(...points.map(p=>p[1]))] as [number,number,number,number]:route.bounds;
- },[world,route.bounds]);
+ const overviewBounds=useMemo(()=>worldOverviewBounds(world,route.bounds),[world,route.bounds]);
  const explore=()=>{setFollow(false);setPanned(true);idleCentered.current=true;};
  const controlClock=async(action:'pause'|'resume'|'advance'|'reset',minutes?:number)=>{
   if(!onRenderTestClock||clockBusy)return;setClockBusy(true);

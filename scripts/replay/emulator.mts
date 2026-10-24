@@ -21,23 +21,39 @@ if((await shell(['getprop','ro.kernel.qemu'])).trim()!=='1')throw new Error('Dev
 const session=randomBytes(16).toString('hex');let activity:string|null=null,started=false,interrupted=false,recoveryResult:{fixesBefore:number;fixesAfter:number;segments:number}|null=null;
 process.once('SIGINT',()=>{interrupted=true;});process.once('SIGTERM',()=>{interrupted=true;});
 const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
+const metroPort=Number(process.argv.find(a=>a.startsWith('--metro-port='))?.slice(13)??8081);
+if(!Number.isInteger(metroPort)||metroPort<1||metroPort>65535)throw new Error('Invalid Metro port.');
+async function launchDevClient(){await shell(['am','start','-a','android.intent.action.VIEW','-d','sporeward://expo-development-client/?url='+encodeURIComponent('http://localhost:'+metroPort),'com.sporeward.app']);}
 async function status(){const raw=await shell(['run-as','com.sporeward.app','cat','files/sporeward-replay-status.json']);const value=JSON.parse(raw);if(value.version!==1||!/^http:\/\/127\.0\.0\.1:[0-9]+$/.test(value.server))throw new Error('Emulator needs the replay-enabled development build and isolated loopback API.');return value;}
 async function command(action:string){
  const request=randomBytes(16).toString('hex'),url=new URL('sporeward://replay/'+action);url.searchParams.set('session',session);url.searchParams.set('request',request);if(activity)url.searchParams.set('activity',activity);
  const dispatch=()=>shell(['am','start','-a','android.intent.action.VIEW','-d',url.toString(),'com.sporeward.app']);
- await dispatch();let nextDispatch=Date.now()+2000;
+ await dispatch();let nextDispatch=Date.now()+10000;
  const deadline=Date.now()+60000;
- while(Date.now()<deadline){if(Date.now()>=nextDispatch){await dispatch();nextDispatch=Date.now()+2000;}try{const value=await status();if(value.control.request===request){if(value.control.error)throw new Error(value.control.error);return value;}}catch(e){if(e instanceof Error&&!(e.message.includes('ENOENT')||e.message.includes('JSON')||e.message.includes('No such file')))throw e;}await wait(150);}
+ while(Date.now()<deadline){if(Date.now()>=nextDispatch){await dispatch();nextDispatch=Date.now()+10000;}try{const value=await status();if(value.control.request===request){if(value.control.error)throw new Error(value.control.error);return value;}}catch(e){if(e instanceof Error&&!(e.message.includes('ENOENT')||e.message.includes('JSON')||e.message.includes('No such file')))throw e;}await wait(150);}
  throw new Error('Native replay command timed out: '+action);
 }
 async function fix(longitude:number,latitude:number){await adb(['emu','geo','fix',String(longitude),String(latitude)]);}
+async function waitForJavascript(){
+ const deadline=Date.now()+60000;
+ while(Date.now()<deadline){
+  const log=await adb(['logcat','-d','-t','500']);
+  if(log.includes('ReactNativeJS: Running "main"'))return;
+  if(log.includes('Unable to load script.')||log.includes('Maximum call stack size exceeded'))throw new Error('Android development client failed to reload its JavaScript bundle after force-stop.');
+  await wait(250);
+ }
+ throw new Error('Timed out waiting for the Android JavaScript bundle after force-stop.');
+}
 async function interruptAndRecover(baseline:number){
  if(interruptAfter===null||recoveryResult||!activity)return baseline;
  const before=await status();
  if(before.activity?.id!==activity||before.activity.status!=='recording'||before.fixCount<1)throw new Error('Cannot interrupt replay before at least one saved fix exists.');
  const interruptedAt=performance.now();
  await shell(['am','force-stop','com.sporeward.app']);
+ await adb(['logcat','-c']);
  await wait(1000);
+ await launchDevClient();
+ await waitForJavascript();
  const after=await command('recover');
  if(after.activity?.id!==activity||after.activity.status!=='recording'||after.segments<before.segments+1||after.fixCount<before.fixCount)throw new Error('Android recorder did not recover the same outing with saved fixes and a new route section.');
  recoveryResult={fixesBefore:before.fixCount,fixesAfter:after.fixCount,segments:after.segments};
@@ -55,9 +71,9 @@ async function waitUntil(target:number,baseline:number){
  return currentBaseline;
 }
 try{
- const metroPort=Number(process.argv.find(a=>a.startsWith('--metro-port='))?.slice(13)??8081);
- if(!Number.isInteger(metroPort)||metroPort<1||metroPort>65535)throw new Error('Invalid Metro port.');
- await shell(['am','start','-a','android.intent.action.VIEW','-d','sporeward://expo-development-client/?url='+encodeURIComponent('http://127.0.0.1:'+metroPort),'com.sporeward.app']);
+ await adb(['logcat','-c']);
+ await launchDevClient();
+ await waitForJavascript();
  await command('status');
  const initial=await status();if(initial.activity&&initial.activity.status!=='finished')throw new Error('Finish the existing emulator activity first.');
  const accountPath=process.argv.find(a=>a.startsWith('--account='))?.slice(10);

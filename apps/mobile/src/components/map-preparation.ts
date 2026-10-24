@@ -1,6 +1,18 @@
-import type {WorldView} from '@sporeward/protocol';
+import type {WorldView,Coordinate} from '@sporeward/protocol';
 import type {MapViewport} from './RicherOverlay';
 type Outbreak=WorldView['outbreaks'][number];
+export function overviewBounds(world:WorldView|null,fallback:[number,number,number,number]|null):[number,number,number,number]|null{
+ let west=Infinity,south=Infinity,east=-Infinity,north=-Infinity;
+ const include=([longitude,latitude]:Coordinate)=>{west=Math.min(west,longitude);south=Math.min(south,latitude);east=Math.max(east,longitude);north=Math.max(north,latitude);};
+ for(const outbreak of world?.outbreaks??[])for(const point of outbreak.ring)include(point);
+ for(const lab of world?.fieldLabs??[])include(lab.position);
+ const zone=world?.resistance;
+ if(zone?.centre&&zone.centreResistance>0){
+  const [longitude,latitude]=zone.centre,dy=zone.radiusMetres/111320,dx=dy/Math.cos(latitude*Math.PI/180);
+  include([longitude-dx,latitude-dy]);include([longitude+dx,latitude+dy]);
+ }
+ return Number.isFinite(west)?[west,south,east,north]:fallback;
+}
 export function outbreakPreparationIndex(outbreaks:Outbreak[]){
  return outbreaks.map(outbreak=>{
   const xs=outbreak.ring.map(p=>p[0]),ys=outbreak.ring.map(p=>p[1]);

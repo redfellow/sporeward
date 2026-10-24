@@ -12,5 +12,5 @@
 
 ## 3. Verify process interruption in isolated Android replay
 
-- [ ] 3.1 Extend or document a repeatable emulator replay procedure that records fixes, force-stops/reopens the app, and checks recovery status, persisted fixes, and separate route sections without uploading to a field service; verify it against disposable loopback replay data.
+- [x] 3.1 Extend or document a repeatable emulator replay procedure that records fixes, force-stops/reopens the app, and checks recovery status, persisted fixes, and separate route sections without uploading to a field service; verify it against disposable loopback replay data. Fold API 36 completed the check with the same outing, 7 fixes before and 15 after recovery, and two sections.
 - [x] 3.2 Document the interruption-replay command, its assertions, the failed emulator startup attempt, and the limits; verify it makes no physical-device or outdoor reliability claim.
