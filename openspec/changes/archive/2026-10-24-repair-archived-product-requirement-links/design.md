@@ -2,7 +2,7 @@
 
 ## Context
 
-See [proposal.md](proposal.md) for the finding and scope. The affected files are the archived [design](../archive/2026-10-23-consolidate-sporeward-product-requirements/design.md) and [traceability ledger](../archive/2026-10-23-consolidate-sporeward-product-requirements/traceability.md). Their relative targets were authored from the active change directory, then became one level too shallow when the directory moved under `archive/`.
+See [proposal.md](proposal.md) for the finding and scope. The affected files are the archived [design](../../archive/2026-10-23-consolidate-sporeward-product-requirements/design.md) and [traceability ledger](../../archive/2026-10-23-consolidate-sporeward-product-requirements/traceability.md). Their relative targets were authored from the active change directory, then became one level too shallow when the directory moved under `archive/`.
 
 ## Goals / Non-Goals
 
