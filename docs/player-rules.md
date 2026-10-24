@@ -4,6 +4,8 @@ Sporeward makes an outdoor walk, run or ride a chance to help clean a shared out
 
 In the Android app, tap **?** on the map to open the offline **Field guide**: a short introduction, illustrated outbreak states, and Field Lab/Resistance explanations. The guide can be read during an outing without pausing the recorder; **Back to map** or Android back closes it. Phone visual acceptance is tracked separately in the [native guide change](../openspec/changes/add-native-field-guide/tasks.md).
 
+Tap an outbreak or Field Lab and choose **Pin destination** to keep one target in view while you explore the live map. The compact card shows its current eligibility, reward context and **straight-line distance to its contact area**; this is not a road-route distance or an arrival estimate. **Show target** frames its area, **Details** expands the information, and **Clear** removes the pin. The pin survives a visit to help or outing history in the same app session, and resets when you change account or test world. If location is missing or over two minutes old, distance is unavailable. Being inside the area is proximity only: recording and server validation still determine visits and rewards. Phone presentation acceptance is tracked in the [destination focus change](../openspec/changes/add-map-destination-focus/tasks.md).
+
 ## Take part
 
 1. Open the Android app and inspect nearby outbreaks and any available Field Labs.
