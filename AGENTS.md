@@ -29,6 +29,27 @@ Keep changes focused on the requested scope. Review staged, unstaged, and untrac
 
 For documentation changes, check consistency and links. Once implementation exists, use checks appropriate to the changed behaviour and document how to run them. Do not assume a framework, branching strategy, or release process before one is chosen.
 
+## Session and worktree lifecycle
+
+- Before spawning or starting parallel work, inspect the available project sessions, owners, branches, and worktrees for an active owner already covering the same change. Continue or coordinate with that owner instead of creating duplicate active ownership; record the owner and work boundary for any new session.
+- During work, keep the responsible owner, scope, current status, branch/worktree, and next action clear in the owning change or session handoff. Update status when the scope or blocker changes.
+- Make closeout part of completion. Inventory changed paths and their staged, unstaged, and untracked state; commits ahead of and behind the intended base/upstream; PR and review status; and the worktree/branch. Classify each item as keep, publish, or discard and report the decision.
+- Preserve dirty work and unpushed commits until their owner explicitly resolves them. Publish only when authorized by the user or configured project workflow. Discard only with explicit resolution from the responsible owner.
+- Remove a worker's workspace or branch only after its work is preserved, landed, or explicitly discarded. Limit cleanup to that worker's resources; do not run project-wide cleanup that can affect unrelated sessions or worktrees.
+- Report any work left parked with its owner, current state, and next action. A session is not fully closed out while its remaining work has no clear owner and handoff.
+
+## CRITICAL GIT WORKFLOW RULES
+
+### Workers operating in isolated worktrees
+
+- Before declaring finished, creating a PR, or exiting, explicitly stage the task files and create a valid local commit containing them.
+- Never hand off with uncommitted or untracked task files. Do not use `git stash`.
+- Stage only task-owned paths or hunks. Inspect `git diff --cached` and `git status` before committing; leave unrelated user changes out of the commit and intact. If task and unrelated edits share a file, stage only the task's hunks.
+
+### Main orchestrator
+
+These worker commit, clean-handoff, and no-stash requirements are scoped to workers operating in isolated worktrees and do not apply to the main orchestrator in the same way. Before deciding whether worker work is current, redundant, or safe to clean up, the orchestrator must fetch `origin main` and compare the worker work against that fresh main tree, which contains merged worker PRs. The orchestrator must not infer main state from a stale worker checkout. Keep cleanup scoped to resolved work and the resources owned by that worker.
+
 ## Version control Guidelines
 
 - Commits: Use ´[$TERM] ´ prefix for commits. For the $TERM, use "Conventional Commits" specification, in uppercase.
