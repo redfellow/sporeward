@@ -48,6 +48,8 @@ function Game() {
  const [details,setDetails]=useState(false);
  const [guideOpen,setGuideOpen]=useState(false);
  const [destination,setDestination]=useState<DestinationFocus|null>(null);
+ const [destinationResetKey,setDestinationResetKey]=useState(0);
+ function resetDestination(){setDestination(null);setDestinationResetKey(value=>value+1);}
  const destinationWorld=useRef<number|null>(null);
  useEffect(()=>{if(screen!=='map')setGuideOpen(false);},[screen]);
  const recordingActive=useRef(false);
@@ -60,7 +62,7 @@ function Game() {
  const encounterWorld=useWorld(displayed?.id??null);
  useEffect(()=>{
   const started=encounterWorld.world?.worldStartedAt;if(started===undefined)return;
-  if(destinationWorld.current!==null&&destinationWorld.current!==started)setDestination(null);
+  if(destinationWorld.current!==null&&destinationWorld.current!==started)resetDestination();
   destinationWorld.current=started;
  },[encounterWorld.world?.worldStartedAt]);
  const encounterPreview=useEncounters(displayed?.id??null,fixes,encounterWorld.world,encounterWorld.recap);
@@ -91,7 +93,7 @@ function Game() {
   try { await action(); await refresh(); return true; } catch(e) { setMessage(String(e)); Alert.alert('Recorder',String(e)); return false; } finally { operation.current = false; setBusy(false); }
  }
  async function applyReplayWithDestinationReset(command:NonNullable<ReturnType<typeof replayCommand>>){
-  if(command.action==='reset-world'||command.action==='sign-in')setDestination(null);
+  if(command.action==='reset-world'||command.action==='sign-in')resetDestination();
   await applyReplayCommand(command);
  }
  async function finishOuting() {
@@ -211,7 +213,7 @@ function Game() {
   </View><MapAttribution/></SafeAreaView>;
  if(screen==='recap-details'&&displayed?.status==='finished')return <SafeAreaView style={styles.screen}><StatusBar style="light"/><OutingRecap activity={displayed} distance={stats.meters} elapsed={duration(recordingDuration(segments,displayed.ended??Date.now()))} recap={shownRecap} provisional={recapOrigin.current==='outings'?historyPreviews[displayed.id]?.provisionalPoints??0:encounterPreview.provisionalPoints} touched={shownRecap?.encounters.filter(e=>e.accepted).length??(historicalFootprints.length||historyPreviews[displayed.id]?.contacts||encounterPreview.visited.size)} coverage={encounterPreview.distanceMetres} onMap={()=>setScreen('recap')} onRoute={()=>setScreen('review')} onUploaded={receipt=>{if(receipt.encounters)encounterWorld.acceptRecap(receipt.encounters);void encounterWorld.refresh();}}/></SafeAreaView>;
  if(screen==='map')return <SafeAreaView style={styles.screen}><StatusBar style="light"/><View style={{flex:1}}>
-  <RouteMap brightMap={brightMap} fixes={fixes} activityId={displayed?.id??null} world={encounterWorld.world} labOffer={encounterWorld.labOffer} labRecap={encounterWorld.recap} visited={encounterPreview.visited} recording={activity?.status==='recording'} fullscreen bottomInset={hudHeight} topInset={topHudHeight} destination={destination} onDestinationChange={setDestination} destinationActivityId={activity?.id??null} onRenderTestClock={encounterWorld.controlRenderTestClock}/>
+  <RouteMap brightMap={brightMap} fixes={fixes} activityId={displayed?.id??null} world={encounterWorld.world} labOffer={encounterWorld.labOffer} labRecap={encounterWorld.recap} visited={encounterPreview.visited} recording={activity?.status==='recording'} fullscreen bottomInset={hudHeight} topInset={topHudHeight} destination={destination} onDestinationChange={setDestination} destinationActivityId={activity?.id??null} destinationResetKey={destinationResetKey} worldStatus={encounterWorld.status} onRenderTestClock={encounterWorld.controlRenderTestClock}/>
   <Pressable accessibilityRole="button" accessibilityLabel="Open field guide" onPress={()=>setGuideOpen(true)} style={[styles.gameMenu,{position:'absolute',top:topHudHeight+12,right:16,minWidth:44,minHeight:44,borderRadius:22,alignItems:'center',justifyContent:'center'}]}><Text style={styles.smallLabel}>?</Text></Pressable>
   <View style={styles.gameTop} pointerEvents="box-none" onLayout={event=>setTopHudHeight(Math.ceil(event.nativeEvent.layout.height)+24)}><View style={styles.gamePanel}>
    <View style={styles.gameRow}><Text style={styles.gameTitle}>Sporeward</Text><View style={{flexDirection:'row',gap:8}}><Pressable accessibilityRole="button" accessibilityLabel="Past outings" onPress={()=>void showHistory()} style={styles.gameMenu}><Text style={styles.smallLabel}>Outings</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Open setup" onPress={()=>setScreen('details')} style={styles.gameMenu}><Text style={styles.smallLabel}>☰</Text></Pressable></View></View>
@@ -231,8 +233,8 @@ function Game() {
  return <SafeAreaView style={styles.screen}><StatusBar style="light"/><ScrollView contentContainerStyle={styles.content}>
   <Pressable accessibilityRole="button" onPress={()=>void run(returnToWorld)} style={styles.secondary}><Text style={styles.secondaryText}>Back to map</Text></Pressable><Text style={styles.title}>Sporeward</Text><Text style={styles.subtitle}>Outbreak field test</Text>
   <Text style={styles.body}>Choose a detour, push back the spores, and finish your outing to confirm your score.</Text>
-  <TesterAccount disabled={!!activity} onChanged={()=>{setDestination(null);historyGeneration.current++;setIdentityGeneration(n=>n+1);selectedId.current=null;setDisplayed(null);setHistory([]);setHistoryPreviews({});setHistoricalSnapshot(null);setFixes([]);setSegments([]);void refresh();void encounterWorld.resetIdentity();}}/>
-  <ServerConnection locked={!!activity} onChanged={()=>{setDestination(null);void encounterWorld.refresh();}}/>
+  <TesterAccount disabled={!!activity} onChanged={()=>{resetDestination();historyGeneration.current++;setIdentityGeneration(n=>n+1);selectedId.current=null;setDisplayed(null);setHistory([]);setHistoryPreviews({});setHistoricalSnapshot(null);setFixes([]);setSegments([]);void refresh();void encounterWorld.resetIdentity();}}/>
+  <ServerConnection locked={!!activity} onChanged={()=>{resetDestination();void encounterWorld.refresh();}}/>
   <View style={[styles.card,{flexDirection:'row',alignItems:'center',justifyContent:'space-between'}]}><View><Text style={styles.state}>Bright map</Text><Text style={styles.body}>Use a lighter map background</Text></View><Switch accessibilityLabel="Bright map" value={brightMap} onValueChange={setBrightMap}/></View>
   <TesterScores key={identityGeneration}/>
 
