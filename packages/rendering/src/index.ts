@@ -1,5 +1,7 @@
 export {materialPixels,type Palette,type PixelSource,type MaterialSources} from './material';
 export {growthField} from './growth-field';
+export {growthContours} from './growth-contours';
+export {guideSpecimenSvg} from './guide-specimen';
 export {richerPalettes,mapPalettes,richerMembranes,membraneMotion,membranePoints,identitySeed,type Membrane} from './richer';
 export {drawSurveyStation,RESISTANCE_HUE,type SurveyStationCanvas} from './survey-station';
 export {surveyStationSvg} from './station-svg';
