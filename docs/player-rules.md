@@ -2,6 +2,8 @@
 
 Sporeward makes an outdoor walk, run or ride a chance to help clean a shared outbreak world. This guide describes the implemented native-recording MVP slice. Some mechanics, including Field Labs and Outbreak Resistance, are opt-in in the test world; the [roadmap](development-roadmap.md) tracks device, field and production acceptance separately.
 
+In the Android app, tap **?** on the map to open the offline **Field guide**: a short introduction, illustrated outbreak states, and Field Lab/Resistance explanations. The guide can be read during an outing without pausing the recorder; **Back to map** or Android back closes it. Phone visual acceptance is tracked separately in the [native guide change](../openspec/changes/add-native-field-guide/tasks.md).
+
 ## Take part
 
 1. Open the Android app and inspect nearby outbreaks and any available Field Labs.

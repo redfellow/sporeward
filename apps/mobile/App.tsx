@@ -1,3 +1,4 @@
+import {FieldGuide} from './src/components/FieldGuide';
 import {MapAttribution} from './src/components/MapAttribution';
 import {syncPendingActivities} from './src/server/sync';
 import {TesterScores} from './src/components/TesterScores';
@@ -39,6 +40,8 @@ function Game() {
  const [message,setMessage] = useState('Ready for a recording test.');
  const [busy,setBusy] = useState(false);
  const [details,setDetails]=useState(false);
+ const [guideOpen,setGuideOpen]=useState(false);
+ useEffect(()=>{if(screen!=='map')setGuideOpen(false);},[screen]);
  const recordingActive=useRef(false);
  const operation = useRef(false), selectedId=useRef<string|null>(null);
  const handledNotificationActions=useRef(new Set<string>());
@@ -136,6 +139,7 @@ function Game() {
  async function returnToWorld() {
   selectedId.current=null;setDisplayed(null);setFixes([]);setSegments([]);setScreen('map');await refresh();
  }
+ if(guideOpen&&screen==='map')return <SafeAreaView style={styles.screen}><StatusBar style="light"/><FieldGuide brightMap={brightMap} onClose={()=>setGuideOpen(false)}/></SafeAreaView>;
  if(screen==='outings')return <SafeAreaView style={styles.screen}><StatusBar style="light"/><ScrollView contentContainerStyle={styles.content}>
   <Pressable accessibilityRole="button" style={styles.secondary} onPress={()=>void run(returnToWorld)}><Text style={styles.secondaryText}>Back to the world</Text></Pressable>
   <Text style={styles.title}>Past outings</Text>
@@ -147,6 +151,7 @@ function Game() {
  if(screen==='recap'&&displayed?.status==='finished')return <SafeAreaView style={styles.screen}><StatusBar style="light"/><OutingRecap activity={displayed} distance={stats.meters} elapsed={duration(recordingDuration(segments,Date.now()))} recap={encounterWorld.recap} provisional={encounterPreview.provisionalPoints} touched={encounterPreview.visited.size} coverage={encounterPreview.distanceMetres} onMap={()=>void run(returnToWorld)} onRoute={()=>setScreen('review')} onUploaded={receipt=>{if(receipt.encounters)encounterWorld.acceptRecap(receipt.encounters);void encounterWorld.refresh();}}/></SafeAreaView>;
  if(screen==='map')return <SafeAreaView style={styles.screen}><StatusBar style="light"/><View style={{flex:1}}>
   <RouteMap brightMap={brightMap} fixes={fixes} activityId={displayed?.id??null} world={encounterWorld.world} labOffer={encounterWorld.labOffer} labRecap={encounterWorld.recap} visited={encounterPreview.visited} recording={activity?.status==='recording'} fullscreen bottomInset={hudHeight} topInset={topHudHeight} onRenderTestClock={encounterWorld.controlRenderTestClock}/>
+  <Pressable accessibilityRole="button" accessibilityLabel="Open field guide" onPress={()=>setGuideOpen(true)} style={[styles.gameMenu,{position:'absolute',top:topHudHeight+12,right:16,minWidth:44,minHeight:44,borderRadius:22,alignItems:'center',justifyContent:'center'}]}><Text style={styles.smallLabel}>?</Text></Pressable>
   <View style={styles.gameTop} pointerEvents="box-none" onLayout={event=>setTopHudHeight(Math.ceil(event.nativeEvent.layout.height)+24)}><View style={styles.gamePanel}>
    <View style={styles.gameRow}><Text style={styles.gameTitle}>Sporeward</Text><View style={{flexDirection:'row',gap:8}}><Pressable accessibilityRole="button" accessibilityLabel="Past outings" onPress={()=>setScreen('outings')} style={styles.gameMenu}><Text style={styles.smallLabel}>Outings</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Open setup" onPress={()=>setScreen('details')} style={styles.gameMenu}><Text style={styles.smallLabel}>☰</Text></Pressable></View></View>
    {!encounterWorld.status.startsWith('Map updated')&&<Text style={styles.body} accessibilityLiveRegion="polite">{encounterWorld.status}</Text>}
