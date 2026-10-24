@@ -13,26 +13,42 @@ import {MapControlIcon} from './MapControlIcon';
 import {CleanupFeedback} from './CleanupFeedback';
 import {MapAttribution} from './MapAttribution';
 import {DestinationCard} from './DestinationCard';
+import {NearbyDestinationsSheet} from './NearbyDestinationsSheet';
+import {nearbyTargetExists} from './nearby-destinations';
 import {destinationSummary,type DestinationFocus,type DestinationLocation} from './destination-focus';
 import {travelHeading} from '../recording/heading';
 import type {ActivityFootprint,WorldView,FieldLabOffer,EncounterRecap} from '@sporeward/protocol';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, AppState, BackHandler, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { Map as NativeMap, Camera, type CameraRef, GeoJSONSource, Layer, type StyleSpecification } from '@maplibre/maplibre-react-native';
 import { type Fix, routeGeometry } from '../recording/model';
 import { overviewBounds as worldOverviewBounds } from './map-preparation';
 const OFFLINE_STYLE: StyleSpecification = {version:8,sources:{},layers:[{id:'background',type:'background',paint:{'background-color':'#152e26'}}]};
-type RouteMapProps={brightMap?:boolean;labOffer?:FieldLabOffer|null;labRecap?:EncounterRecap|null;fixes:Fix[];activityId:string|null;world:WorldView|null;visited:Set<string>;recording:boolean;fullscreen?:boolean;historicalOnly?:boolean;historicalFootprints?:ActivityFootprint[];bottomInset?:number;topInset?:number;destination?:DestinationFocus|null;destinationActivityId?:string|null;onDestinationChange?:(focus:DestinationFocus|null)=>void;onRenderTestClock?:(action:'pause'|'resume'|'advance'|'reset',minutes?:number)=>Promise<void>};
-export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes,activityId,world,visited:recordedVisited,recording,fullscreen=false,historicalOnly=false,historicalFootprints=[],bottomInset=280,topInset=160,destination=null,destinationActivityId=null,onDestinationChange,onRenderTestClock}:RouteMapProps) {
+type RouteMapProps={brightMap?:boolean;labOffer?:FieldLabOffer|null;labRecap?:EncounterRecap|null;fixes:Fix[];activityId:string|null;world:WorldView|null;visited:Set<string>;recording:boolean;fullscreen?:boolean;historicalOnly?:boolean;historicalFootprints?:ActivityFootprint[];bottomInset?:number;topInset?:number;destination?:DestinationFocus|null;destinationActivityId?:string|null;destinationResetKey?:number;worldStatus?:string;onDestinationChange?:(focus:DestinationFocus|null)=>void;onRenderTestClock?:(action:'pause'|'resume'|'advance'|'reset',minutes?:number)=>Promise<void>};
+export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes,activityId,world,visited:recordedVisited,recording,fullscreen=false,historicalOnly=false,historicalFootprints=[],bottomInset=280,topInset=160,destination=null,destinationActivityId=null,destinationResetKey=0,worldStatus='',onDestinationChange,onRenderTestClock}:RouteMapProps) {
  const destinationMode=!!onDestinationChange&&!historicalOnly;
  const window=useWindowDimensions();
  const [mapHeight,setMapHeight]=useState(window.height),[targetCardHeight,setTargetCardHeight]=useState(200),[detailsHeight,setDetailsHeight]=useState(240);
- const [,setDistanceClock]=useState(0);
+ const [nearbyOpen,setNearbyOpen]=useState(false);
+ const [distanceClock,setDistanceClock]=useState(Date.now);
+ const closeNearby=useCallback(()=>setNearbyOpen(false),[]);
+ useEffect(()=>{setNearbyOpen(false);setSelected(null);setSelectedLabId(null);},[destinationResetKey]);
+ const nearbyWorld=useRef<number|undefined>(world?.worldStartedAt);
  useEffect(()=>{
-  if(!destinationMode||!destination)return;
-  const timer=setInterval(()=>{if(AppState.currentState==='active')setDistanceClock(value=>value+1);},10000);
-  return()=>clearInterval(timer);
- },[destinationMode,destination?.id,destination?.kind]);
+  if(nearbyWorld.current!==undefined&&world?.worldStartedAt!==nearbyWorld.current)setNearbyOpen(false);
+  nearbyWorld.current=world?.worldStartedAt;
+ },[world?.worldStartedAt]);
+ useEffect(()=>{
+  if(!nearbyOpen)return;
+  const sub=BackHandler.addEventListener('hardwareBackPress',()=>{setNearbyOpen(false);return true;});
+  return()=>sub.remove();
+ },[nearbyOpen]);
+ useEffect(()=>{
+  if(!destinationMode||(!destination&&!nearbyOpen))return;
+  const tick=()=>{if(AppState.currentState==='active')setDistanceClock(Date.now());};
+  tick();const timer=setInterval(tick,10000),sub=AppState.addEventListener('change',tick);
+  return()=>{clearInterval(timer);sub.remove();};
+ },[destinationMode,destination?.id,destination?.kind,nearbyOpen]);
  const renderTest=typeof __DEV__!=='undefined'&&__DEV__&&SERVER_URL.startsWith('http://127.0.0.1:')?world?.renderTest:undefined;
  const visited=useMemo(()=>new Set([...recordedVisited,...(renderTest?.examples.filter(e=>e.visited).flatMap(e=>e.ids)??[])]),[recordedVisited,renderTest]);
  const [exampleIndex,setExampleIndex]=useState(0);
@@ -61,9 +77,17 @@ export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes,acti
  const cameraZoom=useRef(12);
  const heading=useRef(0),viewCenter=useRef<[number,number]>([23.761,61.498]);
  const followedActivity=useRef<string|null>(null),latest=fixes.at(-1);
- const location:DestinationLocation|null=latest&&latest.timestamp>=(idleLocation?.timestamp??0)?{coordinate:[latest.longitude,latest.latitude],timestamp:latest.timestamp}:idleLocation;
+ const location=useMemo<DestinationLocation|null>(()=>latest&&latest.timestamp>=(idleLocation?.timestamp??0)?{coordinate:[latest.longitude,latest.latitude],timestamp:latest.timestamp}:idleLocation,[latest,idleLocation]);
  const currentOuting=destinationActivityId===activityId?destinationActivityId:null;
- const context={world,location,now:Date.now(),outingId:currentOuting,visited:currentOuting?recordedVisited:undefined,provisionalLabs:currentOuting?provisionalLabs:undefined,offer:labOffer,recap:labRecap};
+ const context=useMemo(()=>({world,location,now:Date.now(),outingId:currentOuting,visited:currentOuting?recordedVisited:undefined,provisionalLabs:currentOuting?provisionalLabs:undefined,offer:labOffer,recap:labRecap}),[world,location,currentOuting,recordedVisited,provisionalLabs,labOffer,labRecap,distanceClock]);
+ const openNearby=()=>{setSelected(null);setSelectedLabId(null);setDistanceClock(Date.now());setNearbyOpen(true);};
+ const selectOutbreak=useCallback((id:string)=>{setNearbyOpen(false);setSelected(id);setSelectedLabId(null);},[]);
+ const selectLab=useCallback((id:string)=>{setNearbyOpen(false);setSelectedLabId(id);setSelected(null);},[]);
+ const openNearbyDetails=useCallback((focus:DestinationFocus)=>{
+  setNearbyOpen(false);
+  if(!nearbyTargetExists(focus,world)){Alert.alert('Destination unavailable','This destination is no longer available in the received world. Your pinned destination is unchanged.');return;}
+  if(focus.kind==='lab')selectLab(focus.id);else selectOutbreak(focus.id);
+ },[world,selectLab,selectOutbreak]);
  const targetSummary=destinationMode?destinationSummary({...context,focus:destination}):null;
  const selectedSummary=destinationMode?destinationSummary({...context,focus:selectedLab?{kind:'lab',id:selectedLab.id}:selectedOutbreak?{kind:'outbreak',id:selectedOutbreak.id}:null}):null;
  const cardTop=topInset+(destinationMode?64:8),cardMaxHeight=Math.max(96,mapHeight-bottomInset-controlsHeight-cardTop-32);
@@ -131,7 +155,7 @@ export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes,acti
     <Layer id="historical-rim" type="line" paint={{'line-color':'#ffd18a','line-opacity':.9,'line-width':2.5}}/>
     <Layer id="historical-contact" type="line" paint={{'line-color':'#42e0bd','line-opacity':1,'line-width':4,'line-dasharray':[4,1.5]}}/>
    </GeoJSONSource>}
-   <GeoJSONSource key="outbreaks" id="outbreaks" data={outbreaks} onPress={event=>{const id=event.nativeEvent.features[0]?.properties?.id;if(typeof id==='string'){setSelected(id);setSelectedLabId(null);}event.stopPropagation();}}>
+   <GeoJSONSource key="outbreaks" id="outbreaks" data={outbreaks} onPress={event=>{const id=event.nativeEvent.features[0]?.properties?.id;if(typeof id==='string')selectOutbreak(id);event.stopPropagation();}}>
     <Layer key="outbreak-fill" id="outbreak-fill" minzoom={12} type="fill" paint={{'fill-color':['get','bodyColor'],'fill-opacity':['get','intensity']}}/>
     {<Layer key="native-richer-rim" id="native-richer-rim" minzoom={12} type="line" paint={{'line-color':['get','rimColor'],'line-opacity':.8,'line-width':['interpolate',['exponential',2],['zoom'],10,['*',.05,['get','strokeScale']],14,['*',.8,['get','strokeScale']],18,['*',12.8,['get','strokeScale']]]}}/>}
     {<Layer key="native-richer-withering" id="native-richer-withering" minzoom={12} type="line" filter={['==',['get','withering'],true]} paint={{'line-color':'#8cf0c9','line-opacity':.8,'line-dasharray':[.5,8],'line-width':['interpolate',['exponential',2],['zoom'],10,['*',.08,['get','strokeScale']],14,['*',1.3,['get','strokeScale']],18,['*',20.8,['get','strokeScale']]]}}/>}
@@ -142,7 +166,7 @@ export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes,acti
     <Layer key="outbreak-label" id="outbreak-label" type="symbol" minzoom={renderTest?14:17} layout={{'text-field':['get','label'],'text-font':['Noto Sans Regular'],'text-size':11}} paint={{'text-color':'#231333','text-halo-color':'#ffffff','text-halo-width':1}}/>
    </GeoJSONSource>
    {!historicalOnly&&<AreaSummaryLayer world={world} bright={brightMap} visited={visited} overviewZoom={overviewZoom} onExpand={(center,zoom)=>{explore();camera.current?.easeTo({center,zoom,bearing:0,duration:350});}}/>}
-   {!historicalOnly&&<FieldLabLayers world={world} viewport={viewport} bright={brightMap} provisional={provisionalLabs} visited={visited} onOutbreakSelect={id=>{setSelected(id);setSelectedLabId(null);}} onSelect={id=>{setSelectedLabId(id);setSelected(null);}}/>}
+   {!historicalOnly&&<FieldLabLayers world={world} viewport={viewport} bright={brightMap} provisional={provisionalLabs} visited={visited} onOutbreakSelect={selectOutbreak} onSelect={selectLab}/>}
    {destinationMode&&<GeoJSONSource id="pinned-destination" data={focusGeometry}>
     <Layer id="pinned-destination-halo" type="line" paint={{'line-color':brightMap?'#574b28':'#ffe8a3','line-width':9,'line-opacity':.25,'line-blur':3}} layout={{'line-join':'round'}}/>
     <Layer id="pinned-destination-outline" type="line" paint={{'line-color':brightMap?'#796433':'#ffe8a3','line-width':2.5,'line-opacity':.95,'line-dasharray':[3,2]}} layout={{'line-join':'round'}}/>
@@ -156,9 +180,11 @@ export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes,acti
     <Layer key="route-points" id="route-points" type="circle" paint={{'circle-radius':6,'circle-color':['match',['get','role'],'start','#ffffff','#e42fa5'],'circle-stroke-color':'#10271f','circle-stroke-width':2}}/>
    </GeoJSONSource>
   </NativeMap></View>
-  {fullscreen&&!historicalOnly&&<CleanupFeedback world={world} top={topInset+8} hidden={!!selectedOutbreak||!!selectedLab||!!targetSummary}/>}
-  {targetSummary&&!selectedLab&&!selectedOutbreak&&<View style={detailPlacement}><DestinationCard summary={targetSummary} maxHeight={cardMaxHeight} onHeight={setTargetCardHeight} onClear={()=>onDestinationChange?.(null)} onDetails={()=>{if(targetSummary.focus.kind==='lab'){setSelectedLabId(targetSummary.focus.id);setSelected(null);}else{setSelected(targetSummary.focus.id);setSelectedLabId(null);}}} onShow={()=>{if(targetSummary.ring)showDestination(targetSummary.ring,targetCardHeight);}}/></View>}
-  {selectedLab&&<ScrollView style={[styles.detail,{padding:0,height:Math.min(cardMaxHeight,380)},detailPlacement]} contentContainerStyle={{padding:14,gap:8}} onLayout={event=>setDetailsHeight(Math.ceil(event.nativeEvent.layout.height))} bounces={false}>
+  {destinationMode&&!nearbyOpen&&<Pressable accessibilityRole="button" accessibilityLabel="Open nearby destinations" onPress={openNearby} style={[styles.button,{position:'absolute',top:topInset+12,left:12,minHeight:44,justifyContent:'center'}]}><Text style={styles.label}>Nearby</Text></Pressable>}
+  {destinationMode&&nearbyOpen&&<View style={fullscreen?{position:'absolute',top:cardTop,left:12,right:12}:undefined}><NearbyDestinationsSheet context={context} status={worldStatus} height={Math.max(0,mapHeight-bottomInset-cardTop-16)} onClose={closeNearby} onSelect={openNearbyDetails}/></View>}
+  {fullscreen&&!historicalOnly&&<CleanupFeedback world={world} top={topInset+8} hidden={nearbyOpen||!!selectedOutbreak||!!selectedLab||!!targetSummary}/>}
+  {!nearbyOpen&&targetSummary&&!selectedLab&&!selectedOutbreak&&<View style={detailPlacement}><DestinationCard summary={targetSummary} maxHeight={cardMaxHeight} onHeight={setTargetCardHeight} onClear={()=>onDestinationChange?.(null)} onDetails={()=>{if(targetSummary.focus.kind==='lab'){setSelectedLabId(targetSummary.focus.id);setSelected(null);}else{setSelected(targetSummary.focus.id);setSelectedLabId(null);}}} onShow={()=>{if(targetSummary.ring)showDestination(targetSummary.ring,targetCardHeight);}}/></View>}
+  {!nearbyOpen&&selectedLab&&<ScrollView style={[styles.detail,{padding:0,height:Math.min(cardMaxHeight,380)},detailPlacement]} contentContainerStyle={{padding:14,gap:8}} onLayout={event=>setDetailsHeight(Math.ceil(event.nativeEvent.layout.height))} bounces={false}>
    <View style={{flexDirection:'row',justifyContent:'space-between'}}><Text style={styles.detailTitle}>Field Lab</Text><Pressable accessibilityRole="button" accessibilityLabel="Close Field Lab details" onPress={()=>setSelectedLabId(null)} style={styles.button}><Text style={styles.label}>Close</Text></Pressable></View>
    <Text style={styles.label}>{selectedSummary?selectedSummary.status:selectedLab.collected?'✓ Collected by you':provisionalLabs.has(selectedLab.id)?'Contact recorded · collection provisional':'Available to you'}</Text>
    {selectedSummary?.contact&&<Text style={styles.legend}>{selectedSummary.contact}</Text>}
@@ -169,7 +195,7 @@ export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes,acti
    <Pressable accessibilityRole="button" accessibilityLabel="Show Field Lab collection area" style={styles.button} onPress={()=>showDestination(selectedLab.ring,detailsHeight)}><Text style={styles.label}>Show collection area</Text></Pressable>
    <Text style={styles.legend}>Ride through the outlined area while recording to collect. Restoration confirms on upload. Other players collect independently.</Text>
   </ScrollView>}
-  {selectedOutbreak && <ScrollView style={[styles.detail,{padding:0,height:Math.min(cardMaxHeight,380)},detailPlacement]} contentContainerStyle={{padding:14,gap:8}} onLayout={event=>setDetailsHeight(Math.ceil(event.nativeEvent.layout.height))} bounces={false}>
+  {!nearbyOpen&&selectedOutbreak && <ScrollView style={[styles.detail,{padding:0,height:Math.min(cardMaxHeight,380)},detailPlacement]} contentContainerStyle={{padding:14,gap:8}} onLayout={event=>setDetailsHeight(Math.ceil(event.nativeEvent.layout.height))} bounces={false}>
    <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}><Text style={styles.detailTitle}>{selectedOutbreak.name}</Text><Pressable accessibilityRole="button" accessibilityLabel="Close outbreak details" onPress={()=>setSelected(null)} style={styles.button}><Text style={styles.label}>Close</Text></Pressable></View>
    <Text style={styles.label}>{selectedSummary?selectedSummary.status:visited.has(selectedOutbreak.id)?'Visited during this outing':selectedOutbreak.eligibleAt>Date.now()?'Revisit available '+new Date(selectedOutbreak.eligibleAt).toLocaleTimeString():selectedOutbreak.status==='cleared'?'Cleared':'Available'} · {selectedOutbreak.status}</Text>
    {selectedSummary?.availableAt&&<Text style={styles.legend}>Revisit after {new Date(selectedSummary.availableAt).toLocaleTimeString()}</Text>}
@@ -186,7 +212,7 @@ export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes,acti
   {offline && <Text style={styles.legend}>Route-only view. Basemap unavailable; recording still works.</Text>}
   {!fixes.length && <Text style={styles.legend}>Tampere shown until your first GPS fix arrives.</Text>}
   </>}
-  {renderTest&&!selectedLab&&!selectedOutbreak&&!targetSummary&&<View style={[styles.detail,fullscreen&&{position:'absolute',left:12,top:topInset+8}, {maxWidth:250}]}>
+  {renderTest&&!nearbyOpen&&!selectedLab&&!selectedOutbreak&&!targetSummary&&<View style={[styles.detail,fullscreen&&{position:'absolute',left:12,top:topInset+8}, {maxWidth:250}]}>
    <Text style={styles.label}>Render test · lifecycle {renderTest.clock?.paused===false?'running':'paused'}</Text>
    <Text style={styles.legend}>{exampleIndex+1}/{renderTest.examples.length} · {renderTest.examples[exampleIndex]?.name}</Text>
    {renderTest.clock&&onRenderTestClock&&<>
@@ -203,7 +229,7 @@ export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes,acti
     if(points.length)camera.current?.fitBounds([Math.min(...points.map(p=>p[0])),Math.min(...points.map(p=>p[1])),Math.max(...points.map(p=>p[0])),Math.max(...points.map(p=>p[1]))],{padding:{top:topInset+145,right:75,bottom:bottomInset+controlsHeight+40,left:75},bearing:0,duration:300});
    }}><Text style={styles.label}>{step===1?'Next →':'← Previous'}</Text></Pressable>)}</View>
   </View>}
-  <View onLayout={event=>setControlsHeight(Math.ceil(event.nativeEvent.layout.height))} style={[styles.controlGroup,fullscreen&&{position:'absolute',bottom:bottomInset+18,right:16}]}>
+  {!nearbyOpen&&<View onLayout={event=>setControlsHeight(Math.ceil(event.nativeEvent.layout.height))} style={[styles.controlGroup,fullscreen&&{position:'absolute',bottom:bottomInset+18,right:16}]}>
    <View style={styles.actions}>
     <Pressable accessibilityRole="button" accessibilityLabel="Zoom in" onPress={()=>changeZoom(.25)} style={styles.mapControl}><MapControlIcon kind="zoom-in"/></Pressable>
     <Pressable accessibilityRole="button" accessibilityLabel="Zoom out" onPress={()=>changeZoom(-.25)} style={styles.mapControl}><MapControlIcon kind="zoom-out"/></Pressable>
@@ -213,7 +239,7 @@ export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes,acti
    <Pressable accessibilityRole="button" accessibilityLabel={orientation==='north'?'North up. Switch to track up':'Track up. Switch to north up'} onPress={()=>{const next=orientation==='north'?'travel':'north';setOrientation(next);camera.current?.easeTo({center:viewCenter.current,bearing:next==='north'?0:heading.current,duration:250});}} style={styles.mapControl}><MapControlIcon kind={orientation}/>{orientation==='north'&&<Text style={styles.north}>N</Text>}</Pressable>
    {panned&&<Pressable accessibilityRole="button" accessibilityLabel="Center map on your position" onPress={()=>{setPanned(false);setFollow(true);followedActivity.current=null;camera.current?.easeTo({center:latest?[latest.longitude,latest.latitude]:idlePosition??viewCenter.current,bearing:orientation==='north'?0:heading.current,duration:300});}} style={styles.mapControl}><MapControlIcon kind="center"/><Text style={styles.centerLabel}>CENTER</Text></Pressable>}
    </View>
-  </View>
+  </View>}
   {!fullscreen&&<MapAttribution/>}
  </View>;
 }
