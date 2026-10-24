@@ -13,6 +13,21 @@ OpenSpec is initialized at the Sporeward monorepo root for Codex. CLI version at
 
 In Codex desktop, select the corresponding skill from Skills in the sidebar. Restart/reopen the Codex session if the newly generated skills do not appear. Codex uses skills, so initialization correctly generated no command files.
 
+## Agreed working loop
+
+1. **Explore and clarify.** Use `$openspec-explore` to inspect the surrounding documentation and code and resolve material product or implementation questions. When the scope is clear, use `$openspec-propose` to capture the proposal, applicable behavior specs, design and tasks in this repository. For a documentation or tooling change with no behavior contract, set `skip_specs: true`; do not invent a product capability to satisfy the schema.
+2. **Review the plan before applying it.** Wait for the owner to review and accept the proposal and specs. Then use `$openspec-apply-change` for the accepted change, keeping work within this repository and its approved files and requirements. If accepted scope needs revision, use `$openspec-update-change`, return the revised plan for review, and do not apply unreviewed scope.
+3. **Review implementation independently.** Have a reviewer in a separate worker thread inspect the completed slice against its accepted change. If review rejects it, route the findings back to the implementer for fixes, then return it to the independent reviewer. If implementation reveals ambiguity, pause the implementer and hand the question back to the explorer to inspect adjacent docs/code or ask the user; update the change artifacts when the answer alters the plan, then resume.
+4. **Complete only after acceptance.** Use `$openspec-apply-change` to mark each implementation task checkbox complete as that task is implemented; task checkboxes record task progress, not acceptance of the overall change. Do not mark the overall change complete, sync its behavior specs, or archive it until independent review is accepted and any owner acceptance gate in the change is satisfied. Use `$openspec-sync-specs` for accepted capability deltas. The `$openspec-archive-change` workflow may sync outstanding capability deltas before moving the change folder into the archive. Neither syncing specs nor archiving integrates the change into Git main, creates a commit, or pushes it. A docs-only change with `skip_specs: true` has no delta spec to sync.
+
+### Worker-thread handoffs
+
+When work moves between explorers, implementers or reviewers, hand off the repository checkout and branch, change name and artifact paths, accepted scope, decisions, inspected evidence, unresolved questions, completed and remaining tasks, review findings/outcome, applicable owner acceptance gates, and the next action. Keep the OpenSpec artifacts as the durable decision and progress record; do not rely on chat context alone.
+
+### Report OpenSpec and Git status separately
+
+Report the OpenSpec change state (active, task progress, validation, synced, or archived) separately from Git integration. For Git, state the checkout path, branch, commit/hash state, push state, and whether Git main contains the change.
+
 For example: `$openspec-propose Add a tester leaderboard` or ask to apply `implement-outbreak-resistance-and-field-labs` with `$openspec-apply-change`.
 
 ```sh
