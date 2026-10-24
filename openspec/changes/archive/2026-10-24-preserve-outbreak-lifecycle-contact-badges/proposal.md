@@ -2,7 +2,7 @@
 
 ## Why
 
-When an outbreak is contacted during the current outing, the mobile map can replace its lifecycle badge with the generic `visited` badge. This hides whether the target is clearing, withering, a remnant, or in another lifecycle state, contrary to the accepted [outbreak visual contract](../../specs/outbreak-visuals/spec.md).
+When an outbreak is contacted during the current outing, the mobile map can replace its lifecycle badge with the generic `visited` badge. This hides whether the target is clearing, withering, a remnant, or in another lifecycle state, contrary to the accepted [outbreak visual contract](../../../specs/outbreak-visuals/spec.md).
 
 ## What Changes
 
