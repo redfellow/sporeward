@@ -26,6 +26,7 @@
 		"dev:mobile:local": "npm run start:local --workspace @sporeward/mobile",
 		"replay": "node --import tsx scripts/replay/run.mts",
 		"replay:emulator": "node --import tsx scripts/replay/emulator.mts",
+		"replay:resistance:postgis": "node --import tsx scripts/replay/resistance-postgis.mts",
 		"replay:server": "node --import tsx apps/server/src/replay/bench.ts",
 		"world:access": "node --import tsx scripts/world/fetch-access.mts",
 		"check:database": "node --import tsx scripts/world/check-database.mts",

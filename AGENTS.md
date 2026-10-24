@@ -54,6 +54,9 @@ These worker commit, clean-handoff, and no-stash requirements are scoped to work
 
 ## Version control Guidelines
 
+- For changes intended to integrate, use a feature branch and open a pull request targeting `main`; do not push work directly to `main`.
+- Push and open the pull request when the user asks. Keep it unmerged until the user or repository review process accepts it.
+- Describe the resulting behavior, validation performed, and any remaining OpenSpec tasks or environment blockers in the pull request.
 - Commits: Use ´[$TERM] ´ prefix for commits. For the $TERM, use "Conventional Commits" specification, in uppercase.
 - Commit messages: Be concise.
 - No co-author attribution

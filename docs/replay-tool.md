@@ -92,6 +92,24 @@ node --import tsx scripts/world/check-resistance-migration.mts
 
 The integration runner uses a private normalized recording, unchanged apart from timestamp rebasing, across four commuting weeks and two players. It selects a reproducible accessible lab seed intersecting that recording and uses high-effort persistent targets to isolate scoring from geographic replacement. All uploads use normal authenticated chunk/completion/recap endpoints in a temporary file-backed world. Its output contains aggregate results rather than GPS coordinates; it verifies personal collection, frozen offers, retries, score/recap agreement and restart, then deletes only its temporary data. This is not a PostGIS, outdoor GPS-reliability or field-deployment test. The local walk fixture's nearby lab has a small benefit; the distant weekend reference belongs to the separate calibration runner.
 
+### Persisted PostGIS resistance comparison
+
+This focused integration replay checks that the same four weeks of weekday visits, a weekend route and the following weekday block behave consistently in two isolated worlds: a matched control with no lab collection and a treatment that collects the weekend Field Lab. It uses the real activity upload, completion, recap and lab-offer endpoints, deterministic synthetic Tampere routes, and the production `PostgresWorldPersistence` adapter. It reconstructs the world and activity stores after collection, retries the completed activity and offer, then runs both arms a second time to compare aggregate results.
+
+Use only the dedicated local database from [`ops/replay/compose.yaml`](../ops/replay/compose.yaml). Its database is named `sporeward_replay`, listens on loopback port 55432 and has a separate Docker volume. The runner requires `REPLAY_DATABASE_URL`, checks the connected database name before writing, and never reads `DATABASE_URL` or a native replay world ID. It gives every comparison run new world IDs, checks unrelated persisted row counts before and after, and removes only its generated worlds and associated records. It reports the database name, fixture seed, visit/point totals, offered and actual restoration, PostGIS contact/history counts, retry results and cleanup status. It prints no GPS coordinates or credentials.
+
+With Docker available, start the isolated database and set a private password in the shell (the password is not saved in the repository):
+
+```sh
+export REPLAY_DB_PASSWORD="$(openssl rand -hex 24)"
+docker compose -f ops/replay/compose.yaml up -d --wait
+export REPLAY_DATABASE_URL="postgresql://sporeward_replay:${REPLAY_DB_PASSWORD}@127.0.0.1:55432/sporeward_replay"
+npm run replay:resistance:postgis
+unset REPLAY_DATABASE_URL REPLAY_DB_PASSWORD
+```
+
+The compose database volume persists between runs; stopping the service does not delete it. This evidence covers deterministic server and database integration only. It does not establish outdoor GPS reliability, field-server safety, gameplay balance or player acceptance. The aggregate PostGIS run is pending because Docker and `REPLAY_DATABASE_URL` were unavailable in the implementation environment; do not interpret the runner's existence as a completed database result.
+
 To return to normal replay, stop this feature API and Metro, start `npm run replay:server` without the feature flag, and restart Metro with `EXPO_PUBLIC_TEST_SERVER_URL=http://127.0.0.1:3102`. Reverse port 3102 and reconnect the development client. Feature and normal world data remain separate; the standalone field app continues to use its fixed HTTPS server.
 
 ### Standard replay
