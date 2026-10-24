@@ -14,6 +14,7 @@ import {CleanupFeedback} from './CleanupFeedback';
 import {MapAttribution} from './MapAttribution';
 import {DestinationCard} from './DestinationCard';
 import {NearbyDestinationsSheet} from './NearbyDestinationsSheet';
+import {ContactNotice,RecentContactsSheet,type ContactFeedbackView} from './ContactFeedback';
 import {nearbyTargetExists} from './nearby-destinations';
 import {destinationSummary,type DestinationFocus,type DestinationLocation} from './destination-focus';
 import {travelHeading} from '../recording/heading';
@@ -24,25 +25,25 @@ import { Map as NativeMap, Camera, type CameraRef, GeoJSONSource, Layer, type St
 import { type Fix, routeGeometry } from '../recording/model';
 import { overviewBounds as worldOverviewBounds } from './map-preparation';
 const OFFLINE_STYLE: StyleSpecification = {version:8,sources:{},layers:[{id:'background',type:'background',paint:{'background-color':'#152e26'}}]};
-type RouteMapProps={brightMap?:boolean;labOffer?:FieldLabOffer|null;labRecap?:EncounterRecap|null;fixes:Fix[];activityId:string|null;world:WorldView|null;visited:Set<string>;recording:boolean;fullscreen?:boolean;historicalOnly?:boolean;historicalFootprints?:ActivityFootprint[];bottomInset?:number;topInset?:number;destination?:DestinationFocus|null;destinationActivityId?:string|null;destinationResetKey?:number;worldStatus?:string;onDestinationChange?:(focus:DestinationFocus|null)=>void;onRenderTestClock?:(action:'pause'|'resume'|'advance'|'reset',minutes?:number)=>Promise<void>};
-export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes,activityId,world,visited:recordedVisited,recording,fullscreen=false,historicalOnly=false,historicalFootprints=[],bottomInset=280,topInset=160,destination=null,destinationActivityId=null,destinationResetKey=0,worldStatus='',onDestinationChange,onRenderTestClock}:RouteMapProps) {
+type RouteMapProps={brightMap?:boolean;labOffer?:FieldLabOffer|null;labRecap?:EncounterRecap|null;fixes:Fix[];activityId:string|null;world:WorldView|null;visited:Set<string>;recording:boolean;fullscreen?:boolean;historicalOnly?:boolean;historicalFootprints?:ActivityFootprint[];bottomInset?:number;topInset?:number;destination?:DestinationFocus|null;destinationActivityId?:string|null;destinationResetKey?:number;worldStatus?:string;contactFeedback?:ContactFeedbackView;onFeedbackBlockedChange?:(blocked:boolean)=>void;onDestinationChange?:(focus:DestinationFocus|null)=>void;onRenderTestClock?:(action:'pause'|'resume'|'advance'|'reset',minutes?:number)=>Promise<void>};
+export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes,activityId,world,visited:recordedVisited,recording,fullscreen=false,historicalOnly=false,historicalFootprints=[],bottomInset=280,topInset=160,destination=null,destinationActivityId=null,destinationResetKey=0,worldStatus='',contactFeedback,onFeedbackBlockedChange,onDestinationChange,onRenderTestClock}:RouteMapProps) {
  const destinationMode=!!onDestinationChange&&!historicalOnly;
  const window=useWindowDimensions();
  const [mapHeight,setMapHeight]=useState(window.height),[targetCardHeight,setTargetCardHeight]=useState(200),[detailsHeight,setDetailsHeight]=useState(240);
- const [nearbyOpen,setNearbyOpen]=useState(false);
+ const [nearbyOpen,setNearbyOpen]=useState(false),[contactsOpen,setContactsOpen]=useState(false),[cleanupActive,setCleanupActive]=useState(false);
  const [distanceClock,setDistanceClock]=useState(Date.now);
  const closeNearby=useCallback(()=>setNearbyOpen(false),[]);
- useEffect(()=>{setNearbyOpen(false);setSelected(null);setSelectedLabId(null);},[destinationResetKey]);
+ useEffect(()=>{setNearbyOpen(false);setContactsOpen(false);setSelected(null);setSelectedLabId(null);},[destinationResetKey]);
  const nearbyWorld=useRef<number|undefined>(world?.worldStartedAt);
  useEffect(()=>{
-  if(nearbyWorld.current!==undefined&&world?.worldStartedAt!==nearbyWorld.current)setNearbyOpen(false);
+  if(nearbyWorld.current!==undefined&&world?.worldStartedAt!==nearbyWorld.current){setNearbyOpen(false);setContactsOpen(false);}
   nearbyWorld.current=world?.worldStartedAt;
  },[world?.worldStartedAt]);
  useEffect(()=>{
-  if(!nearbyOpen)return;
-  const sub=BackHandler.addEventListener('hardwareBackPress',()=>{setNearbyOpen(false);return true;});
+  if(!nearbyOpen&&!contactsOpen)return;
+  const sub=BackHandler.addEventListener('hardwareBackPress',()=>{setNearbyOpen(false);setContactsOpen(false);return true;});
   return()=>sub.remove();
- },[nearbyOpen]);
+ },[nearbyOpen,contactsOpen]);
  useEffect(()=>{
   if(!destinationMode||(!destination&&!nearbyOpen))return;
   const tick=()=>{if(AppState.currentState==='active')setDistanceClock(Date.now());};
@@ -80,15 +81,18 @@ export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes,acti
  const location=useMemo<DestinationLocation|null>(()=>latest&&latest.timestamp>=(idleLocation?.timestamp??0)?{coordinate:[latest.longitude,latest.latitude],timestamp:latest.timestamp}:idleLocation,[latest,idleLocation]);
  const currentOuting=destinationActivityId===activityId?destinationActivityId:null;
  const context=useMemo(()=>({world,location,now:Date.now(),outingId:currentOuting,visited:currentOuting?recordedVisited:undefined,provisionalLabs:currentOuting?provisionalLabs:undefined,offer:labOffer,recap:labRecap}),[world,location,currentOuting,recordedVisited,provisionalLabs,labOffer,labRecap,distanceClock]);
- const openNearby=()=>{setSelected(null);setSelectedLabId(null);setDistanceClock(Date.now());setNearbyOpen(true);};
- const selectOutbreak=useCallback((id:string)=>{setNearbyOpen(false);setSelected(id);setSelectedLabId(null);},[]);
- const selectLab=useCallback((id:string)=>{setNearbyOpen(false);setSelectedLabId(id);setSelected(null);},[]);
+ const openNearby=()=>{setContactsOpen(false);setSelected(null);setSelectedLabId(null);setDistanceClock(Date.now());setNearbyOpen(true);};
+ const selectOutbreak=useCallback((id:string)=>{setContactsOpen(false);setNearbyOpen(false);setSelected(id);setSelectedLabId(null);},[]);
+ const selectLab=useCallback((id:string)=>{setContactsOpen(false);setNearbyOpen(false);setSelectedLabId(id);setSelected(null);},[]);
  const openNearbyDetails=useCallback((focus:DestinationFocus)=>{
   setNearbyOpen(false);
   if(!nearbyTargetExists(focus,world)){Alert.alert('Destination unavailable','This destination is no longer available in the received world. Your pinned destination is unchanged.');return;}
   if(focus.kind==='lab')selectLab(focus.id);else selectOutbreak(focus.id);
  },[world,selectLab,selectOutbreak]);
  const targetSummary=destinationMode?destinationSummary({...context,focus:destination}):null;
+ const openContacts=()=>{setNearbyOpen(false);setSelected(null);setSelectedLabId(null);setContactsOpen(true);};
+ const feedbackSurfaceBlocked=nearbyOpen||contactsOpen||!!selectedOutbreak||!!selectedLab||!!targetSummary;
+ useEffect(()=>{onFeedbackBlockedChange?.(feedbackSurfaceBlocked||cleanupActive);return()=>onFeedbackBlockedChange?.(false);},[feedbackSurfaceBlocked,cleanupActive,onFeedbackBlockedChange]);
  const selectedSummary=destinationMode?destinationSummary({...context,focus:selectedLab?{kind:'lab',id:selectedLab.id}:selectedOutbreak?{kind:'outbreak',id:selectedOutbreak.id}:null}):null;
  const cardTop=topInset+(destinationMode?64:8),cardMaxHeight=Math.max(96,mapHeight-bottomInset-controlsHeight-cardTop-32);
  const detailPlacement=fullscreen?{position:'absolute' as const,top:cardTop,left:12,right:12,maxHeight:cardMaxHeight}:undefined;
@@ -180,11 +184,13 @@ export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes,acti
     <Layer key="route-points" id="route-points" type="circle" paint={{'circle-radius':6,'circle-color':['match',['get','role'],'start','#ffffff','#e42fa5'],'circle-stroke-color':'#10271f','circle-stroke-width':2}}/>
    </GeoJSONSource>
   </NativeMap></View>
-  {destinationMode&&!nearbyOpen&&<Pressable accessibilityRole="button" accessibilityLabel="Open nearby destinations" onPress={openNearby} style={[styles.button,{position:'absolute',top:topInset+12,left:12,minHeight:44,justifyContent:'center'}]}><Text style={styles.label}>Nearby</Text></Pressable>}
+  {destinationMode&&!nearbyOpen&&!contactsOpen&&<Pressable accessibilityRole="button" accessibilityLabel="Open nearby destinations" onPress={openNearby} style={[styles.button,{position:'absolute',top:topInset+12,left:12,minHeight:44,justifyContent:'center'}]}><Text style={styles.label}>Nearby</Text></Pressable>}
+  {destinationMode&&contactFeedback&&!nearbyOpen&&!contactsOpen&&<Pressable accessibilityRole="button" accessibilityLabel="Open recent contacts" onPress={openContacts} style={[styles.button,{position:'absolute',top:topInset+12,left:94,minHeight:44,justifyContent:'center'}]}><Text style={styles.label}>Contacts · {contactFeedback.rows.length}</Text></Pressable>}
+  {destinationMode&&contactsOpen&&contactFeedback&&<View style={fullscreen?{position:'absolute',top:cardTop,left:12,right:12}:undefined}><RecentContactsSheet feedback={contactFeedback} height={Math.max(0,mapHeight-bottomInset-cardTop-16)} onClose={()=>setContactsOpen(false)}/></View>}
   {destinationMode&&nearbyOpen&&<View style={fullscreen?{position:'absolute',top:cardTop,left:12,right:12}:undefined}><NearbyDestinationsSheet context={context} status={worldStatus} height={Math.max(0,mapHeight-bottomInset-cardTop-16)} onClose={closeNearby} onSelect={openNearbyDetails}/></View>}
-  {fullscreen&&!historicalOnly&&<CleanupFeedback world={world} top={topInset+8} hidden={nearbyOpen||!!selectedOutbreak||!!selectedLab||!!targetSummary}/>}
-  {!nearbyOpen&&targetSummary&&!selectedLab&&!selectedOutbreak&&<View style={detailPlacement}><DestinationCard summary={targetSummary} maxHeight={cardMaxHeight} onHeight={setTargetCardHeight} onClear={()=>onDestinationChange?.(null)} onDetails={()=>{if(targetSummary.focus.kind==='lab'){setSelectedLabId(targetSummary.focus.id);setSelected(null);}else{setSelected(targetSummary.focus.id);setSelectedLabId(null);}}} onShow={()=>{if(targetSummary.ring)showDestination(targetSummary.ring,targetCardHeight);}}/></View>}
-  {!nearbyOpen&&selectedLab&&<ScrollView style={[styles.detail,{padding:0,height:Math.min(cardMaxHeight,380)},detailPlacement]} contentContainerStyle={{padding:14,gap:8}} onLayout={event=>setDetailsHeight(Math.ceil(event.nativeEvent.layout.height))} bounces={false}>
+  {fullscreen&&!historicalOnly&&<CleanupFeedback world={world} top={cardTop} hidden={feedbackSurfaceBlocked} onActiveChange={setCleanupActive} fallback={contactFeedback?<ContactNotice notice={contactFeedback.notice} qualified={contactFeedback.qualified} top={cardTop}/>:undefined}/>}
+  {!nearbyOpen&&!contactsOpen&&targetSummary&&!selectedLab&&!selectedOutbreak&&<View style={detailPlacement}><DestinationCard summary={targetSummary} maxHeight={cardMaxHeight} onHeight={setTargetCardHeight} onClear={()=>onDestinationChange?.(null)} onDetails={()=>{if(targetSummary.focus.kind==='lab'){setSelectedLabId(targetSummary.focus.id);setSelected(null);}else{setSelected(targetSummary.focus.id);setSelectedLabId(null);}}} onShow={()=>{if(targetSummary.ring)showDestination(targetSummary.ring,targetCardHeight);}}/></View>}
+  {!nearbyOpen&&!contactsOpen&&selectedLab&&<ScrollView style={[styles.detail,{padding:0,height:Math.min(cardMaxHeight,380)},detailPlacement]} contentContainerStyle={{padding:14,gap:8}} onLayout={event=>setDetailsHeight(Math.ceil(event.nativeEvent.layout.height))} bounces={false}>
    <View style={{flexDirection:'row',justifyContent:'space-between'}}><Text style={styles.detailTitle}>Field Lab</Text><Pressable accessibilityRole="button" accessibilityLabel="Close Field Lab details" onPress={()=>setSelectedLabId(null)} style={styles.button}><Text style={styles.label}>Close</Text></Pressable></View>
    <Text style={styles.label}>{selectedSummary?selectedSummary.status:selectedLab.collected?'✓ Collected by you':provisionalLabs.has(selectedLab.id)?'Contact recorded · collection provisional':'Available to you'}</Text>
    {selectedSummary?.contact&&<Text style={styles.legend}>{selectedSummary.contact}</Text>}
@@ -195,7 +201,7 @@ export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes,acti
    <Pressable accessibilityRole="button" accessibilityLabel="Show Field Lab collection area" style={styles.button} onPress={()=>showDestination(selectedLab.ring,detailsHeight)}><Text style={styles.label}>Show collection area</Text></Pressable>
    <Text style={styles.legend}>Ride through the outlined area while recording to collect. Restoration confirms on upload. Other players collect independently.</Text>
   </ScrollView>}
-  {!nearbyOpen&&selectedOutbreak && <ScrollView style={[styles.detail,{padding:0,height:Math.min(cardMaxHeight,380)},detailPlacement]} contentContainerStyle={{padding:14,gap:8}} onLayout={event=>setDetailsHeight(Math.ceil(event.nativeEvent.layout.height))} bounces={false}>
+  {!nearbyOpen&&!contactsOpen&&selectedOutbreak && <ScrollView style={[styles.detail,{padding:0,height:Math.min(cardMaxHeight,380)},detailPlacement]} contentContainerStyle={{padding:14,gap:8}} onLayout={event=>setDetailsHeight(Math.ceil(event.nativeEvent.layout.height))} bounces={false}>
    <View style={{flexDirection:'row',justifyContent:'space-between',alignItems:'center'}}><Text style={styles.detailTitle}>{selectedOutbreak.name}</Text><Pressable accessibilityRole="button" accessibilityLabel="Close outbreak details" onPress={()=>setSelected(null)} style={styles.button}><Text style={styles.label}>Close</Text></Pressable></View>
    <Text style={styles.label}>{selectedSummary?selectedSummary.status:visited.has(selectedOutbreak.id)?'Visited during this outing':selectedOutbreak.eligibleAt>Date.now()?'Revisit available '+new Date(selectedOutbreak.eligibleAt).toLocaleTimeString():selectedOutbreak.status==='cleared'?'Cleared':'Available'} · {selectedOutbreak.status}</Text>
    {selectedSummary?.availableAt&&<Text style={styles.legend}>Revisit after {new Date(selectedSummary.availableAt).toLocaleTimeString()}</Text>}
@@ -212,7 +218,7 @@ export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes,acti
   {offline && <Text style={styles.legend}>Route-only view. Basemap unavailable; recording still works.</Text>}
   {!fixes.length && <Text style={styles.legend}>Tampere shown until your first GPS fix arrives.</Text>}
   </>}
-  {renderTest&&!nearbyOpen&&!selectedLab&&!selectedOutbreak&&!targetSummary&&<View style={[styles.detail,fullscreen&&{position:'absolute',left:12,top:topInset+8}, {maxWidth:250}]}>
+  {renderTest&&!nearbyOpen&&!contactsOpen&&!selectedLab&&!selectedOutbreak&&!targetSummary&&<View style={[styles.detail,fullscreen&&{position:'absolute',left:12,top:topInset+8}, {maxWidth:250}]}>
    <Text style={styles.label}>Render test · lifecycle {renderTest.clock?.paused===false?'running':'paused'}</Text>
    <Text style={styles.legend}>{exampleIndex+1}/{renderTest.examples.length} · {renderTest.examples[exampleIndex]?.name}</Text>
    {renderTest.clock&&onRenderTestClock&&<>
@@ -229,7 +235,7 @@ export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes,acti
     if(points.length)camera.current?.fitBounds([Math.min(...points.map(p=>p[0])),Math.min(...points.map(p=>p[1])),Math.max(...points.map(p=>p[0])),Math.max(...points.map(p=>p[1]))],{padding:{top:topInset+145,right:75,bottom:bottomInset+controlsHeight+40,left:75},bearing:0,duration:300});
    }}><Text style={styles.label}>{step===1?'Next →':'← Previous'}</Text></Pressable>)}</View>
   </View>}
-  {!nearbyOpen&&<View onLayout={event=>setControlsHeight(Math.ceil(event.nativeEvent.layout.height))} style={[styles.controlGroup,fullscreen&&{position:'absolute',bottom:bottomInset+18,right:16}]}>
+  {!nearbyOpen&&!contactsOpen&&<View onLayout={event=>setControlsHeight(Math.ceil(event.nativeEvent.layout.height))} style={[styles.controlGroup,fullscreen&&{position:'absolute',bottom:bottomInset+18,right:16}]}>
    <View style={styles.actions}>
     <Pressable accessibilityRole="button" accessibilityLabel="Zoom in" onPress={()=>changeZoom(.25)} style={styles.mapControl}><MapControlIcon kind="zoom-in"/></Pressable>
     <Pressable accessibilityRole="button" accessibilityLabel="Zoom out" onPress={()=>changeZoom(-.25)} style={styles.mapControl}><MapControlIcon kind="zoom-out"/></Pressable>

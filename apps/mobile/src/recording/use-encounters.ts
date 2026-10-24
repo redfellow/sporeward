@@ -18,5 +18,5 @@ export function useEncounters(id:string|null,fixes:Fix[],world:WorldView|null,re
    return {id,contacts:[...merged.values()].sort((a,b)=>a.timestamp-b.timestamp||a.outbreakId.localeCompare(b.outbreakId))};
   });}).catch(()=>{});
  },[id,saved,preview]);
- return preview;
+ return {...preview,observationsReady:saved.id===id};
 }

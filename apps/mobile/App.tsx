@@ -8,6 +8,8 @@ import {OutingRecap} from './src/components/OutingRecap';
 import {replayCommand,applyReplayCommand,publishReplayStatus,restoreReplayControl} from './src/replay/bridge';
 import {useWorld} from './src/server/use-world';
 import {useEncounters} from './src/recording/use-encounters';
+import {useContactFeedback} from './src/recording/use-contact-feedback';
+import {SERVER_URL} from './src/server/client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, BackHandler, Linking, Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaProvider, SafeAreaView, initialWindowMetrics } from 'react-native-safe-area-context';
@@ -39,6 +41,9 @@ function Game() {
  const [fixes,setFixes] = useState<Fix[]>([]);
  const [segments,setSegments] = useState<Segment[]>([]);
  const [identityGeneration,setIdentityGeneration]=useState(0);
+ const [feedbackOwner,setFeedbackOwner]=useState<string|null>(null);
+ const feedbackGeneration=useRef(0);
+ const [feedbackBlocked,setFeedbackBlocked]=useState(false);
  const [hudHeight,setHudHeight]=useState(260);
  const [topHudHeight,setTopHudHeight]=useState(76);
  const compact=useWindowDimensions().width<380;
@@ -49,7 +54,11 @@ function Game() {
  const [guideOpen,setGuideOpen]=useState(false);
  const [destination,setDestination]=useState<DestinationFocus|null>(null);
  const [destinationResetKey,setDestinationResetKey]=useState(0);
- function resetDestination(){setDestination(null);setDestinationResetKey(value=>value+1);}
+ function resetDestination(){
+  setDestination(null);setDestinationResetKey(value=>value+1);setFeedbackOwner(null);
+  const generation=++feedbackGeneration.current;
+  void savedSession(true).then(session=>{if(generation===feedbackGeneration.current)setFeedbackOwner(session?.tester.id??'legacy-local');}).catch(()=>{});
+ }
  const destinationWorld=useRef<number|null>(null);
  useEffect(()=>{if(screen!=='map')setGuideOpen(false);},[screen]);
  const recordingActive=useRef(false);
@@ -66,6 +75,7 @@ function Game() {
   destinationWorld.current=started;
  },[encounterWorld.world?.worldStartedAt]);
  const encounterPreview=useEncounters(displayed?.id??null,fixes,encounterWorld.world,encounterWorld.recap);
+ const contactFeedback=useContactFeedback({activity,owner:feedbackOwner,environment:SERVER_URL,world:encounterWorld.world,fixes:displayed?.id===activity?.id?fixes:[],observations:displayed?.id===activity?.id?encounterPreview.observations:[],evidenceReady:!!activity&&displayed?.id===activity.id&&encounterPreview.observationsReady,recap:encounterWorld.recap,offer:encounterWorld.labOffer,mapVisible:screen==='map'&&!guideOpen,blocked:feedbackBlocked,resetKey:destinationResetKey,eligibleDistance:encounterPreview.distanceMetres});
  const shownRecap=encounterWorld.recap?.activityId===displayed?.id?encounterWorld.recap:historyPreviews[displayed?.id??'']?.recap??null;
  const historicalFootprints=historicalSnapshot&&historicalSnapshot.activityId===displayed?.id?historicalSnapshot.footprints:historyPreviews[displayed?.id??'']?.footprints??NO_FOOTPRINTS;
  const finishedId=displayed?.status==='finished'?displayed.id:null;
@@ -78,11 +88,13 @@ function Game() {
  },[finishedId,hasRecap,identityGeneration]);
  const stats=useMemo(()=>summarize(fixes),[fixes]);
  async function refresh() {
+  const feedbackToken=feedbackGeneration.current;
   const owner=(await savedSession(true))?.tester.id??'legacy-local';
   const a = await store.current(), list = await store.recent(owner);
   const shown = a ?? list.find(item=>item.id===selectedId.current) ?? null;
   const [p,s]=shown ? await Promise.all([store.points(shown.id),store.segments(shown.id)]) : [[],[]];
   recordingActive.current=a?.status==='recording';
+  if(feedbackToken===feedbackGeneration.current)setFeedbackOwner(owner);
   setActivity(a);setHistory(list);setDisplayed(shown);setFixes(p);setSegments(s);
   const e = await store.lastEvent(); if(e) setMessage(e.message);
   await publishReplayStatus();
@@ -213,7 +225,7 @@ function Game() {
   </View><MapAttribution/></SafeAreaView>;
  if(screen==='recap-details'&&displayed?.status==='finished')return <SafeAreaView style={styles.screen}><StatusBar style="light"/><OutingRecap activity={displayed} distance={stats.meters} elapsed={duration(recordingDuration(segments,displayed.ended??Date.now()))} recap={shownRecap} provisional={recapOrigin.current==='outings'?historyPreviews[displayed.id]?.provisionalPoints??0:encounterPreview.provisionalPoints} touched={shownRecap?.encounters.filter(e=>e.accepted).length??(historicalFootprints.length||historyPreviews[displayed.id]?.contacts||encounterPreview.visited.size)} coverage={encounterPreview.distanceMetres} onMap={()=>setScreen('recap')} onRoute={()=>setScreen('review')} onUploaded={receipt=>{if(receipt.encounters)encounterWorld.acceptRecap(receipt.encounters);void encounterWorld.refresh();}}/></SafeAreaView>;
  if(screen==='map')return <SafeAreaView style={styles.screen}><StatusBar style="light"/><View style={{flex:1}}>
-  <RouteMap brightMap={brightMap} fixes={fixes} activityId={displayed?.id??null} world={encounterWorld.world} labOffer={encounterWorld.labOffer} labRecap={encounterWorld.recap} visited={encounterPreview.visited} recording={activity?.status==='recording'} fullscreen bottomInset={hudHeight} topInset={topHudHeight} destination={destination} onDestinationChange={setDestination} destinationActivityId={activity?.id??null} destinationResetKey={destinationResetKey} worldStatus={encounterWorld.status} onRenderTestClock={encounterWorld.controlRenderTestClock}/>
+  <RouteMap brightMap={brightMap} fixes={fixes} activityId={displayed?.id??null} world={encounterWorld.world} labOffer={encounterWorld.labOffer} labRecap={encounterWorld.recap} visited={encounterPreview.visited} recording={activity?.status==='recording'} fullscreen bottomInset={hudHeight} topInset={topHudHeight} destination={destination} onDestinationChange={setDestination} destinationActivityId={activity?.id??null} destinationResetKey={destinationResetKey} worldStatus={encounterWorld.status} contactFeedback={activity?contactFeedback:undefined} onFeedbackBlockedChange={setFeedbackBlocked} onRenderTestClock={encounterWorld.controlRenderTestClock}/>
   <Pressable accessibilityRole="button" accessibilityLabel="Open field guide" onPress={()=>setGuideOpen(true)} style={[styles.gameMenu,{position:'absolute',top:topHudHeight+12,right:16,minWidth:44,minHeight:44,borderRadius:22,alignItems:'center',justifyContent:'center'}]}><Text style={styles.smallLabel}>?</Text></Pressable>
   <View style={styles.gameTop} pointerEvents="box-none" onLayout={event=>setTopHudHeight(Math.ceil(event.nativeEvent.layout.height)+24)}><View style={styles.gamePanel}>
    <View style={styles.gameRow}><Text style={styles.gameTitle}>Sporeward</Text><View style={{flexDirection:'row',gap:8}}><Pressable accessibilityRole="button" accessibilityLabel="Past outings" onPress={()=>void showHistory()} style={styles.gameMenu}><Text style={styles.smallLabel}>Outings</Text></Pressable><Pressable accessibilityRole="button" accessibilityLabel="Open setup" onPress={()=>setScreen('details')} style={styles.gameMenu}><Text style={styles.smallLabel}>☰</Text></Pressable></View></View>

@@ -1,9 +1,10 @@
 import {useEffect,useRef,useState} from 'react';
+import type {ReactNode} from 'react';
 import {Animated,AppState,StyleSheet,Text} from 'react-native';
 import type {WorldView} from '@sporeward/protocol';
 
 /** Celebrate observed transitions, never historical cleared areas on first load. */
-export function CleanupFeedback({world,top,hidden=false}:{world:WorldView|null;top:number;hidden?:boolean}){
+export function CleanupFeedback({world,top,hidden=false,fallback,onActiveChange}:{world:WorldView|null;top:number;hidden?:boolean;fallback?:ReactNode;onActiveChange?:(active:boolean)=>void}){
  const previous=useRef<Map<string,string>|null>(null);
  const [message,setMessage]=useState('');
  const opacity=useRef(new Animated.Value(0)).current;
@@ -22,7 +23,9 @@ export function CleanupFeedback({world,top,hidden=false}:{world:WorldView|null;t
   ]).start(({finished})=>{if(finished)setMessage('');});
  },[world,opacity]);
  useEffect(()=>()=>opacity.stopAnimation(),[opacity]);
- if(!message||hidden)return null;
+ useEffect(()=>{onActiveChange?.(!!message);return()=>onActiveChange?.(false);},[!!message,onActiveChange]);
+ if(hidden)return null;
+ if(!message)return <>{fallback}</>;
  return <Animated.View pointerEvents="none" accessibilityLiveRegion="polite" style={[styles.notice,{top,opacity,transform:[{translateY:opacity.interpolate({inputRange:[0,1],outputRange:[8,0]})}]}]}>
   <Text style={styles.title}>✦ OVERGROWTH CLEARED</Text>
   <Text style={styles.body}>{message}</Text>
