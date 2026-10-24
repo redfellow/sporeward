@@ -3,7 +3,7 @@ export function formatFieldLabRecap(actualFraction:number,resistanceReduction:nu
  return {
   restoration:percent===0&&actualFraction>0?'<1% restoration':`${percent}% restoration`,
   explanation:resistanceReduction>0
-   ?'Reduced resistance may mean less resistance-based point loss on later eligible visits to familiar areas.'
+   ?'Confirmed restoration may lessen resistance-based point loss on later eligible ordinary visits near familiar areas. No exact future point amount is promised; subsequent contributions, elapsed time and reward rounding affect future points.'
    :'No resistance was restored in this collection.'
  };
 }
