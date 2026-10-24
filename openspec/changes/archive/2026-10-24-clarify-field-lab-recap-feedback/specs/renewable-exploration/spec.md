@@ -3,7 +3,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Understandable expedition benefit
-Field Lab feedback SHALL explain confirmed resistance reduction and its possible benefit to later eligible familiar-area ordinary visit points. It SHALL distinguish point rewards from committed cleaning and conditional cleanup bonuses. It SHALL make no exact future point prediction and state that later contributions, elapsed time and reward rounding affect future points. At zero reduction it SHALL make no later-benefit claim. It SHALL NOT promise a complete reset, guaranteed percentage, stored future credit or a resistance-free following week.
+Field Lab feedback SHALL explain confirmed resistance reduction and possible later benefit to familiar-area ordinary visit points. It SHALL distinguish points from committed cleaning and conditional cleanup bonuses. It SHALL NOT predict exact points; subsequent contributions, elapsed time and reward rounding affect later points. Zero reduction SHALL make no later-benefit claim. It SHALL NOT promise a complete reset, guaranteed percentage, stored future credit or a resistance-free following week.
 
 #### Scenario: Return after lab hunting
 - **WHEN** a confirmed Field Lab collection reduces resistance accumulated around the player's usual cleaning area
