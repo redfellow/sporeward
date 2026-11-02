@@ -45,7 +45,7 @@ export function RouteMap({brightMap=false,labOffer=null,labRecap=null,fixes,acti
   nearbyWorld.current=world?.worldStartedAt;
  },[world?.worldStartedAt]);
  useEffect(()=>{
-  if(!nearbyOpen&&!contactsOpen&&!resistanceOpen&&!resistanceOpen)return;
+  if(!nearbyOpen&&!contactsOpen&&!resistanceOpen)return;
   const sub=BackHandler.addEventListener('hardwareBackPress',()=>{setNearbyOpen(false);setContactsOpen(false);setResistanceOpen(false);return true;});
   return()=>sub.remove();
  },[nearbyOpen,contactsOpen,resistanceOpen]);

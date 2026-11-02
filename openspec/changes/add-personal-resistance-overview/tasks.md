@@ -11,8 +11,12 @@
 
 ## 2. Add the map overview and lab flow
 
-- [ ] 2.1 Add the bounded Resistance sheet and live-map entry point with established/empty/unavailable/last-known states, loaded-world lab candidates and short recovery copy; verify mobile TypeScript and source/component checks cover idle, recording and paused presentation, virtualized candidates and the absence of historical-map UI. Add concise player-rules guidance and verify its local links.
-- [ ] 2.2 Wire Show affected area and lab selection through the existing native camera and destination flow, coordinating Nearby, Recent contacts, details, compact pin and notices; verify focused bounds/selection tests and scoped navigation checks cover invisible-field disabling, stale target selection, pin preservation, Back-first dismissal, notice suppression and accessible pause/finish. Record that source checks do not prove physical layout acceptance.
+- [x] 2.1 Add the bounded Resistance sheet and live-map entry point with established/empty/unavailable/last-known states, loaded-world lab candidates and short recovery copy; verify mobile TypeScript and source/component checks cover idle, recording and paused presentation, virtualized candidates and the absence of historical-map UI. Add concise player-rules guidance and verify its local links.
+  - proof: `npx vitest run tests/mobile-resistance-overview-sheet.test.ts`
+  - proof: `npm run typecheck --workspace @sporeward/mobile`
+- [x] 2.2 Wire Show affected area and lab selection through the existing native camera and destination flow, coordinating Nearby, Recent contacts, details, compact pin and notices; verify focused bounds/selection tests and scoped navigation checks cover invisible-field disabling, stale target selection, pin preservation, Back-first dismissal, notice suppression and accessible pause/finish. Record that source checks do not prove physical layout acceptance.
+  - proof: `npx vitest run tests/mobile-resistance-overview-navigation.test.ts`
+  - proof: `npm run typecheck --workspace @sporeward/mobile`
 
 ## 3. Review and accept the slice
 
