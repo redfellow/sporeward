@@ -28,7 +28,8 @@ export function reduceProvenance(state:WorldProvenance,event:ProvenanceEvent):Wo
    // A cache load never upgrades or overrides an attributable snapshot for the same identity.
    if(state.key===event.key&&state.source==='received')return state;
    return {...NO_PROVENANCE,key:event.key,source:'unattributed'};
-  case 'refreshing':return state.key===event.key?{...state,refresh:'loading'}:{...NO_PROVENANCE,key:event.key,refresh:'loading'};
+  // A retry in flight keeps a failed state: the data is still the old snapshot until a fetch succeeds.
+  case 'refreshing':return state.key===event.key?(state.refresh==='failed'?state:{...state,refresh:'loading'}):{...NO_PROVENANCE,key:event.key,refresh:'loading'};
   case 'received':return {key:event.key,source:'received',receivedAt:event.at,worldStartedAt:event.worldStartedAt,refresh:'idle'};
   case 'failed':return state.key===event.key?{...state,refresh:'failed'}:state;
  }

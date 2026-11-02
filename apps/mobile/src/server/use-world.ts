@@ -22,12 +22,14 @@ export function useWorld(activityId:string|null) {
    if(owner.current!==player){owner.current=player;track({type:'reset'});setRecap(null);setLabOffer(null);const cached=await store.cachedWorld(player);if(valid()){setWorld(cached?parseWorldView(cached):null);if(cached)track({type:'cache',key:identity});}}
    track({type:'refreshing',key:identity});
    if(activityId){try{const cached=await store.cachedLabOffer(SERVER_URL+'|'+player,activityId);if(valid()&&cached)setLabOffer(parseFieldLabOffer(cached));}catch{}}
-   const snapshot=await fetchWorld(credentials);if(!valid())return;await store.cacheWorld(player,snapshot);if(!valid())return;setWorld(snapshot);track({type:'received',key:identity,at:Date.now(),worldStartedAt:snapshot.worldStartedAt});setStatus(typeof __DEV__!=='undefined'&&__DEV__&&SERVER_URL.startsWith('http://127.0.0.1:')&&snapshot.serverTime>Date.now()+60000?'Accelerated test world · reset before GPS replay.':`Map updated ${new Date(snapshot.serverTime).toLocaleTimeString()}.`);
+   let snapshot:Awaited<ReturnType<typeof fetchWorld>>;
+   try{snapshot=await fetchWorld(credentials);}catch(e){if(valid())track({type:'failed',key:identity});throw e;}
+   if(!valid())return;await store.cacheWorld(player,snapshot);if(!valid())return;setWorld(snapshot);track({type:'received',key:identity,at:Date.now(),worldStartedAt:snapshot.worldStartedAt});setStatus(typeof __DEV__!=='undefined'&&__DEV__&&SERVER_URL.startsWith('http://127.0.0.1:')&&snapshot.serverTime>Date.now()+60000?'Accelerated test world · reset before GPS replay.':`Map updated ${new Date(snapshot.serverTime).toLocaleTimeString()}.`);
    if(activityId&&snapshot.fieldLabs){
     try{const offer=await fetchLabOffer(activityId,credentials);if(valid()){await store.cacheLabOffer(SERVER_URL+'|'+player,activityId,offer);setLabOffer(offer);}}catch{}
    }
    if(activityId){const uploaded=await store.uploadState(activityId);if(uploaded?.state==='uploaded') {const confirmed=await fetchRecap(activityId,credentials);if(valid()){setRecap(confirmed);const old=uploaded.receipt?JSON.parse(uploaded.receipt):{};await store.markUpload(activityId,'uploaded',{...old,encounters:confirmed});}}}
-  }catch(e){if(valid()){if(identity)track({type:'failed',key:identity});setStatus(e instanceof Error?e.message:'Could not update outbreaks.');}}finally{busy.current=false;}
+  }catch(e){if(valid()){setStatus(e instanceof Error?e.message:'Could not update outbreaks.');}}finally{busy.current=false;}
  },[activityId]);
  useEffect(()=>{mounted.current=true;return()=>{mounted.current=false;generation.current++;};},[]);
  useEffect(()=>{

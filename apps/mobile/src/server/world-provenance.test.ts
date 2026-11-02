@@ -30,6 +30,14 @@ describe('world snapshot provenance',()=>{
   expect(reduceProvenance(received,{type:'cache',key:A})).toBe(received);
   expect(reduceProvenance(received,{type:'cache',key:B})).toMatchObject({key:B,source:'unattributed',receivedAt:null});
  });
+ it('a retry in flight after a failed refresh stays failed until a fetch succeeds',()=>{
+  const received=run({type:'received',key:A,at:5000,worldStartedAt:100});
+  const failed=reduceProvenance(received,{type:'failed',key:A});
+  const retrying=reduceProvenance(failed,{type:'refreshing',key:A});
+  expect(retrying).toEqual(failed);
+  expect(overviewSnapshotStatus(retrying,world(100))).toEqual({source:'received',receivedAt:5000,refresh:'failed'});
+  expect(reduceProvenance(retrying,{type:'received',key:A,at:9000,worldStartedAt:100}).refresh).toBe('idle');
+ });
  it('owner, server and world resets invalidate earlier provenance',()=>{
   const received=run({type:'received',key:A,at:5000,worldStartedAt:100});
   expect(reduceProvenance(received,{type:'reset'})).toBe(NO_PROVENANCE);

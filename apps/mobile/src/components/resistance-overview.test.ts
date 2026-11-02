@@ -53,6 +53,7 @@ describe('personal Resistance overview model',()=>{
   expect(o.qualifier).toMatch(/Last-known information from/);
   expect(o.labs.coverage).toMatch(/last-known/);
   expect(o.labs.candidates.map(l=>l.focus.id)).toEqual(['near','far']);
+  // 'loading' only reaches the model when the prior state was not failed (the provenance reducer keeps 'failed' during a retry).
   expect(resistanceOverview({...context,snapshot:{...received,refresh:'loading'}}).freshness).toBe('current');
  });
  it('Change player or test environment: unknown cache provenance withholds personal context and labs',()=>{
