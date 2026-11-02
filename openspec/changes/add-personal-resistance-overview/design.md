@@ -1,0 +1,39 @@
+# Design
+
+## Context
+
+See [proposal.md](proposal.md) for motivation and the [delta](specs/outbreak-resistance/spec.md) for behavior. `WorldView.resistance` already contains a centre, radius, centre resistance and version/activation metadata. It is optional; omission does not diagnose whether a server disabled the feature. The summary has no global reward-loss percentage, contribution breakdown or recovery deadline. The [baseline contract](../../specs/outbreak-resistance/spec.md) evaluates rewards spatially; a circular visual summary is not the scorer.
+
+`ResistanceLayer.tsx` already renders the personal haze below roads and outbreaks inside MapLibre. `RouteMap.tsx` owns camera fitting and mutually exclusive Nearby/contact/detail surfaces; its existing overview fits labs and Resistance together. `destination-focus.ts` and `nearby-destinations.ts` supply per-player lab availability, matching offer validation, polygon-edge direct distances and deterministic sorting. `use-world.ts` refreshes on an existing interval and foreground return, retaining received/cached snapshots; its status is currently a display string. Its legacy world cache is keyed by player rather than server, so a persisted snapshot alone cannot establish environment provenance.
+
+## Goals / Non-Goals
+
+**Goals:** A short personal explanation with a useful map action and lab candidates, grounded in current account-owned evidence. Preserve the accepted native map rendering and all existing recorder controls.
+
+**Non-Goals:** A new score calculator, global Resistance meter, low/medium/high tuning thresholds, restoration simulator, per-contribution history, route planning, a lab inventory, new location work, server API changes or a general cache-system redesign. No replacement of existing guides/recaps or acceptance claims for earlier features.
+
+## Decisions
+
+- **Extend the existing capability.** Add overview requirements to `outbreak-resistance`; reuse the merged destination/Nearby implementations rather than duplicating their behavioral contracts. Those changes remain active for phone acceptance and need not be archived to consume their source.
+- **Use a bounded live-map sheet.** Add a labeled Resistance action alongside the existing live-map tools, also usable when idle or paused. Put a concise summary and recovery explanation first, then Show affected area and an available-lab list. Use text and existing field colors rather than a numerical meter or new arbitrary strength categories. A scrollable/virtualized list keeps a large loaded world bounded. Historical maps receive no overview.
+- **Separate state from freshness.** A pure presentation model derives established field, explicitly empty field and unavailable context, plus independent last-known/loading/failed-refresh status and snapshot time. Add structured local receive/provenance metadata to the existing world hook instead of parsing its display string. Tie that metadata to account, server and world, with generation guards and reset invalidation. Never reinterpret an old recap or a local lab touch as current Resistance. With unknown legacy cache provenance, withhold this personal overview context until a matching fetch establishes it; do not rewrite or delete the cache or saved activities. An attributable in-memory snapshot can remain browsable after a refresh failure with explicit last-known wording.
+- **Describe geography without inventing a penalty.** Copy explains that familiar cleaning areas can yield fewer ordinary visit points, with passive recovery and optional Field Lab relief. Show no raw `centreResistance` value, global percentage, recovery ETA or before/after attribution. If the summary has no centre or no positive centre resistance, say no active personal field is established in that snapshot; this is not a promise that all visits earn maximum points. When Resistance data is absent, explain unavailability rather than claiming a disabled setting.
+- **Focus the field alone.** Reuse existing map projection/bounds helpers to fit the received centre/radius, respecting safe area and recording HUD. Close the sheet first, disable follow as an intentional camera action, retain the pin, and let normal center/follow controls restore following. Reuse `ResistanceLayer` unchanged unless a scoped integration adjustment is necessary; no screen-space overlay or per-camera-frame raster work. Disable the action for an absent/invisible field. The existing combined labs overview stays available.
+- **Reuse lab summaries, not a new recommender.** Derive candidates from the loaded world's personally uncollected, unexpired labs. Reuse current-outing offer/receipt/provisional context and direct-distance helpers. Order by numeric direct distance when location is recent, otherwise stable name/ID order; state loaded-world coverage. Do not rank by promised benefit or claim road accessibility/route distance. Provisional collection stays explicitly unconfirmed. With no matching outing offer, display no numeric restoration estimate. Selecting revalidates against current received state, closes the overview and opens existing lab details; only the explicit pin action replaces a pin. No available candidates has a local-coverage empty message, even if a personal field exists. Cached candidates retain last-known qualification.
+- **Share surfaces and identity.** Opening the overview closes Nearby, Recent contacts and expanded details while retaining the app-owned pin. Suppress the compact pin card and notices while it is open, using the existing feedback block path so contacts enter the log silently rather than queue a banner burst. Close/Back dismisses the overview first. Account/server/world resets close it; normal snapshots recompute it without camera jumps or pin changes. Recording continues and pause/finish stay outside the sheet.
+
+## Risks / Trade-offs
+
+- [Circle read as an exact penalty boundary] → Explicit spatial-summary copy; use existing per-target offers for rewards, never derive points from the summary.
+- [Cache read as current or belonging to another server] → Structured scoped provenance; last-known timestamp/error state; unavailable overview until an unknown cache is attributable.
+- [Lab collection looks like guaranteed recovery] → Matching offers only, provisional contact cue and confirmation on upload. No optimistic field weakening or causal claim from snapshot changes. Existing confirmed-zero recap wording remains unchanged.
+- [Additional sheet crowds a folding phone] → Measured bounded height, scrollable content, mutually exclusive surfaces, at least 44-point controls and separate owner narrow/wide acceptance.
+- [Feature becomes a world-hook/cache rewrite] → Add only overview provenance/status needed for these requirements. Preserve cache storage format, existing consumers and polling; surface any broader need before apply scope expands.
+
+## Migration Plan
+
+No server rollout, database migration or field-world mutation. Add the presentation model/component and local metadata, wire the live map, then add a brief player-rules explanation. Rollback removes the entry point and sheet without changing recordings, owners, contact previews, feedback rows, receipts, historical geometry or scores. Validate synthetic state/offer/selection boundaries and mobile TypeScript/Android JS export; independent implementation review follows. Physical-phone layout/gesture acceptance is a separate task, not replaced by source or bundle checks.
+
+## Planning Handoff
+
+Owner: root session in `/Users/red/Koodit/sporeward`, planning on `main` at `7baedf5` after merged PR #27. This request authorizes proposal/spec/design/tasks only. No runtime edits, implementation checks, commit, push, PR, baseline sync or archive are included. Unrelated investor artwork remains untouched. Next action: owner review, then explicit apply on a separate feature branch. Keep all earlier phone acceptance tasks open.
