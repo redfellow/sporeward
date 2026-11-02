@@ -37,3 +37,20 @@ No server rollout, database migration or field-world mutation. Add the presentat
 ## Planning Handoff
 
 Owner: root session in `/Users/red/Koodit/sporeward`, planning on `main` at `7baedf5` after merged PR #27. This request authorizes proposal/spec/design/tasks only. No runtime edits, implementation checks, commit, push, PR, baseline sync or archive are included. Unrelated investor artwork remains untouched. Next action: owner review, then explicit apply on a separate feature branch. Keep all earlier phone acceptance tasks open.
+
+## Implementation Notes
+
+### Overview model (`apps/mobile/src/components/resistance-overview.ts`)
+
+- Pure function of the received world, the existing destination context (location, outing, offer, recap, provisional labs) and a structured snapshot status (`received` / `unattributed` / `none`, receive time, `idle`/`loading`/`failed` refresh). It reuses `nearbyDestinations` for lab availability, matching-offer validation, provisional versus confirmed collection and direct-distance ordering; it adds no scoring.
+- Field state: no world while loading is `loading`; no attributable world is `unavailable`; unattributed legacy cache is `withheld` (no field, no labs); a world without `resistance` is `unavailable`; a summary with no centre or non-positive centre resistance is `empty`; otherwise `established`. The raw centre resistance is never shown or converted.
+- Freshness is independent: `current`, `last-known` (failed refresh after an attributable snapshot, with the receive time and a qualifier), `loading` or `none`. Last-known data keeps its lab candidates with a qualified coverage line and never simulates recovery.
+- Candidates are labs whose destination summary is `available` (uncollected for this player, unexpired at the received server time, not confirmed collected by the current outing's recap). Lab names are all "Field Lab", so equal-name ties fall back to id order. Copy states loaded-world coverage and straight-line distance to the collection area only.
+- Presentation assumption: the affected-area explanation and the lab list are independent, so an established field with no available labs still shows a local-coverage empty message.
+
+### Snapshot provenance boundary (`apps/mobile/src/server/world-provenance.ts`)
+
+- `useWorld` keeps one in-memory `WorldProvenance` (identity `SERVER_URL|player`, source, receive time, world start, refresh state) updated by a pure reducer and exposed as `snapshotStatus`. It is derived inside the existing refresh path: no new poller, no change to the persisted cache format, saved activities or recorder.
+- The legacy world cache is still keyed by player only. A world loaded from it is `unattributed` (the overview withholds personal context and labs) until a fetch for the current account and server succeeds; a cache load never downgrades a received snapshot for the same identity. Nothing is rewritten or deleted.
+- Account/credential loss and identity reset dispatch `reset`; a changed player resets before the cache is read. The server is part of the identity key, but `SERVER_URL` is fixed per build, so a server change is a different key rather than an in-session transition. A received status is tied to `worldStartedAt`: a world with a different start is reported `unattributed` rather than described by an old receive time.
+- Late asynchronous results are dropped by the hook's existing generation guard before any event is dispatched, and the reducer additionally ignores `failed` for a non-current identity. A failed refresh keeps the attributable snapshot as `last-known`; the overview, not the hook, words that state.
