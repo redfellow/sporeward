@@ -20,8 +20,13 @@
 
 ## 3. Review and accept the slice
 
-- [ ] 3.1 Obtain independent implementation review and resolve blocking findings; pass strict OpenSpec validation, `git diff --check` and Android JavaScript export, then record exact check scope, Git/dependency disposition and remaining phone gate in the handoff. Do not substitute full-suite or emulator startup for focused checks.
-- [ ] 3.2 Obtain owner phone acceptance on narrow/wide layouts: understandable personal state and spatial-summary copy, affected-area focus, lab detail/pin flow, offline wording, Close/Back, notice coordination and reachable pause/finish during recording. Keep this separate from automated checks, outdoor GPS reliability and earlier features' acceptance tasks.
+
+## Manual checks after merge (Reijo)
+
+No agent could do these from its sandbox; Reijo does them once the pull request is merged.
+
+- Obtain independent implementation review and resolve blocking findings; pass strict OpenSpec validation, `git diff --check` and Android JavaScript export, then record exact check scope, Git/dependency disposition and remaining phone gate in the handoff. Do not substitute full-suite or emulator startup for focused checks.
+- Obtain owner phone acceptance on narrow/wide layouts: understandable personal state and spatial-summary copy, affected-area focus, lab detail/pin flow, offline wording, Close/Back, notice coordination and reachable pause/finish during recording. Keep this separate from automated checks, outdoor GPS reliability and earlier features' acceptance tasks.
 
 ## Workflow follow-up
 
