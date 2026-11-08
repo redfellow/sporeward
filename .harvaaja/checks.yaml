@@ -1,0 +1,21 @@
+setup:
+  check: install
+  clean: [node_modules]
+checks:
+  - name: install
+    run: npm ci
+    network: [registry.npmjs.org]
+    timeoutSeconds: 900
+  - name: typecheck
+    run: npm run typecheck
+    covers: ['npm run typecheck', 'npx tsc']
+    timeoutSeconds: 600
+  - name: unit
+    run: npx vitest run
+    covers: ['npx vitest', 'npm test']
+    timeoutSeconds: 900
+  # Safer choice: the cleaning-lab build check is deterministic, but kept at final since its cost is unknown.
+  - name: cleaning-lab
+    run: npm run check:lab
+    stage: final
+    paths: ['scripts/build-cleaning-lab.mjs', 'apps/**', 'packages/**']
