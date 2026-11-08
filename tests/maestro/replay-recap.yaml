@@ -1,0 +1,23 @@
+# Before this flow the runner replays tests/maestro/replay-track.json through
+# sporeward://replay/... deep links and `adb emu geo fix`, then finishes the outing.
+appId: com.sporeward.app
+name: Open the recap of the replayed outing
+---
+- extendedWaitUntil:
+    visible: "Past outings"
+    timeout: 30000
+- tapOn: "Past outings"
+- extendedWaitUntil:
+    visible: ".*Open full-screen recap.*"
+    timeout: 30000
+- tapOn:
+    text: ".*Open full-screen recap.*"
+    index: 0
+- extendedWaitUntil:
+    visible: "Outing details"
+    timeout: 30000
+- takeScreenshot: replay-recap
+- tapOn: "Outing details"
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: replay-recap-details

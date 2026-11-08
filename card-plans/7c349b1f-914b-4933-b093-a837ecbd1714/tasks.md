@@ -1,10 +1,12 @@
 # Tasks
 
-- [ ] 1.1 Extract the adb, deep-link command and status helpers from `scripts/replay/emulator.mts` into `scripts/replay/emulator-control.mts`, and keep `replay:emulator` working through them.
+- [x] 1.1 Extract the adb, deep-link command and status helpers from `scripts/replay/emulator.mts` into `scripts/replay/emulator-control.mts`, and keep `replay:emulator` working through them.
   - proof: `npx vitest run tests/mobile-replay-bridge.test.ts`
-- [ ] 1.2 Add `scripts/maestro/run.mts` and the `maestro:emulator` npm script. It checks that the tools are present (it fails with an install hint for maestro, emulator, adb or a missing AVD), boots the emulator, starts the loopback API, adb reverse and Metro, installs the dev client, runs `tests/maestro/*.yaml` into `artifacts/maestro/`, and stops only what it started. Put the precondition and argument logic in pure functions and cover them with one table-driven fast test, `scripts/maestro/run.test.ts`. Add `artifacts/` to `.gitignore`.
+  - proof: `npx tsc --noEmit --allowImportingTsExtensions --module esnext --moduleResolution bundler --target es2022 --strict --skipLibCheck --types node scripts/replay/emulator.mts`
+- [x] 1.2 Add `scripts/maestro/run.mts` and the `maestro:emulator` npm script. It checks that the tools are present (it fails with an install hint for maestro, emulator, adb or a missing AVD), boots the emulator, starts the loopback API, adb reverse and Metro, installs the dev client, runs `tests/maestro/*.yaml` into `artifacts/maestro/`, and stops only what it started. Put the precondition and argument logic in pure functions and cover them with one table-driven fast test, `scripts/maestro/run.test.ts`. Add `artifacts/` to `.gitignore`.
   - proof: `npx vitest run scripts/maestro/run.test.ts`
-- [ ] 1.3 Add the flows `tests/maestro/launch-map.yaml`, `field-guide.yaml` and `replay-recap.yaml`, each with `takeScreenshot` steps. The replay flow uses deep links and geo fixes through the runner and a bundled scenario. Add a short README section on how to run them.
+  - proof: `npx tsc --noEmit --allowImportingTsExtensions --module esnext --moduleResolution bundler --target es2022 --strict --skipLibCheck --types node scripts/maestro/run.mts`
+- [x] 1.3 Add the flows `tests/maestro/launch-map.yaml`, `field-guide.yaml` and `replay-recap.yaml`, each with `takeScreenshot` steps. The replay flow uses deep links and geo fixes through the runner and a bundled scenario. Add a short README section on how to run them.
   - proof: `node -e "for(const f of require('fs').readdirSync('tests/maestro').filter(n=>n.endsWith('.yaml')))require('fs').readFileSync('tests/maestro/'+f,'utf8').includes('takeScreenshot')||process.exit(1)"`
   - proof: `npm run typecheck --workspace @sporeward/mobile`
 - [ ] 2.1 (human) Add the screenshots check to the end of `checks:`.
