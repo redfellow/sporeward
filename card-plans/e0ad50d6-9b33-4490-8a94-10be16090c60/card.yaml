@@ -5,3 +5,20 @@ x-harvaaja-card: e0ad50d6-9b33-4490-8a94-10be16090c60
 x-harvaaja-owner: b480b8ae-9b42-451b-865d-ff78d89e33ad
 x-harvaaja-owner-name: Sohvamäkki
 x-harvaaja-owner-person: Reijo
+route:
+  kind: split
+  rationale: Owner chose split per area, covering unspecified shipped features and
+    gaps in existing main specs. Areas touch separate code (server
+    accounts/activity, world/spatial, mobile recording, game rules,
+    rendering/web guides) and each spec set is reviewable alone.
+  citations:
+    - openspec/specs/
+    - apps/server/src/accounts
+    - apps/server/src/activity-store.ts
+    - apps/server/src/world-store.ts
+    - apps/mobile/src/recording
+    - packages/game/src
+    - packages/rendering/src
+    - docs/replay-tool.md
+    - docs/tester-accounts.md
+  revision: 6726bb63-e2ba-4312-a492-c2c5231fb5a7
