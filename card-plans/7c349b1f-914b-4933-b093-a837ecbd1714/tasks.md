@@ -8,8 +8,8 @@
   - proof: `node -e "for(const f of require('fs').readdirSync('tests/maestro').filter(n=>n.endsWith('.yaml')))require('fs').readFileSync('tests/maestro/'+f,'utf8').includes('takeScreenshot')||process.exit(1)"`
   - proof: `npm run typecheck --workspace @sporeward/mobile`
 - [ ] 2.1 (human) Add the screenshots check to the end of `checks:`.
-  file: .harvaaja/checks.yaml
-  snippet:
+  - file: `.harvaaja/checks.yaml`
+  - snippet:
   ```yaml
   - name: screenshots
     run: npm run maestro:emulator
@@ -20,8 +20,8 @@
     timeoutSeconds: 1800
   ```
 - [ ] 2.2 (human) Add the field-ride rule to the planner instructions.
-  file: .harvaaja/instructions/plan.md
-  snippet:
+  - file: `.harvaaja/instructions/plan.md`
+  - snippet:
   ```markdown
   - For cards that touch native recording, list under Manual checks after merge: install the field APK (`npm run android:field`) on a phone and ride about 10 minutes, then confirm the outing recorded and uploaded.
   ```
