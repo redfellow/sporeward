@@ -5,3 +5,17 @@ x-harvaaja-card: 56fbd432-c651-421a-96a7-02d651b8b58f
 x-harvaaja-owner: b480b8ae-9b42-451b-865d-ff78d89e33ad
 x-harvaaja-owner-name: Sohvamäkki
 x-harvaaja-owner-person: Reijo
+route:
+  kind: new-change
+  rationale: Documentation-only spec deltas for shipped replay tooling, showcase
+    and desktop rendering lab; no active change owns them. Adds a replay
+    capability since none fits, plus ADDED deltas to visual-showcase.
+  citations:
+    - openspec/specs/visual-showcase/spec.md
+    - docs/replay-tool.md
+    - docs/rendering-prototype.md
+    - apps/server/src/replay/showcase.test.ts
+    - apps/server/src/replay/timeline.test.ts
+    - tests/mobile-replay-bridge.test.ts
+    - apps/web/src/rendering/footprint.test.ts
+  revision: ef0c36c4-ce3d-45bf-b0ae-c4e65709d962
