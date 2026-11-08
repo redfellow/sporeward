@@ -5,3 +5,17 @@ x-harvaaja-card: 6ef3d605-5793-4416-8c42-4c7b47aabddb
 x-harvaaja-owner: b480b8ae-9b42-451b-865d-ff78d89e33ad
 x-harvaaja-owner-name: Sohvamäkki
 x-harvaaja-owner-person: Reijo
+route:
+  kind: new-change
+  rationale: Shipped world storage, serving and migration behavior has no owning
+    spec; no active change covers it. Adds a shared-world capability plus deltas
+    to outbreak-growth and gps-contact-matching.
+  citations:
+    - apps/server/src/world-store.ts
+    - apps/server/src/outbreak-view.ts
+    - packages/protocol/src/world.ts
+    - openspec/specs/outbreak-growth/spec.md
+    - openspec/specs/gps-contact-matching/spec.md
+    - docs/spatial-test-world.md
+    - docs/field-migration.md
+  revision: a346cc19-c549-4439-aa80-2145e141825d
