@@ -17,7 +17,7 @@ Before each operation the server SHALL advance the world to the current minute. 
 - **THEN** it catches up in successive transactions of at most one hour each before the operation runs
 
 ### Requirement: Per-player world view
-The world view SHALL include server time, world start time, and each non-retired outbreak that is uncleared or within cleanup protection, with its current ring, status, lifecycle phase and deadline, remaining effort, personal visit points, cleanup bonus and personal eligibility time. Remnants SHALL advertise zero visit points. Field Lab and Resistance sections SHALL appear only when those features are enabled. Clients SHALL reject responses that fail the protocol's shape and geometry budget checks.
+The world view SHALL include server time, world start time, and each non-retired outbreak that is uncleared or within cleanup protection, with its current ring, status, lifecycle phase and deadline, remaining effort, personal visit points, cleanup bonus and personal eligibility time. Remnants SHALL advertise zero visit points. Field Lab and Resistance sections SHALL appear only when those features are enabled.
 
 #### Scenario: Remnant view
 - **WHEN** a player requests a world containing a remnant
@@ -26,6 +26,13 @@ The world view SHALL include server time, world start time, and each non-retired
 #### Scenario: Cooldown and stabilization eligibility
 - **WHEN** the player is in cooldown or the outbreak is stabilizing
 - **THEN** the eligibility time is the later of the cooldown end and the stabilization end
+
+### Requirement: World view protocol validation
+Clients SHALL reject world responses that fail the protocol's shape and geometry budget checks.
+
+#### Scenario: Malformed world response
+- **WHEN** a world response fails the protocol's shape or geometry budget checks
+- **THEN** the client rejects it instead of using it
 
 ### Requirement: Seeded spatial test world
 The spatial world SHALL generate seeded, connected five-cell outbreaks only on accessible cells from a saved public access extract, excluding private, restricted or closed routes, and SHALL NOT download map data at startup.
