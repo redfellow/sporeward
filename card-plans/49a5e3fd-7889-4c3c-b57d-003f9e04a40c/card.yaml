@@ -5,3 +5,16 @@ x-harvaaja-card: 49a5e3fd-7889-4c3c-b57d-003f9e04a40c
 x-harvaaja-owner: b480b8ae-9b42-451b-865d-ff78d89e33ad
 x-harvaaja-owner-name: Sohvamäkki
 x-harvaaja-owner-person: Reijo
+route:
+  kind: new-change
+  rationale: Documents shipped Android recorder lifecycle, SQLite persistence,
+    upload retry and world refresh as new requirements; no active change owns
+    this intent.
+  citations:
+    - apps/mobile/src/recording/store.ts
+    - apps/mobile/src/recording/recorder.ts
+    - apps/mobile/src/server/sync.ts
+    - apps/mobile/src/server/use-world.ts
+    - openspec/specs/activity-recording/spec.md
+    - openspec/specs/native-recording-recovery/spec.md
+  revision: 8d946a1d-36ba-4fec-b2dd-b8a68a69d481
