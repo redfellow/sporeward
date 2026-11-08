@@ -6,3 +6,11 @@ x-harvaaja-owner: b480b8ae-9b42-451b-865d-ff78d89e33ad
 x-harvaaja-owner-name: Sohvamäkki
 x-harvaaja-owner-person: Reijo
 x-harvaaja-repairs-main: true
+route:
+  kind: no-spec-change
+  rationale: "Build-script bug: URL.pathname keeps %20 for paths with spaces, so
+    esbuild cannot resolve the entry. Tooling fix, no observable product
+    contract."
+  citations:
+    - scripts/build-cleaning-lab.mjs:5
+  revision: 9415484e-bb42-4976-adc0-9342697f9c7d
