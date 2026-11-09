@@ -1,6 +1,6 @@
 # OpenSpec workflow
 
-OpenSpec is initialized at the Sporeward monorepo root for Codex. CLI version at setup: **1.14.3**, installed globally using npm. It is a developer tool, not an application dependency.
+OpenSpec is initialized at the Sporeward monorepo root for Codex (`.agents/skills/`) and Claude Code (`.claude/skills/`). Regenerate both with `openspec init --tools claude,codex`. CLI version at setup: **1.14.3**, installed globally using npm. It is a developer tool, not an application dependency.
 
 ## Working on changes
 
@@ -11,7 +11,7 @@ OpenSpec is initialized at the Sporeward monorepo root for Codex. CLI version at
 - `$openspec-sync-specs`: intentionally sync capability deltas into baseline specs.
 - `$openspec-archive-change`: archive completed work after the required review.
 
-In Codex desktop, select the corresponding skill from Skills in the sidebar. Restart/reopen the Codex session if the newly generated skills do not appear. Codex uses skills, so initialization correctly generated no command files.
+The names above use Codex syntax. In Claude Code, invoke the same skills as `/openspec-explore`, `/openspec-propose`, and so on. In Codex desktop, select the corresponding skill from Skills in the sidebar. Restart or reopen the session if newly generated skills do not appear. Both tools use skills, so initialization correctly generates no command files.
 
 ## Agreed working loop
 
