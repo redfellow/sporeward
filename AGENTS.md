@@ -63,6 +63,6 @@ These worker commit, clean-handoff, and no-stash requirements are scoped to work
 
 ## OpenSpec workflow
 
-Use OpenSpec for substantive features, fixes and architectural changes: explore as needed, propose requirements/design/tasks, apply the agreed change, then archive after completion and review. Small wording or routine maintenance edits can stay direct unless the user requests a proposal. Use the generated Codex skills under `.agents/skills/`; setup and exact invocation names are in `docs/openspec-workflow.md`.
+Use OpenSpec for substantive features, fixes and architectural changes: explore as needed, propose requirements/design/tasks, apply the agreed change, then archive after completion and review. Small wording or routine maintenance edits can stay direct unless the user requests a proposal. Use the generated skills: Codex under `.agents/skills/`, Claude Code under `.claude/skills/`; setup and exact invocation names are in `docs/openspec-workflow.md`.
 
 `openspec/specs/` holds the accepted capability baseline after sync/archive; active changes hold proposed deltas. Do not treat pending specs as evidence of implemented behavior. Existing gameplay design remains in `docs/game-concept.md`, concise public guidance in `docs/player-rules.md`, and prior completion evidence in `docs/finished-goals.md`. Baseline existing capabilities incrementally when touched, using implementation and recorded decisions rather than inventing guarantees.
