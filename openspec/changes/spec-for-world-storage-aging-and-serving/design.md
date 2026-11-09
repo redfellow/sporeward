@@ -7,12 +7,15 @@ Document existing behavior only. Each requirement maps to a focused existing tes
 - Atomic snapshot, retries and restart: `apps/server/src/world-store.test.ts`.
 - Bounded catch-up, archive merge, history-preserving contour and shoreline upgrades: `apps/server/src/spatial/world-history.test.ts`.
 - PostGIS history persistence: `apps/server/src/database/world.test.ts` (mocked `pg`, fast).
-- World view fields: `apps/server/src/outbreak-view.test.ts`.
+- World view fields, protocol shape check and older responses: `apps/server/src/outbreak-view.test.ts`.
 - Spatial generation and access: `apps/server/src/spatial/generate.test.ts`, `world-store.test.ts` (fixture access paths).
 - Separation and growth: `apps/server/src/spatial/resize.test.ts`, `continuous.test.ts`, `lifecycle.test.ts`.
-- Guarded import: source reference `apps/server/src/database/import.ts` only.
+- Guarded import: source reference `apps/server/src/database/import.ts` and `scripts/migration/check-import.mts` only (needs PostgreSQL); no fast test.
 
 ## Open questions
 
-- No fast test covers protocol `parseWorldView` budget limits directly; it is cited by source (`packages/protocol/src/world.ts`) only.
+- No fast test covers protocol `parseWorldView` geometry budget limits; they exist in source (`packages/protocol/src/world.ts`) but are not specified until tested.
+- No cited test checks that the world view omits retired outbreaks or cleaned ones past cleanup protection, or shows Field Lab and Resistance sections only when enabled (Field Lab and Resistance belong to part 3); the requirement does not claim them.
+- Migration tests assert unchanged scores and contributions only; unchanged bonuses and activity records are recorded in `docs/field-migration.md` but not tested, so are not specified.
+- Excluding `access=customers/delivery/destination` routes as restricted is in `publicAccess` source but untested; the requirement names only private and doubly closed routes.
 - Multi-instance PostgreSQL concurrency beyond a single locked client is not specified.
