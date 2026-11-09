@@ -1,0 +1,22 @@
+format: 1
+slug: specify-accounts-tester-sign-in-and-acti
+title: Specify accounts, tester sign-in and activity upload on the server
+x-harvaaja-card: b99629d6-9232-477c-af60-4b3cc631eb28
+x-harvaaja-owner: b480b8ae-9b42-451b-865d-ff78d89e33ad
+x-harvaaja-owner-name: Sohvamäkki
+x-harvaaja-owner-person: Reijo
+route:
+  kind: new-change
+  rationale: Documentation-only spec deltas adding requirements to
+    account-owned-play and activity-recording for merged server behavior; no
+    active change owns accounts/upload contracts.
+  citations:
+    - apps/server/src/app.ts
+    - apps/server/src/accounts/store.ts
+    - apps/server/src/activity-store.ts
+    - packages/protocol/src/activities.ts
+    - packages/protocol/src/scores.ts
+    - docs/tester-accounts.md
+    - openspec/specs/account-owned-play/spec.md
+    - openspec/specs/activity-recording/spec.md
+  revision: 0286a3c9-b76a-479c-8683-84bc37a9491a
