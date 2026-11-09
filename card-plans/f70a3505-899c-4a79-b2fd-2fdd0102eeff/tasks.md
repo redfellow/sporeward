@@ -1,6 +1,6 @@
 # Tasks
 
-- [ ] 1.1 Confirm the repo needs no change: a934bd4 touched only Markdown.
+- [x] 1.1 Confirm the repo needs no change: a934bd4 touched only Markdown.
   - proof: `git diff --stat a934bd4~1 a934bd4 -- . ':(exclude)*.md' ':(exclude)*.yaml'`
 
 ## Manual checks after merge (The user)
