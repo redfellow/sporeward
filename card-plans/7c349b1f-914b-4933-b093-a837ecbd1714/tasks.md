@@ -9,7 +9,7 @@
 - [x] 1.3 Add the flows `tests/maestro/launch-map.yaml`, `field-guide.yaml` and `replay-recap.yaml`, each with `takeScreenshot` steps. The replay flow uses deep links and geo fixes through the runner and a bundled scenario. Add a short README section on how to run them.
   - proof: `node -e "for(const f of require('fs').readdirSync('tests/maestro').filter(n=>n.endsWith('.yaml')))require('fs').readFileSync('tests/maestro/'+f,'utf8').includes('takeScreenshot')||process.exit(1)"`
   - proof: `npm run typecheck --workspace @sporeward/mobile`
-- [ ] 2.1 (human) Add the screenshots check to the end of `checks:`.
+- [x] 2.1 (human) Add the screenshots check to the end of `checks:`.
   - file: `.harvaaja/checks.yaml`
   - snippet:
   ```yaml
@@ -21,7 +21,7 @@
     paths: ['apps/mobile/**', 'packages/**', 'tests/maestro/**', 'scripts/maestro/**', 'scripts/replay/**']
     timeoutSeconds: 1800
   ```
-- [ ] 2.2 (human) Add the field-ride rule to the planner instructions.
+- [x] 2.2 (human) Add the field-ride rule to the planner instructions.
   - file: `.harvaaja/instructions/plan.md`
   - snippet:
   ```markdown

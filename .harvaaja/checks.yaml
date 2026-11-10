@@ -19,3 +19,10 @@ checks:
     run: npm run check:lab
     stage: final
     paths: ['scripts/build-cleaning-lab.mjs', 'apps/**', 'packages/**']
+  - name: screenshots
+    run: npm run maestro:emulator
+    role: screenshots
+    stage: final
+    sandbox: none
+    paths: ['apps/mobile/**', 'packages/**', 'tests/maestro/**', 'scripts/maestro/**', 'scripts/replay/**']
+    timeoutSeconds: 1800
