@@ -12,8 +12,7 @@ export const quote=(s:string)=>"'"+s.replaceAll("'","'\\''")+"'";
 export const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
 const exec=promisify(execFile);
 
-export function emulatorControl({serial,metroPort=8081,adbPath=defaultAdbPath()}:{serial:string;metroPort?:number;adbPath?:string}){
-	const session=randomBytes(16).toString('hex');
+export function emulatorControl({serial,metroPort=8081,adbPath=defaultAdbPath(),session=randomBytes(16).toString('hex')}:{serial:string;metroPort?:number;adbPath?:string;session?:string}){
 	const adb=async(args:string[])=>{const r=await exec(adbPath,['-s',serial,...args],{timeout:20000,maxBuffer:8*1024*1024});return r.stdout;};
 	const shell=(args:string[])=>adb(['shell',args.map(quote).join(' ')]);
 	async function launchDevClient(){await shell(['am','start','-a','android.intent.action.VIEW','-d','sporeward://expo-development-client/?url='+encodeURIComponent('http://localhost:'+metroPort),APP_ID]);}
@@ -26,7 +25,8 @@ export function emulatorControl({serial,metroPort=8081,adbPath=defaultAdbPath()}
 		while(Date.now()<deadline){if(Date.now()>=nextDispatch){await dispatch();nextDispatch=Date.now()+10000;}try{const value=await status();if(value.control.request===request){if(value.control.error)throw new Error(value.control.error);return value;}}catch(e){if(e instanceof Error&&!(e.message.includes('ENOENT')||e.message.includes('JSON')||e.message.includes('No such file')))throw e;}await wait(150);}
 		throw new Error('Native replay command timed out: '+action);
 	}
-	async function fix(longitude:number,latitude:number){await adb(['emu','geo','fix',String(longitude),String(latitude)]);}
+	// The emulator console occasionally drops a single command; retry before failing the replay.
+	async function fix(longitude:number,latitude:number){for(let attempt=1;;attempt++){try{await adb(['emu','geo','fix',String(longitude),String(latitude)]);return;}catch(error){if(attempt>=3)throw error;await wait(500);}}}
 	async function waitForJavascript(){
 		const deadline=Date.now()+60000;
 		while(Date.now()<deadline){

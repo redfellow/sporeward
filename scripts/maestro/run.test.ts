@@ -1,6 +1,6 @@
 // @harvaaja-test-tier: fast
 import {describe,it,expect} from 'vitest';
-import {parseArgs,preconditionProblems,chooseAvd,orderFlows,screenshotNames,missingScreenshots,type Probe} from './run.mts';
+import {parseArgs,preconditionProblems,chooseAvd,orderFlows,screenshotNames,missingScreenshots,reportScreenshot,type Probe} from './run.mts';
 
 const ready:Probe={maestro:true,emulator:true,adb:true,deviceRunning:false,avds:['Pixel_API36']};
 
@@ -51,5 +51,11 @@ describe('Maestro runner arguments and flows',()=>{
 		expect(names).toEqual(['map','guide-open']);
 		expect(missingScreenshots(names,['map.png','reports'])).toEqual(['guide-open']);
 		expect(missingScreenshots(names,['map.png','guide-open.png'])).toEqual([]);
+	});
+
+	it('finds the newest copy of a screenshot inside Maestro test reports',()=>{
+		const files=['2026-01-01_120000/Map/takeScreenshot/map.png','2026-01-01_130000/Map/takeScreenshot/map.png','2026-01-01_130000/Guide/takeScreenshot/guide-open.png'];
+		expect(reportScreenshot('map',files)).toBe('2026-01-01_130000/Map/takeScreenshot/map.png');
+		expect(reportScreenshot('guide-closed',files)).toBeNull();
 	});
 });

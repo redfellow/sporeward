@@ -10,6 +10,9 @@ name: Open the recap of the replayed outing
 - extendedWaitUntil:
     visible: ".*Open full-screen recap.*"
     timeout: 30000
+# The outings sheet slides in; a tap mid-slide can land on the map's attribution link.
+- waitForAnimationToEnd:
+    timeout: 5000
 - tapOn:
     text: ".*Open full-screen recap.*"
     index: 0

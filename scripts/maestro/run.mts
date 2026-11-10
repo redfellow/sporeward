@@ -1,14 +1,14 @@
 import {spawn,execFile,type ChildProcess} from 'node:child_process';
 import {promisify} from 'node:util';
 import {existsSync,openSync} from 'node:fs';
-import {mkdir,readFile,readdir,rename} from 'node:fs/promises';
+import {copyFile,mkdir,readFile,readdir,rename,rm} from 'node:fs/promises';
 import {join,resolve,basename,dirname} from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {parseReplayTrack} from '../../packages/protocol/src/replay.ts';
 import {nativeReplayPlan} from '../../apps/server/src/replay/native-plan.ts';
-import {androidSdk,defaultAdbPath,emulatorControl,wait} from '../replay/emulator-control.mts';
+import {APP_ID,androidSdk,defaultAdbPath,emulatorControl,wait} from '../replay/emulator-control.mts';
 
-/** The dev-client install (`npm run android:emulator`) targets emulator-5554, so the runner does too. */
+/** The runner drives emulator-5554 and installs the dev client on whichever AVD runs there. */
 /** Flows run in this order; the runner drives the synthetic replay before `replay-recap`. */
 export const FLOW_ORDER=['launch-map','field-guide','replay-recap'];
 export const REPLAY_FLOW='replay-recap';
@@ -46,6 +46,8 @@ export const chooseAvd=(avds:string[],preferred:string|null)=>preferred??avds[0]
 export const orderFlows=(files:string[])=>FLOW_ORDER.map(name=>{const file=files.find(f=>basename(f)===name+'.yaml');if(!file)throw new Error('Missing Maestro flow: '+name+'.yaml');return file;});
 export const screenshotNames=(flow:string)=>[...flow.matchAll(/^\s*-\s*takeScreenshot:\s*["']?([\w.-]+?)["']?\s*$/gm)].map(m=>m[1]);
 export const missingScreenshots=(expected:string[],files:string[])=>expected.filter(name=>!files.includes(name+'.png'));
+/** Maestro 2.x saves screenshots under reports/<timestamp>/<flow>/takeScreenshot/; pick the newest report copy. */
+export const reportScreenshot=(name:string,reportFiles:string[])=>reportFiles.filter(f=>basename(f)===name+'.png').sort().at(-1)??null;
 
 const exec=promisify(execFile);
 const root=fileURLToPath(new URL('../../',import.meta.url));
@@ -63,7 +65,12 @@ function stop(child:ChildProcess){if(child.pid&&child.exitCode===null){try{proce
 
 async function replaySyntheticOuting(control:ReturnType<typeof emulatorControl>){
 	const track=parseReplayTrack(JSON.parse(await readFile(join(root,'tests/maestro/replay-track.json'),'utf8'))),plan=nativeReplayPlan(track);
-	await control.command('status');
+	const before=await control.command('status');
+	// A failed earlier run can leave its outing open, which blocks reset-world. Finish it with the session that started it.
+	if(before.activity&&before.activity.status!=='finished'){
+		if(!before.control?.session||before.control.activity!==before.activity.id)throw new Error('The emulator app has an unfinished outing the runner did not start. Finish it in the app, then rerun.');
+		await emulatorControl({serial:control.serial,adbPath:control.adbPath,session:before.control.session}).command('finish',before.activity.id);
+	}
 	await control.command('reset-world');
 	await control.command('check-clock');
 	await control.fix(plan.first.longitude,plan.first.latitude);await wait(1000);
@@ -89,7 +96,10 @@ async function main(){
 	const problems=preconditionProblems({maestro:await runs('maestro',['--version']),adb:adbFound,emulator:emulatorFound,deviceRunning,avds},options.avd);
 	if(problems.length)throw new Error('Cannot take Maestro screenshots:\n- '+problems.join('\n- '));
 
-	const output=resolve(root,options.output);await mkdir(output,{recursive:true});
+	const output=resolve(root,options.output),reports=join(output,'reports');
+	// Start empty so screenshots left by an earlier run can never satisfy this one.
+	await rm(reports,{recursive:true,force:true});await mkdir(output,{recursive:true});
+	for(const file of await readdir(output))if(file.endsWith('.png'))await rm(join(output,file));
 	const flows=orderFlows((await readdir(join(root,'tests/maestro'))).filter(f=>f.endsWith('.yaml')).map(f=>join(root,'tests/maestro',f)));
 	const control=emulatorControl({serial:options.serial,metroPort:options.metroPort,adbPath});
 	const children:ChildProcess[]=[];let startedEmulator=false;
@@ -99,6 +109,9 @@ async function main(){
 			children.push(background(emulatorPath,['-avd',chooseAvd(avds,options.avd)!,'-port',port,'-gpu','host','-no-snapshot-save','-no-boot-anim','-no-audio'],join(output,'emulator.log')));startedEmulator=true;
 			await until('the emulator to boot',300000,async()=>{try{return (await control.shell(['getprop','sys.boot_completed'])).trim()==='1';}catch{return false;}});
 		}
+		// Keep the device crash and system logs: emulator system_server restarts otherwise surface only as hung adb calls.
+		await rm(join(output,'device.log'),{force:true});
+		children.push(background(adbPath,['-s',options.serial,'logcat','-b','crash','-b','system','-v','time'],join(output,'device.log')));
 		const api='http://127.0.0.1:'+options.apiPort;
 		if(!await reachable(api+'/replay/environment')){
 			children.push(background('npm',['run','replay:server'],join(output,'api.log')));
@@ -106,12 +119,17 @@ async function main(){
 		}
 		await control.adb(['reverse','tcp:'+options.apiPort,'tcp:'+options.apiPort]);
 		await control.adb(['reverse','tcp:'+options.metroPort,'tcp:'+options.metroPort]);
-		const metro='http://127.0.0.1:'+options.metroPort+'/status';
+		// Expo --localhost binds Metro to localhost, which is IPv6-only [::1] on macOS.
+		const metro='http://localhost:'+options.metroPort+'/status';
 		if(!await reachable(metro)){
 			children.push(background('npx',['expo','start','--dev-client','--localhost','--port',String(options.metroPort)],join(output,'metro.log'),{cwd:join(root,'apps/mobile'),env:{...process.env,EXPO_PUBLIC_TEST_SERVER_URL:api,CI:'1'}}));
 			await until('Metro on '+options.metroPort,180000,()=>reachable(metro));
 		}
-		await run('npm',['run','android:emulator','--workspace','@sporeward/mobile','--','--no-bundler']);
+		// Expo's --device matches the AVD name, not the adb serial, so ask the emulator which AVD it is running.
+		const avdName=(await control.adb(['emu','avd','name'])).split(/\r?\n/)[0].trim();
+		await run('npx',['expo','run:android','--device',avdName,'--no-bundler'],{cwd:join(root,'apps/mobile')});
+		// expo run:android opens the app on the Mac's LAN address, which a --localhost Metro never serves; restart it cleanly.
+		await control.shell(['am','force-stop',APP_ID]);
 		await control.adb(['logcat','-c']);
 		await control.launchDevClient();
 		await control.waitForJavascript();
@@ -119,9 +137,14 @@ async function main(){
 		for(const flow of flows){
 			if(basename(flow,'.yaml')===REPLAY_FLOW)await replaySyntheticOuting(control);
 			const names=screenshotNames(await readFile(flow,'utf8'));expected.push(...names);
-			await run('maestro',['--device',options.serial,'test',flow,'--test-output-dir',join(output,'reports')],{cwd:output});
-			// Some Maestro versions resolve screenshot paths beside the flow instead of the working directory.
-			for(const name of missingScreenshots(names,await readdir(output))){const beside=join(dirname(flow),name+'.png');if(existsSync(beside))await rename(beside,join(output,name+'.png'));}
+			await run('maestro',['--device',options.serial,'test',flow,'--test-output-dir',reports],{cwd:output});
+			// Maestro may save screenshots beside the flow or inside its test-output reports instead of the working directory.
+			const reportFiles=existsSync(reports)?(await readdir(reports,{recursive:true})).map(String):[];
+			for(const name of missingScreenshots(names,await readdir(output))){
+				const beside=join(dirname(flow),name+'.png'),inReports=reportScreenshot(name,reportFiles);
+				if(existsSync(beside))await rename(beside,join(output,name+'.png'));
+				else if(inReports)await copyFile(join(reports,inReports),join(output,name+'.png'));
+			}
 		}
 		const missing=missingScreenshots(expected,await readdir(output));
 		if(missing.length)throw new Error('Maestro finished without screenshots: '+missing.join(', '));
