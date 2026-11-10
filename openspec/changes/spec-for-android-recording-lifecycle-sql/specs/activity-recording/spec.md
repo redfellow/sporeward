@@ -3,10 +3,10 @@
 ## ADDED Requirements
 
 ### Requirement: Single explicit recording lifecycle
-The Android recorder SHALL allow at most one unfinished outing, owned by the signed-in account. Finishing SHALL require an explicit confirmation. A recording that reaches 24 hours SHALL be paused, not finished, until the player resumes or finishes it. Source: `apps/mobile/src/recording/store.ts` (`begin`, `transition`), `recorder.ts`, `confirm-finish.ts`.
+The Android recorder SHALL allow at most one unfinished outing, owned by the signed-in account. Finishing SHALL require an explicit confirmation. A recording SHALL be paused, not finished, 24 hours of wall-clock time after it started or was last explicitly resumed (an explicit resume restarts the 24 hours), until the player resumes or finishes it. Source: `apps/mobile/src/recording/store.ts` (`begin`, `transition`), `recorder.ts`, `confirm-finish.ts`.
 
 #### Scenario: Reach the recording limit
-- **WHEN** an outing has been recording for 24 hours
+- **WHEN** 24 hours of wall-clock time have passed since an outing started or was last explicitly resumed
 - **THEN** the recorder pauses it and asks the player to resume or finish explicitly
 
 ### Requirement: Local per-account route storage
