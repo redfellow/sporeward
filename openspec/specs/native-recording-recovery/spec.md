@@ -27,3 +27,10 @@ If location service recovery cannot proceed, the recorder SHALL preserve the out
 #### Scenario: Location service cannot be restarted
 - **WHEN** the recorder cannot restart location updates during recovery
 - **THEN** the outing is paused, saved fixes remain available, and the recorder reports the recovery failure
+
+### Requirement: Resume after the missing permission is restored
+After recovery paused an outing for missing background location permission, an explicit resume SHALL continue the same outing in a new section once the permission is granted. Test: `apps/mobile/src/recording/recovery.test.ts`.
+
+#### Scenario: Permission granted later
+- **WHEN** the player grants background location and resumes the paused outing
+- **THEN** recording continues in the same outing with a new section
