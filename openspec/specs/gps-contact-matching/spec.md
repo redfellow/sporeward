@@ -46,3 +46,14 @@ The system SHALL evaluate each recorded contact time against the footprint versi
 #### Scenario: Inferred contact rounds to a footprint boundary
 - **WHEN** an inferred first-contact timestamp for a former footprint rounds up to that footprint's exclusive end
 - **THEN** the former footprint does not receive the contact, and the footprint beginning at that boundary may match it from its inclusive start
+
+### Requirement: Valid ordered input and earliest contact
+Contact matching SHALL reject fixes without timestamps, with timestamps not strictly increasing in time, or with non-finite or out-of-range coordinates. It SHALL return one earliest contact per outbreak even when several footprint versions match. Source: `packages/game/src/contacts.ts` (`matchContacts`); test: `packages/game/src/contacts.test.ts`.
+
+#### Scenario: Unordered fixes
+- **WHEN** a recording contains a fix earlier than its predecessor
+- **THEN** matching fails instead of producing contacts
+
+#### Scenario: Several footprint versions touched
+- **WHEN** a route touches two successive footprint versions of one outbreak
+- **THEN** only the earliest contact for that outbreak is returned
