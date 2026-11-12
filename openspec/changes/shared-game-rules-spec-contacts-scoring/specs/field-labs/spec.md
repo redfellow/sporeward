@@ -18,7 +18,7 @@ The server SHALL issue at most one offer per player and outing, valid for 24 hou
 
 ### Requirement: Contact-time eligibility
 Settlement SHALL mark a lab contact as one of:
-- ineligible, when the track is ineligible or the contact precedes resistance activation;
+- ineligible, when the track is ineligible, resistance is disabled, the contact precedes resistance activation, or the contact time is more than 30 seconds in the future;
 - expired, when the contact falls outside the lab's lifetime;
 - already collected, when the player has collected it before.
 
@@ -29,7 +29,7 @@ Otherwise the contact SHALL be confirmed. Source: `apps/server/src/lab-settlemen
 - **THEN** the contact is marked expired
 
 ### Requirement: Quoted and reconciled settlement
-A valid matching offer SHALL settle as quoted. Without one, the server SHALL settle a reconciled amount, capped by shared settlement load and available resistance. Ordinary and lab contacts SHALL be applied in recorded-time order. Source: `apps/server/src/lab-settlement.ts`; test: `apps/server/src/lab-settlement.test.ts`.
+A valid matching offer SHALL be the upper limit and label the settlement quoted; without one the settlement SHALL be reconciled. Both SHALL be capped by current shared settlement load and available resistance, so a quoted amount can settle lower or at zero. Ordinary and lab contacts SHALL be applied in recorded-time order. Source: `apps/server/src/lab-settlement.ts`; test: `apps/server/src/lab-settlement.test.ts`.
 
 #### Scenario: Offline collection without a cached offer
 - **WHEN** an eligible upload contacts an unexpired lab with no valid offer for the outing

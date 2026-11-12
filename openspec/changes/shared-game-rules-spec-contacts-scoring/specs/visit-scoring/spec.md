@@ -17,14 +17,14 @@ In gentle mode, successive accepted visits by one player SHALL commit 100%, 75%,
 - **THEN** it contributes 75% cleaning strength
 
 ### Requirement: Cleanup bonus for the finishing group and protection window
-When an outbreak clears, each player SHALL receive its 100-point cleanup bonus exactly once if they visited within 10 minutes before the last visit before clearing, or within the 10-minute protection window after clearing. A protection-window visit SHALL earn full ordinary points regardless of prior history. Later evidence SHALL add awards but never revoke them. Source: `packages/game/src/engine.ts` (`reconcileCleanupBonuses`); test: `packages/game/src/engine.test.ts`.
+When an outbreak clears, each player SHALL receive the 100-point cleanup bonus exactly once if they visited within 10 minutes before the last visit before clearing, or within the 10-minute protection window after. A protection-window visit SHALL earn full ordinary points regardless of diminished visit history; the cooldown still applies. Later evidence SHALL NOT revoke awards. Source: `packages/game/src/engine.ts` (`reconcileCleanupBonuses`); test: `packages/game/src/engine.test.ts`.
 
 #### Scenario: Arrive just after clearing
 - **WHEN** an eligible player reaches a cleared outbreak within 10 minutes of clearing
 - **THEN** they receive full visit points and the cleanup bonus once
 
 ### Requirement: Remnant and historical visit outcomes
-A remnant visit SHALL award no ordinary points and SHALL clear the remnant toward its divided bonus. A historical visit to a retired outbreak SHALL credit its diminished value without a cleanup bonus or new treatment. Test: `packages/game/src/engine.test.ts`.
+A remnant visit SHALL award no ordinary points and SHALL clear the remnant, and the visitor SHALL receive that remnant's share of the cleanup bonus (a quarter of the original, 25 points today). A historical visit to a retired outbreak SHALL credit its diminished value without a cleanup bonus or new treatment. Test: `packages/game/src/engine.test.ts`.
 
 #### Scenario: Historical repeat to a retired outbreak
 - **WHEN** a late upload contains a repeat visit to an outbreak that has since been retired
