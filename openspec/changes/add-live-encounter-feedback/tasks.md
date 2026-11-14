@@ -3,19 +3,25 @@
 ## 1. Model honest contact feedback
 
 - [x] 1.1 Add a pure contact-feedback reducer/formatter for outbreak and lab evidence, estimates/held points, known cooldown versus unknown zero estimates and matching authoritative outcomes; verify synthetic tests cover per-target deduplication, original contact time, delayed/changed evidence, rapid grouping, bounded pending feedback and no duplicate totals or inferred awards.
+  - proof: `npx vitest run apps/mobile/src/recording/contact-feedback.test.ts`
 
 ## 2. Retain and ingest current-outing evidence
 
 - [x] 2.1 Add an idempotent local feedback table and owner/context-scoped read/upsert operations through the existing writer; verify isolated SQLite tests cover repeated insertion, restart/reopen, announcement consumption, field-lab retention, identity isolation and additive setup with existing recordings/previews/receipts preserved. Document local persistence and rollback boundaries in the change design.
+  - proof: `npx vitest run apps/mobile/src/recording/feedback-storage.test.ts`
 - [x] 2.2 Add app-owned active-outing ingestion using existing outbreak observations and shared-matcher lab contacts, with hydration/foreground catch-up silent and live evidence distinct; verify focused sequence tests cover startup races, navigation/remount, pause/resume, delayed world loading, expiry/removal, reset cancellation and receipt reconciliation without changing GPS matching, scoring or recorder/upload behavior.
+  - proof: `npx vitest run apps/mobile/src/recording/feedback-controller.test.ts`
 
 ## 3. Present notices and Recent contacts
 
 - [x] 3.1 Add bounded live notices and a virtualized current-outing Recent contacts sheet, coordinate with Nearby/target cards/cleanup feedback, preserve pause/finish and Back behavior, and update player rules; verify mobile TypeScript, Android JavaScript export, scoped navigation/source checks and documentation links. Record actual check scope separately from phone appearance/gesture acceptance.
+  - proof: `npm run typecheck --workspace @sporeward/mobile`
 
 ## 4. Review and accept the slice
 
 - [x] 4.1 Obtain independent implementation review against this change and address blocking findings; pass strict OpenSpec validation and `git diff --check`, and record integration evidence, storage boundaries, Git/dependency status and pending phone acceptance in the handoff.
+  - proof: `openspec validate add-live-encounter-feedback --strict`
+  - proof: `git diff --check`
 - [ ] 4.2 Obtain owner phone acceptance on narrow/wide layouts: fresh contact notice, grouped contacts, Recent contacts/Back, points-held and lab wording, screen-off return without a banner burst, map/pin continuity and accessible pause/finish. Keep this separate from automated checks, native background reliability and earlier feature phone gates.
 
 ## Workflow follow-up
