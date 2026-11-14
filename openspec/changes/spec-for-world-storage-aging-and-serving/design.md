@@ -10,7 +10,8 @@ Document existing behavior only. Each requirement maps to a focused existing tes
 - World view fields, protocol shape check and older responses: `apps/server/src/outbreak-view.test.ts`.
 - Spatial generation and access: `apps/server/src/spatial/generate.test.ts`, `world-store.test.ts` (fixture access paths).
 - Separation and growth: `apps/server/src/spatial/resize.test.ts`, `continuous.test.ts`, `lifecycle.test.ts`.
-- Guarded import: source reference `apps/server/src/database/import.ts` and `scripts/migration/check-import.mts` only (needs PostgreSQL); no fast test.
+- Guarded import: source references `apps/server/src/database/world.ts` `importSnapshot` (rejects a different source hash and an existing world without an import record), `apps/server/src/database/import.ts` (snapshot shape validation) and `scripts/migration/check-import.mts` only (needs PostgreSQL); no fast test.
+- Failed write leaves the previous state intact: source reference `apps/server/src/world-store.ts` (writes a temporary file, fsyncs it and renames it over the snapshot) and one database transaction per step (`apps/server/src/database/world.ts`); `world-store.test.ts` covers only retries and restart.
 
 ## Open questions
 

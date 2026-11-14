@@ -31,5 +31,5 @@ OpenSpec artifacts only. Sources: `apps/server/src/world-store.ts`, `outbreak-vi
 ## Assumptions
 
 - A new `shared-world` capability is used because no existing spec owns storage, serving or migration; folding it into `outbreak-growth` was ruled out as a scope mismatch.
-- Guarded snapshot import is backed by a source reference (`apps/server/src/database/import.ts`, `scripts/migration/check-import.mts`) because its check needs PostgreSQL; no fast test is claimed for it.
+- Guarded snapshot import is backed by a source reference (`apps/server/src/database/world.ts` `importSnapshot`, `apps/server/src/database/import.ts`, `scripts/migration/check-import.mts`) because its check needs PostgreSQL; no fast test is claimed for it.
 - Provisional numbers (20 replay outbreaks, 600 field density, one-hour checkpoints) are stated as current configuration, not as fixed rules.
