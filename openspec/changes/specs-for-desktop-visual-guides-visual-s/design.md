@@ -7,4 +7,4 @@ Documentation-only. Each added requirement names the test that backs it:
 - Showcase: `apps/server/src/replay/showcase.test.ts`, `showcase-clock.test.ts`, `presentation.test.ts`.
 - Rendering lab: `apps/web/src/rendering/footprint.test.ts`. Artwork: `packages/rendering/src/survey-station.test.ts`.
 
-Open questions (not specified): Strava catalogue and Python import behavior (covered only by `tests/replay` Python tests outside Vitest); the interactive runner's command set; PostGIS comparison report contents; the desktop guide UI (`ExplorationLabs.tsx`) controls, which have no automated test.
+Open questions (not specified): rejection of duplicate player identities, backwards scheduling and backwards fix timestamps across batches (checked in `scenario.ts` and `packages/protocol/src/replay.ts` but not pinned by a test); Strava catalogue and Python import behavior (covered only by `tests/replay` Python tests outside Vitest); the interactive runner's command set; PostGIS comparison report contents; the desktop guide UI (`ExplorationLabs.tsx`) controls, which have no automated test.

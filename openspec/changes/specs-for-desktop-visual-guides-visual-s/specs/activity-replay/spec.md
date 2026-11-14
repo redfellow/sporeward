@@ -3,7 +3,7 @@
 ## ADDED Requirements
 
 ### Requirement: Rebase recorded tracks without compression
-Replay SHALL rebase a recorded track to a chosen start time while keeping every relative interval, including GPS gaps, pauses and a final paused period. It SHALL reject corrupt pause boundaries and timestamps that go backwards across batches. Test: `apps/server/src/replay/timeline.test.ts`.
+Replay SHALL rebase a recorded track to a chosen start time while keeping every relative interval, including GPS gaps, pauses and a final paused period. It SHALL reject corrupt pause boundaries. Test: `apps/server/src/replay/timeline.test.ts`.
 
 #### Scenario: Rebase a paused recording
 - **WHEN** a track with a GPS gap and a final pause is rebased
@@ -17,10 +17,10 @@ The replay clock SHALL NOT deliver an event before its scheduled time, SHALL kee
 - **THEN** the same events are delivered in the same order at the same virtual times
 
 ### Requirement: Deterministic scenarios
-A scenario run SHALL repeat its scheduled contributions and decay exactly after reset, with no upload delivered early. Definitions with ambiguous player identities or backwards scheduling SHALL be refused. Test: `apps/server/src/replay/scenario.test.ts`.
+A scenario run SHALL repeat its scheduled contributions and decay exactly after reset, with no upload delivered early. An invalid scenario definition SHALL be refused before the run starts. Test: `apps/server/src/replay/scenario.test.ts`.
 
-#### Scenario: Ambiguous identity
-- **WHEN** a definition names two players with the same identity
+#### Scenario: Invalid definition
+- **WHEN** a scenario definition is incomplete or has an invalid world id
 - **THEN** the scenario is refused before any upload
 
 ### Requirement: Native replay window gaps

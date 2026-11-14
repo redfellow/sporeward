@@ -7,10 +7,10 @@ The showcase clock SHALL start paused at zero, advance only by explicit valid am
 
 #### Scenario: Advance past the limit
 - **WHEN** a tester asks to advance beyond 720 minutes
-- **THEN** the advance is rejected or the clock pauses at the limit
+- **THEN** an advance beyond the limit is rejected, and reaching 720 minutes leaves the clock paused
 
 ### Requirement: Examples are reachable and synthetic
-Every showcase example SHALL be contactable from public paths, and showcase and presentation worlds SHALL be deterministic valid world data without user tracks or contributions. Tests: `apps/server/src/replay/showcase.test.ts`, `apps/server/src/replay/presentation.test.ts`.
+Every showcase example SHALL be contactable from public paths, and showcase and presentation worlds SHALL be deterministic valid world data. The presentation world SHALL contain no user tracks or contributions, and the showcase SHALL use only synthetic visitors. Tests: `apps/server/src/replay/showcase.test.ts`, `apps/server/src/replay/presentation.test.ts`.
 
 #### Scenario: Ride public paths
 - **WHEN** fixes follow the public paths of the showcase area
