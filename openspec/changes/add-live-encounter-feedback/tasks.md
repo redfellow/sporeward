@@ -16,6 +16,8 @@
 
 - [x] 3.1 Add bounded live notices and a virtualized current-outing Recent contacts sheet, coordinate with Nearby/target cards/cleanup feedback, preserve pause/finish and Back behavior, and update player rules; verify mobile TypeScript, Android JavaScript export, scoped navigation/source checks and documentation links. Record actual check scope separately from phone appearance/gesture acceptance.
   - proof: `npm run typecheck --workspace @sporeward/mobile`
+  - proof: `npx vitest run tests/mobile-contact-feedback-navigation.test.ts`
+  - proof: `D=$(mktemp -d) && HOME="$D/home" EXPO_NO_TELEMETRY=1 CI=1 npm exec --workspace @sporeward/mobile -- expo export --platform android --output-dir "$D/out"`
 
 ## 4. Review and accept the slice
 
@@ -32,6 +34,6 @@ No agent could do these from its sandbox; the user does them once the pull reque
 ## Workflow follow-up
 
 - The owner approved the artifacts and requested apply on 24 October 2026. Work runs on `feat/live-encounter-feedback`. PRs #25 and #26 are now merged; publication uses their merged `main` base (`1ef59ab`).
-- The owner requested a commit and separate PR to `main`, with phone layout testing later. Keep task 4.2 pending; publication does not satisfy owner acceptance.
-- Prefer focused synthetic reducer/storage/controller tests and an Android JavaScript export. No full-suite, emulator startup or new outdoor outing prerequisite; physical-phone acceptance remains task 4.2.
+- The owner requested a commit and separate PR to `main`, with phone layout testing later. Keep the owner phone acceptance under "Manual checks after merge" pending; publication does not satisfy it.
+- Prefer focused synthetic reducer/storage/controller tests and an Android JavaScript export. No full-suite, emulator startup or new outdoor outing prerequisite; physical-phone acceptance remains the manual check after merge.
 - No baseline sync/archive before independent review and required owner acceptance. Commit, push and PR creation remain separately authorized actions.
