@@ -1,3 +1,4 @@
+// @harvaaja-test-tier: integration
 /// <reference types="node" />
 import {describe,it,expect} from 'vitest';
 import {DatabaseSync} from 'node:sqlite';

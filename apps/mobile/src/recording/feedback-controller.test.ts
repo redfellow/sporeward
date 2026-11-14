@@ -1,3 +1,4 @@
+// @harvaaja-test-tier: fast
 import {describe,it,expect} from 'vitest';
 import {ContactFeedbackController,contactEvidence} from './feedback-controller';
 import {contactKey,mergeContactEntries,type ContactEntry} from './contact-feedback';

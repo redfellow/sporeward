@@ -1,3 +1,4 @@
+// @harvaaja-test-tier: fast
 import {describe,it,expect} from 'vitest';
 import {mergeContactEntries,contactEntryText,enqueueContactNotice,advanceContactNotice,emptyNotices,type ContactEntry} from './contact-feedback';
 import type {EncounterRecap} from '@sporeward/protocol';
