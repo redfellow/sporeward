@@ -61,6 +61,18 @@ npm run dev:mobile
 
 Native dependency or app-configuration changes require rebuilding the development app. Android/iOS directories are generated and ignored; keep native configuration in Expo configuration and config plugins. No cloud-build account is required for this local workflow. See [Development setup](docs/development-setup.md).
 
+### Emulator screenshots with Maestro
+
+The Maestro flows in `tests/maestro/` take screenshots of the live map, the field guide and the recap of a short replayed outing. Install [Maestro](https://maestro.mobile.dev) (`curl -Ls https://get.maestro.mobile.dev | bash`), check that `maestro --version` works (the runner also finds it in `~/.maestro/bin` or at `$MAESTRO_BIN` when it is not on `PATH`), then run:
+
+```sh
+npm run maestro:emulator
+```
+
+The runner starts whatever is not already running and later stops only what it started: it boots `emulator-5554` from the first AVD it finds (or `--avd=NAME`), starts the isolated loopback API (`npm run replay:server`, port 3102) with `adb reverse`, starts Metro with `EXPO_PUBLIC_TEST_SERVER_URL=http://127.0.0.1:3102` (`--metro-port=8081` by default), and builds and installs the development client from `apps/mobile` with `npx expo run:android --device <AVD name> --no-bundler` (the AVD name comes from `adb emu avd name`, because Expo matches AVD names rather than adb serials). It then force-stops the app and relaunches it against the localhost Metro through the `sporeward://expo-development-client/?url=http://localhost:8081` deep link. Before the recap flow it replays the synthetic 60-second Tampere track `tests/maestro/replay-track.json` through the development-only `sporeward://replay/...` bridge and `adb emu geo fix`. Use the disposable replay credentials in the emulator app, as for `npm run replay:emulator`.
+
+Screenshots and logs go to ignored `artifacts/maestro/`. The run fails with an install hint when Maestro, adb, the emulator binary or an AVD is missing, and it fails when any expected screenshot is absent. Emulator runs do not prove background GPS reliability; that still needs a field ride with `npm run android:field`.
+
 ## Checks
 
 - `npm run typecheck`: check all five TypeScript workspaces.

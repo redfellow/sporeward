@@ -1,0 +1,16 @@
+appId: com.sporeward.app
+name: Open and close the field guide
+---
+- extendedWaitUntil:
+    visible: "Open field guide"
+    timeout: 30000
+- tapOn: "Open field guide"
+- extendedWaitUntil:
+    visible: "Close field guide and return to map"
+    timeout: 15000
+- takeScreenshot: field-guide-open
+- tapOn: "Close field guide and return to map"
+- extendedWaitUntil:
+    visible: "Open field guide"
+    timeout: 15000
+- takeScreenshot: field-guide-closed

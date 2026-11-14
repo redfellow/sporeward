@@ -8,4 +8,5 @@ Rules for planners, on top of härvääjä's own.
 - Type check with `npm run typecheck --workspace @sporeward/<name>`; there is no linter.
 - Mark test speed with a first-line comment `@harvaaja-test-tier: fast`, `integration` or `host`. Tests needing PostgreSQL/PostGIS, an Android emulator or a device are not fast.
 - Native GPS recording cannot be proven by JavaScript checks; plan real-device validation as a manual step.
+- For cards that touch native recording, list under Manual checks after merge: install the field APK (`npm run android:field`) on a phone and ride about 10 minutes, then confirm the outing recorded and uploaded.
 - Plans follow the change's OpenSpec artifacts in `openspec/changes/<change>/`.
