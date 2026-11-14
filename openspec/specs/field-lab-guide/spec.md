@@ -44,3 +44,10 @@ The guide SHALL provide readable static available and collected states when moti
 #### Scenario: Disable animation
 - **WHEN** reduced motion or the guide's motion-off control is active
 - **THEN** scanning stops while shape and collection cues remain distinguishable.
+
+### Requirement: Distinct station poses
+The shared survey station artwork SHALL keep transparent glow stops and distinct available and collected poses. Test: `packages/rendering/src/survey-station.test.ts`.
+
+#### Scenario: Compare poses
+- **WHEN** available and collected stations are drawn
+- **THEN** their drawings differ and glow stays transparent at its edge
