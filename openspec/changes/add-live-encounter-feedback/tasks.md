@@ -22,7 +22,12 @@
 - [x] 4.1 Obtain independent implementation review against this change and address blocking findings; pass strict OpenSpec validation and `git diff --check`, and record integration evidence, storage boundaries, Git/dependency status and pending phone acceptance in the handoff.
   - proof: `openspec validate add-live-encounter-feedback --strict`
   - proof: `git diff --check`
-- [ ] 4.2 Obtain owner phone acceptance on narrow/wide layouts: fresh contact notice, grouped contacts, Recent contacts/Back, points-held and lab wording, screen-off return without a banner burst, map/pin continuity and accessible pause/finish. Keep this separate from automated checks, native background reliability and earlier feature phone gates.
+
+## Manual checks after merge (The user)
+
+No agent could do these from its sandbox; the user does them once the pull request is merged.
+
+- Obtain owner phone acceptance on narrow/wide layouts: fresh contact notice, grouped contacts, Recent contacts/Back, points-held and lab wording, screen-off return without a banner burst, map/pin continuity and accessible pause/finish. Keep this separate from automated checks, native background reliability and earlier feature phone gates.
 
 ## Workflow follow-up
 
