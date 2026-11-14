@@ -63,7 +63,7 @@ Native dependency or app-configuration changes require rebuilding the developmen
 
 ### Emulator screenshots with Maestro
 
-The Maestro flows in `tests/maestro/` take screenshots of the live map, the field guide and the recap of a short replayed outing. Install [Maestro](https://maestro.mobile.dev) (`curl -Ls https://get.maestro.mobile.dev | bash`), check that `maestro --version` works, then run:
+The Maestro flows in `tests/maestro/` take screenshots of the live map, the field guide and the recap of a short replayed outing. Install [Maestro](https://maestro.mobile.dev) (`curl -Ls https://get.maestro.mobile.dev | bash`), check that `maestro --version` works (the runner also finds it in `~/.maestro/bin` or at `$MAESTRO_BIN` when it is not on `PATH`), then run:
 
 ```sh
 npm run maestro:emulator

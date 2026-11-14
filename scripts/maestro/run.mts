@@ -3,6 +3,7 @@ import {promisify} from 'node:util';
 import {existsSync,openSync} from 'node:fs';
 import {copyFile,mkdir,readFile,readdir,rename,rm} from 'node:fs/promises';
 import {join,resolve,basename,dirname} from 'node:path';
+import {homedir} from 'node:os';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {parseReplayTrack} from '../../packages/protocol/src/replay.ts';
 import {nativeReplayPlan} from '../../apps/server/src/replay/native-plan.ts';
@@ -42,6 +43,8 @@ export function preconditionProblems(probe:Probe,avd:string|null):string[]{
 	return problems;
 }
 
+/** Where to look for the Maestro CLI: $MAESTRO_BIN, then PATH, then the installer's default ~/.maestro/bin, which a non-login PATH often lacks. */
+export const maestroCandidates=(env:NodeJS.ProcessEnv,home:string)=>[...new Set([env.MAESTRO_BIN,'maestro',join(home,'.maestro','bin','maestro')].filter((c):c is string=>!!c))];
 export const chooseAvd=(avds:string[],preferred:string|null)=>preferred??avds[0]??null;
 export const orderFlows=(files:string[])=>FLOW_ORDER.map(name=>{const file=files.find(f=>basename(f)===name+'.yaml');if(!file)throw new Error('Missing Maestro flow: '+name+'.yaml');return file;});
 export const screenshotNames=(flow:string)=>[...flow.matchAll(/^\s*-\s*takeScreenshot:\s*["']?([\w.-]+?)["']?\s*$/gm)].map(m=>m[1]);
@@ -93,8 +96,10 @@ async function main(){
 	const devices=adbFound?await probe('listing adb devices',adbPath,['devices']):'';
 	const deviceRunning=devices.split('\n').some(line=>line.startsWith(options.serial+'\tdevice'));
 	const avds=!deviceRunning&&emulatorFound?(await probe('listing Android Virtual Devices',emulatorPath,['-list-avds'])).split('\n').map(s=>s.trim()).filter(Boolean):[];
-	const problems=preconditionProblems({maestro:await runs('maestro',['--version']),adb:adbFound,emulator:emulatorFound,deviceRunning,avds},options.avd);
-	if(problems.length)throw new Error('Cannot take Maestro screenshots:\n- '+problems.join('\n- '));
+	let maestro:string|null=null;
+	for(const candidate of maestroCandidates(process.env,homedir()))if(await runs(candidate,['--version'])){maestro=candidate;break;}
+	const problems=preconditionProblems({maestro:!!maestro,adb:adbFound,emulator:emulatorFound,deviceRunning,avds},options.avd);
+	if(problems.length||!maestro)throw new Error('Cannot take Maestro screenshots:\n- '+problems.join('\n- '));
 
 	const output=resolve(root,options.output),reports=join(output,'reports');
 	// Start empty so screenshots left by an earlier run can never satisfy this one.
@@ -137,7 +142,7 @@ async function main(){
 		for(const flow of flows){
 			if(basename(flow,'.yaml')===REPLAY_FLOW)await replaySyntheticOuting(control);
 			const names=screenshotNames(await readFile(flow,'utf8'));expected.push(...names);
-			await run('maestro',['--device',options.serial,'test',flow,'--test-output-dir',reports],{cwd:output});
+			await run(maestro,['--device',options.serial,'test',flow,'--test-output-dir',reports],{cwd:output});
 			// Maestro may save screenshots beside the flow or inside its test-output reports instead of the working directory.
 			const reportFiles=existsSync(reports)?(await readdir(reports,{recursive:true})).map(String):[];
 			for(const name of missingScreenshots(names,await readdir(output))){

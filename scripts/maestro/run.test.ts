@@ -1,6 +1,6 @@
 // @harvaaja-test-tier: fast
 import {describe,it,expect} from 'vitest';
-import {parseArgs,preconditionProblems,chooseAvd,orderFlows,screenshotNames,missingScreenshots,reportScreenshot,type Probe} from './run.mts';
+import {parseArgs,preconditionProblems,maestroCandidates,chooseAvd,orderFlows,screenshotNames,missingScreenshots,reportScreenshot,type Probe} from './run.mts';
 
 const ready:Probe={maestro:true,emulator:true,adb:true,deviceRunning:false,avds:['Pixel_API36']};
 
@@ -19,6 +19,14 @@ describe('Maestro runner preconditions',()=>{
 		expect(problems).toHaveLength(expected.length);
 		expected.forEach((pattern,i)=>expect(problems[i]).toMatch(pattern));
 	});
+});
+
+describe('Maestro CLI lookup',()=>{
+	it.each<[string,NodeJS.ProcessEnv,string[]]>([
+		['PATH first, then the installer default',{},['maestro','/home/u/.maestro/bin/maestro']],
+		['MAESTRO_BIN before both',{MAESTRO_BIN:'/opt/maestro'},['/opt/maestro','maestro','/home/u/.maestro/bin/maestro']],
+		['MAESTRO_BIN equal to the default is tried once',{MAESTRO_BIN:'/home/u/.maestro/bin/maestro'},['/home/u/.maestro/bin/maestro','maestro']],
+	])('%s',(_name,env,expected)=>expect(maestroCandidates(env,'/home/u')).toEqual(expected));
 });
 
 describe('Maestro runner arguments and flows',()=>{
