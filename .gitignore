@@ -1,5 +1,6 @@
 .history/
 work/
+artifacts/
 .env
 .env.*
 !.env.example

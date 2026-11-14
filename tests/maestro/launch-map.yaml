@@ -1,0 +1,9 @@
+# The runner opens the development client against Metro before this flow.
+appId: com.sporeward.app
+name: Launch the live map
+---
+- extendedWaitUntil:
+    visible: "Open field guide"
+    timeout: 90000
+- assertVisible: "Past outings"
+- takeScreenshot: launch-map
