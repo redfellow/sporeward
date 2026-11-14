@@ -1,0 +1,18 @@
+format: 1
+slug: add-maestro-device-check-and-field-ride
+title: Add Maestro device check and field-ride step
+x-harvaaja-card: 7c349b1f-914b-4933-b093-a837ecbd1714
+x-harvaaja-owner: b480b8ae-9b42-451b-865d-ff78d89e33ad
+x-harvaaja-owner-name: Sohvamäkki
+x-harvaaja-owner-person: Reijo
+route:
+  kind: no-spec-change
+  rationale: Developer tooling only (Maestro flows, a wrapper script, a check
+    entry and planner guidance). No player-facing or product contract changes,
+    so no OpenSpec capability is touched.
+  citations:
+    - .harvaaja/checks.yaml
+    - scripts/replay/emulator.mts
+    - AGENTS.md:15
+    - docs/development-setup.md:159
+  revision: d27c5d2c-bb80-4839-8a8d-fcf1bcb1f3c4
