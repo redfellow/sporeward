@@ -20,14 +20,9 @@
   - proof: `npx vitest run apps/mobile/src/components/outing-recap-format.test.ts`
   - proof: `npm run typecheck --workspace @sporeward/mobile`
 
-## 3. Review the user-facing result
-
-
-The owner deferred tasks 2.4 and 3.1 to a later physical-phone session on 24 October 2026. They remain open and do not block publishing the implementation PR or starting the next feature.
-
 ## Manual checks after merge (The user)
 
-No agent could do these from its sandbox; the user does them once the pull request is merged.
+No agent could do these from its sandbox; the user does them once the pull request is merged, in a physical-phone session. They do not block publishing the implementation PR or starting the next feature.
 
 - Confirm on Android that back from a history recap returns to the outing list.
 - Check empty, pending-upload, uploaded-with-recap, and uploaded-without-recap states on Android; confirm cards remain account-scoped, score badges distinguish pending values, historical footprints match contacts, and scrolling remains responsive.
