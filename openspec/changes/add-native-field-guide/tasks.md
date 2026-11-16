@@ -20,7 +20,12 @@
 - [x] 3.1 Obtain independent review against this accepted scope, address blocking findings, and pass strict OpenSpec validation and `git diff --check`.
   - proof: `openspec validate add-native-field-guide --strict`
   - proof: `git diff --check`
-- [ ] 3.2 Have the owner inspect the guide on a physical phone, including back navigation, readability and reduced motion. Keep this later acceptance separate from implementation checks.
+
+## Manual checks after merge (The user)
+
+No agent could do these from its sandbox; the user does them once the pull request is merged.
+
+- Have the owner inspect the guide on a physical phone, including back navigation, readability and reduced motion. Keep this later acceptance separate from implementation checks.
 
 ## Workflow follow-up
 
