@@ -19,7 +19,12 @@
 - [x] 3.1 Obtain independent implementation review, address blocking findings and pass strict OpenSpec validation plus `git diff --check`; record the precise check scope and remaining acceptance.
   - proof: `openspec validate add-map-destination-focus --strict`
   - proof: `git diff --check`
-- [ ] 3.2 Obtain owner phone acceptance of narrow/wide target summary, direct-distance wording, pan/show-target behavior and return from help/history, separately from implementation checks.
+
+## Manual checks after merge (The user)
+
+No agent could do these from its sandbox; the user does them once the pull request is merged.
+
+- Obtain owner phone acceptance of narrow/wide target summary, direct-distance wording, pan/show-target behavior and return from help/history, separately from implementation checks.
 
 ## Workflow follow-up
 
