@@ -3,16 +3,29 @@
 ## 1. Derive honest target context
 
 - [x] 1.1 Add a pure destination-summary/distance model using current world and existing contact evidence; verify cooldown, conditional bonus, missing offer, provisional/confirmed lab, absent target, polygon-inside and stale-location boundaries with focused tests.
+  - proof: `npx vitest run apps/mobile/src/components/destination-focus.test.ts`
 
 ## 2. Add live-map destination focus
 
 - [x] 2.1 Add an app-owned session pin with explicit pin/replace/clear actions and identity reset, preserving it across map/help/history navigation; verify mobile TypeScript and Android JavaScript bundle checks pass without changing recorder or upload behavior.
+  - proof: `npm run typecheck --workspace @sporeward/mobile`
+  - proof: `npx vitest run apps/mobile/src/components/destination-focus.test.ts`
+  - proof: `cd apps/mobile && HOME=$(mktemp -d) EXPO_NO_TELEMETRY=1 CI=1 npx expo export --platform android --output-dir $(mktemp -d)`
 - [x] 2.2 Add compact target feedback, native highlight and show-target action with normal pan/follow controls; document the feature in player rules and verify the map contains no screen-space geographic overlay or historical-recap target UI.
+  - proof: `npm run typecheck --workspace @sporeward/mobile`
+  - proof: `npx vitest run apps/mobile/src/components/destination-focus.test.ts`
 
 ## 3. Review the slice
 
 - [x] 3.1 Obtain independent implementation review, address blocking findings and pass strict OpenSpec validation plus `git diff --check`; record the precise check scope and remaining acceptance.
-- [ ] 3.2 Obtain owner phone acceptance of narrow/wide target summary, direct-distance wording, pan/show-target behavior and return from help/history, separately from implementation checks.
+  - proof: `openspec validate add-map-destination-focus --strict`
+  - proof: `git diff --check`
+
+## Manual checks after merge (The user)
+
+No agent could do these from its sandbox; the user does them once the pull request is merged.
+
+- Obtain owner phone acceptance of narrow/wide target summary, direct-distance wording, pan/show-target behavior and return from help/history, separately from implementation checks.
 
 ## Workflow follow-up
 
