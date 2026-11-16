@@ -28,6 +28,6 @@ No agent could do these from its sandbox; the user does them once the pull reque
 ## Workflow follow-up
 
 - The owner approved the plan and requested apply on 24 October 2026. Implementation branch `feat/nearby-destinations-sheet` is stacked on `ac7f331` while PR #25 remains open; preserve the dependency explicitly.
-- Prefer focused synthetic tests, mobile typecheck and Android JavaScript export. Emulator startup and another outdoor outing are not implementation prerequisites; builds do not satisfy task 3.2.
+- Prefer focused synthetic tests, mobile typecheck and Android JavaScript export. Emulator startup and another outdoor outing are not implementation prerequisites; builds do not satisfy the owner phone acceptance in "Manual checks after merge".
 - Preserve the current destination-focus, history and guide acceptance tasks. Do not sync/archive this change until its independent review and owner acceptance pass.
 - Commit, push and PR creation remain separate user-authorized steps.
