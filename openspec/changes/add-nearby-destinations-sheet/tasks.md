@@ -18,7 +18,12 @@
 - [x] 3.1 Obtain independent implementation review against this change, resolve blocking findings, and pass strict change validation plus `git diff --check`; record actual checks, dependency/branch state and remaining phone acceptance in the handoff.
   - proof: `openspec validate add-nearby-destinations-sheet --strict`
   - proof: `git diff --check`
-- [ ] 3.2 Obtain owner phone acceptance on narrow/wide layouts: sheet readability and scrolling, filters/status/distance wording, row-to-details-to-pin flow, Back dismissal, preserved map/pin and accessible pause/finish controls during recording. Record it separately from automated checks and prior changes' phone gates.
+
+## Manual checks after merge (The user)
+
+No agent could do these from its sandbox; the user does them once the pull request is merged.
+
+- Obtain owner phone acceptance on narrow/wide layouts: sheet readability and scrolling, filters/status/distance wording, row-to-details-to-pin flow, Back dismissal, preserved map/pin and accessible pause/finish controls during recording. Record it separately from automated checks and prior changes' phone gates.
 
 ## Workflow follow-up
 
