@@ -10,6 +10,7 @@
 - [x] 2.1 Add an app-owned session pin with explicit pin/replace/clear actions and identity reset, preserving it across map/help/history navigation; verify mobile TypeScript and Android JavaScript bundle checks pass without changing recorder or upload behavior.
   - proof: `npm run typecheck --workspace @sporeward/mobile`
   - proof: `npx vitest run apps/mobile/src/components/destination-focus.test.ts`
+  - proof: `cd apps/mobile && HOME=$(mktemp -d) EXPO_NO_TELEMETRY=1 CI=1 npx expo export --platform android --output-dir $(mktemp -d)`
 - [x] 2.2 Add compact target feedback, native highlight and show-target action with normal pan/follow controls; document the feature in player rules and verify the map contains no screen-space geographic overlay or historical-recap target UI.
   - proof: `npm run typecheck --workspace @sporeward/mobile`
   - proof: `npx vitest run apps/mobile/src/components/destination-focus.test.ts`
