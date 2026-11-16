@@ -1,0 +1,19 @@
+format: 1
+slug: on-hold-unit-2
+title: "On hold: unit"
+x-harvaaja-card: 4f521e16-f859-458c-a43f-ccce2f8b55d5
+x-harvaaja-owner: b480b8ae-9b42-451b-865d-ff78d89e33ad
+x-harvaaja-owner-name: Sohvamäkki
+x-harvaaja-owner-person: Reijo
+x-harvaaja-repairs-main: true
+route:
+  kind: no-spec-change
+  rationale: The player-rules doc links to
+    openspec/changes/add-native-field-guide/tasks.md, but that change was
+    archived. Pointing the link at the archived path fixes the failing link test
+    without changing any contract.
+  citations:
+    - docs/player-rules.md:5
+    - tests/mobile-resistance-overview-sheet.test.ts:39-43
+    - openspec/changes/archive/2026-11-16-add-native-field-guide/tasks.md
+  revision: 67acdbca-739b-4092-adac-f8d11f2673f3
