@@ -33,3 +33,4 @@ rules:
   tasks:
     - Group work into reviewable implementation slices with focused validation.
     - Distinguish implementation checks from explicit owner visual acceptance.
+skillsScope: project
